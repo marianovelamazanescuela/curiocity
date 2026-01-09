@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Capa_2" data-name="Capa 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 194.08 74.99">
+  <defs>
+    <style>
+      .cls-1 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #1d1d1b;
+      }
+
+      .cls-3 {
+        font-family: SofiaSansCondensed-Thin, 'Sofia Sans Condensed';
+        font-size: 72px;
+        font-weight: 200;
+      }
+
+      .cls-4 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-5 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-6 {
+        letter-spacing: 0em;
+      }
+
+      .cls-7 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-8 {
+        letter-spacing: 0em;
+      }
+
+      .cls-9 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-10 {
+        letter-spacing: -.03em;
+      }
+    </style>
+  </defs>
+  <g id="Capa_2-2" data-name="Capa 2">
+    <g>
+      <text/>
+      <text class="cls-3" transform="translate(0 59.58)"><tspan class="cls-4" x="0" y="0">c</tspan><tspan class="cls-5" x="25.61" y="0">u</tspan><tspan class="cls-8" x="53.36" y="0">r</tspan><tspan class="cls-10" x="72.43" y="0">i</tspan><tspan class="cls-1" x="82.26" y="0">o</tspan><tspan class="cls-9" x="109.49" y="0">c</tspan><tspan class="cls-7" x="135.1" y="0">i</tspan><tspan class="cls-6" x="145.96" y="0">t</tspan><tspan x="167.94" y="0">y</tspan></text>
+      <ellipse class="cls-2" cx="127.87" cy="41.95" rx="3.72" ry="5.93"/>
+      <ellipse class="cls-2" cx="100.78" cy="41.95" rx="3.72" ry="5.93"/>
+    </g>
+  </g>
+</svg>

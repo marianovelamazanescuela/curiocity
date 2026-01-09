@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = "build"
+
+# Proxy API calls from the static frontend to the Render backend.
+[[redirects]]
+  from = "/api/*"
+  to = "https://<your-render-service>.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback (optional but safe for client-side routing)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
