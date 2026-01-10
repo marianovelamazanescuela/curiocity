@@ -169,6 +169,12 @@ const CameraScreen = () => {
     const [selectedSubject, setSelectedSubject] = useState(null);
     const [loadingDetection, setLoadingDetection] = useState(false);
     const [educationalResources, setEducationalResources] = useState(null);
+    // Splash screen control (ensure visible for at least 3 seconds)
+    const [showSplash, setShowSplash] = useState(true);
+    useEffect(() => {
+        const timer = setTimeout(() => setShowSplash(false), 3000);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Store raw predictions from the detector in case we want to use them later (we only need the setter)
     const [, setPredictionsState] = useState([]);
@@ -456,6 +462,26 @@ const CameraScreen = () => {
             overflow: "hidden",
             fontFamily: "'Sofia Sans', sans-serif"
         }}>
+            {showSplash && (
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: '#faebd9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000
+                }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <img src="/logo512.png" alt="Curiocity" style={{ width: 96, height: 96, marginBottom: 16 }} />
+                        <h1 style={{ color: '#000000', fontWeight: 900, fontSize: 28, margin: 0 }}>Curiocity</h1>
+                        <p style={{ color: '#333', fontSize: 14, marginTop: 8 }}>Loading…</p>
+                    </div>
+                </div>
+            )}
             {capturedImage ? (
                 <>
                     <img
