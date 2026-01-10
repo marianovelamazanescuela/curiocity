@@ -235,6 +235,26 @@ const CameraScreen = () => {
     };
 
     // Initialize camera on component mount
+    // Request fullscreen on mount
+    useEffect(() => {
+        const enterFullscreen = async () => {
+            try {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    await elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    await elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) {
+                    await elem.msRequestFullscreen();
+                }
+            } catch (err) {
+                console.info('Fullscreen request declined or unsupported', err);
+            }
+        };
+        enterFullscreen();
+    }, []);
+
+    // Initialize camera on component mount
     useEffect(() => {
         enableCamera();
         return () => {
@@ -357,7 +377,7 @@ const CameraScreen = () => {
 
     const shareContent = async () => {
         if (!educationalResources) return;
-        const intro = 'Look what I found with Curiocity!';
+        const intro = 'Look what I found with <a href="https://curiocity-vn5n.onrender.com">Curiocity!</a>';
         const facts = (educationalResources.funFacts && educationalResources.funFacts.length > 0) ? ('\n\nFun facts:\n' + educationalResources.funFacts.map(f => '• ' + f).join('\n')) : '';
         const shareText = `${intro}\n\n${educationalResources.title}\n\n${educationalResources.text}\n\n${educationalResources.explanation || ''}${facts}`;
 
