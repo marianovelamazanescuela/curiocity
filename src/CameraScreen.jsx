@@ -362,32 +362,18 @@ const CameraScreen = () => {
         const shareText = `${intro}\n\n${educationalResources.title}\n\n${educationalResources.text}\n\n${educationalResources.explanation || ''}${facts}`;
 
         try {
-            // Try Web Share with files if supported (mobile & some browsers)
-            if (navigator.canShare && capturedImage) {
-                const file = dataURLtoFile(capturedImage);
-                if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        title: educationalResources.title,
-                        text: shareText,
-                        files: [file]
-                    });
-                    showToast('Shared successfully', 'success');
-                    return;
-                }
-            }
-
-            // Try generic navigator.share with text fallback
+            // Try Web Share API with text only first (image+text combo often fails or drops text)
             if (navigator.share) {
                 await navigator.share({ title: educationalResources.title, text: shareText });
                 showToast('Shared successfully', 'success');
                 return;
             }
 
-            // Fallback to manual options UI
+            // Fallback to manual options UI (Email/WhatsApp handle text+image better)
             setShowShareOptions(true);
         } catch (err) {
-            console.error('Share failed', err);
-            showToast('Could not share. Try Email or Download', 'error');
+            // User cancelled or share failed; show manual options
+            console.info('Native share cancelled or unavailable, showing manual options', err && err.message ? err.message : '');
             setShowShareOptions(true);
         }
     };
@@ -601,7 +587,7 @@ const CameraScreen = () => {
                                                                         cursor: "pointer",
                                                                         margin: 2
                                                                     }}
-                                                                >Share via Email</button>
+                                                                >📧 Email</button>
 
                                                                 <button
                                                                     onClick={shareViaWhatsApp}
@@ -617,7 +603,23 @@ const CameraScreen = () => {
                                                                         cursor: "pointer",
                                                                         margin: 2
                                                                     }}
-                                                                >Share via WhatsApp</button>
+                                                                >💬 WhatsApp</button>
+
+                                                                <button
+                                                                    onClick={handleDownloadImage}
+                                                                    style={{
+                                                                        fontFamily: "'Sofia Sans', sans-serif",
+                                                                        background: "#ff9500",
+                                                                        color: "#fff",
+                                                                        border: "none",
+                                                                        borderRadius: 12,
+                                                                        padding: "8px 12px",
+                                                                        fontWeight: 700,
+                                                                        fontSize: 14,
+                                                                        cursor: "pointer",
+                                                                        margin: 2
+                                                                    }}
+                                                                >📥 Download Image</button>
 
                                                                 <button
                                                                     onClick={() => setShowShareOptions(false)}
