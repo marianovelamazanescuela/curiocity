@@ -479,7 +479,7 @@ const CameraScreen = () => {
                         <div style={{ background: '#ffffff', borderRadius: '50%', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                             <img src="/curiocity-logo.svg" alt="Curiocity" style={{ width: 128, height: 128 }} />
                         </div>
-                        <h1 style={{ color: '#000000', fontWeight: 900, fontSize: 28, margin: 0 }}>Curiocity</h1>
+                        
                         <p style={{ color: '#333', fontSize: 14, marginTop: 8 }}>Loading…</p>
                     </div>
                 </div>
