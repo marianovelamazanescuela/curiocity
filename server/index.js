@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 // Use built-in global fetch when available (Node 18+). Only dynamically import node-fetch
 // as a fallback for older Node versions. This avoids adding node-fetch to package.json.
@@ -6,7 +7,9 @@ let fetchFunc;
 if (typeof globalThis.fetch === 'function') {
   fetchFunc = globalThis.fetch.bind(globalThis);
 } else {
-  fetchFunc = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+  fetchFunc = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)).catch(() => {
+    throw new Error('Fetch is unavailable and node-fetch is not installed');
+  });
 }
 const fetch = (...args) => fetchFunc(...args);
 const app = express();
@@ -27,8 +30,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// ---- API routes ----
 // Simple health endpoint
-app.get('/api/health', (req, res) => res.json({ok: true, time: Date.now()}));
+app.get('/api/health', (req, res) => res.json({ ok: true, time: Date.now() }));
 
 // Simple in-memory cache: key -> { data, expiresAt }
 const cache = new Map();
@@ -151,8 +155,16 @@ app.post('/api/ai', async (req, res) => {
   }
 });
 
+// ---- Static frontend (Render web service) ----
+const buildDir = path.join(__dirname, '..', 'build');
+app.use(express.static(buildDir));
 
+// SPA fallback to index.html for non-API routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(buildDir, 'index.html'));
+});
 
 app.listen(PORT, () => {
-  console.log(`AI proxy listening on http://localhost:${PORT}`);
+  console.log(`Web + API server listening on http://localhost:${PORT}`);
 });
