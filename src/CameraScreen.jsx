@@ -26,7 +26,7 @@ async function getEducationalResources(objectName, subject) {
     // WARNING: Calling the OpenAI API directly from client-side code exposes the key
     // in the built bundle. Prefer a server-side proxy for production. This client-side
     // call is optional and falls back to a safe, local template generator on failure.
-    const PROXY_URL = process.env.REACT_APP_AI_PROXY_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:4000' : '/api');
+    const PROXY_BASE = process.env.REACT_APP_AI_PROXY_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
     const fallbackGenerator = () => {
         // Create short, simple paragraphs suitable for children (age ~6-12).
@@ -118,7 +118,7 @@ async function getEducationalResources(objectName, subject) {
     // and avoids exposing it in the client bundle. If the proxy is unavailable or returns
     // an error, fall back to the safe local generator.
     try {
-        const proxyEndpoint = `${PROXY_URL.replace(/\/$/, '')}/api/ai`;
+        const proxyEndpoint = `${PROXY_BASE.replace(/\/$/, '')}/api/ai`;
         const resp = await fetch(proxyEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
