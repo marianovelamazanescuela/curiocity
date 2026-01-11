@@ -299,30 +299,59 @@ const CameraScreen = () => {
         setShowModal(true);
 
         try {
-            const model = await cocoSsd.load();
-            const img = new window.Image();
-            img.src = dataUrl;
-            img.onload = async () => {
+            // Try OpenAI Vision API first (more accurate)
+            const PROXY_BASE = process.env.REACT_APP_AI_PROXY_URL || window.location.origin;
+            const detectEndpoint = `${PROXY_BASE.replace(/\/$/, '')}/api/detect`;
+            
+            let detectedObjectName = null;
+            try {
+                const visionResp = await fetch(detectEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: dataUrl })
+                });
+                
+                if (visionResp.ok) {
+                    const visionData = await visionResp.json();
+                    if (visionData && visionData.object) {
+                        detectedObjectName = visionData.object;
+                        console.log('OpenAI Vision detected:', detectedObjectName);
+                    }
+                }
+            } catch (err) {
+                console.info('Vision API unavailable, falling back to COCO-SSD', err.message || err);
+            }
+
+            // Fallback to COCO-SSD if Vision API failed
+            if (!detectedObjectName) {
+                const model = await cocoSsd.load();
+                const img = new window.Image();
+                img.src = dataUrl;
+                await new Promise((resolve) => { img.onload = resolve; });
+                
                 const predictions = await model.detect(img);
                 if (predictions && predictions.length > 0) {
-                    // Save raw predictions so we can offer alternatives later
                     setPredictionsState(predictions);
-                    // Get object with highest confidence score
                     const mainObject = predictions.reduce((a, b) => (a.score > b.score ? a : b));
-                    setDetectedObject({
-                        title: mainObject.class.charAt(0).toUpperCase() + mainObject.class.slice(1),
-                        description: `I detected a ${mainObject.class} in your image! Choose a subject to explore and learn more about it.`,
-                        subjects: defaultSubjects
-                    });
-                } else {
-                    setDetectedObject({
-                        title: "Sin objeto detectado",
-                        description: "No se ha podido identificar ningún objeto principal en la foto.",
-                        subjects: []
-                    });
+                    detectedObjectName = mainObject.class;
+                    console.log('COCO-SSD detected:', detectedObjectName);
                 }
-                setLoadingDetection(false);
-            };
+            }
+
+            if (detectedObjectName) {
+                setDetectedObject({
+                    title: detectedObjectName.charAt(0).toUpperCase() + detectedObjectName.slice(1),
+                    description: `I detected a ${detectedObjectName} in your image! Choose a subject to explore and learn more about it.`,
+                    subjects: defaultSubjects
+                });
+            } else {
+                setDetectedObject({
+                    title: "Sin objeto detectado",
+                    description: "No se ha podido identificar ningún objeto principal en la foto.",
+                    subjects: []
+                });
+            }
+            setLoadingDetection(false);
         } catch (e) {
             console.error('Error detecting objects:', e);
             setDetectedObject({

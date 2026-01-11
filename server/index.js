@@ -155,6 +155,67 @@ app.post('/api/ai', async (req, res) => {
   }
 });
 
+// Object detection endpoint using OpenAI Vision API
+app.post('/api/detect', async (req, res) => {
+  const { image } = req.body || {};
+  if (!image) {
+    return res.status(400).json({ error: 'Missing image data' });
+  }
+
+  const OPENAI_KEY = process.env.OPENAI_API_KEY;
+  if (!OPENAI_KEY) {
+    return res.status(500).json({ error: 'Server missing OPENAI_API_KEY' });
+  }
+
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'What is the main object in this image? Respond with ONLY the object name in 1-3 words (e.g., "apple", "red car", "golden retriever"). Be specific and accurate.'
+              },
+              {
+                type: 'image_url',
+                image_url: { url: image }
+              }
+            ]
+          }
+        ],
+        max_tokens: 50,
+        temperature: 0.3
+      })
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.warn('OpenAI vision API error', resp.status, resp.statusText, text);
+      return res.status(502).json({ error: 'Vision API error', status: resp.status });
+    }
+
+    const data = await resp.json();
+    const objectName = (data?.choices?.[0]?.message?.content || '').trim();
+
+    if (objectName) {
+      return res.json({ object: objectName, confidence: 0.95 });
+    }
+
+    return res.status(500).json({ error: 'Could not detect object' });
+  } catch (err) {
+    console.error('Vision API error', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ---- Static frontend (Render web service) ----
 const buildDir = path.join(__dirname, '..', 'build');
 app.use(express.static(buildDir));
