@@ -388,12 +388,16 @@ const CameraScreen = () => {
         const shareText = `${intro}\n\n${educationalResources.title}\n\n${educationalResources.text}\n\n${educationalResources.explanation || ''}${facts}`;
 
         try {
-            // Prefer sharing both text and image when supported
+            // Prefer sharing both text and image when supported.
+            // Some platforms drop the text when files are present; include a text file to guarantee delivery.
             if (navigator.share && capturedImage) {
                 try {
-                    const file = dataURLtoFile(capturedImage);
-                    if (navigator.canShare && navigator.canShare({ files: [file], title: educationalResources.title, text: shareText })) {
-                        await navigator.share({ title: educationalResources.title, text: shareText, files: [file] });
+                    const imageFile = dataURLtoFile(capturedImage);
+                    const textBlob = new Blob([shareText], { type: 'text/plain' });
+                    const textFile = new File([textBlob], 'curiocity-content.txt', { type: 'text/plain' });
+                    const shareData = { title: educationalResources.title, text: shareText, files: [imageFile, textFile] };
+                    if (navigator.canShare && navigator.canShare({ files: shareData.files })) {
+                        await navigator.share(shareData);
                         showToast('Shared successfully', 'success');
                         return;
                     }
@@ -493,7 +497,7 @@ const CameraScreen = () => {
                     left: 0,
                     width: '100vw',
                     height: '100vh',
-                    background: '#faebd9',
+                    background: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
