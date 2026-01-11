@@ -383,12 +383,26 @@ const CameraScreen = () => {
 
     const shareContent = async () => {
         if (!educationalResources) return;
-        const intro = 'Look what I found with <a href="https://curiocity-vn5n.onrender.com">Curiocity!</a>';
+        const intro = 'Look what I found with Curiocity! https://curiocity-vn5n.onrender.com';
         const facts = (educationalResources.funFacts && educationalResources.funFacts.length > 0) ? ('\n\nFun facts:\n' + educationalResources.funFacts.map(f => '• ' + f).join('\n')) : '';
         const shareText = `${intro}\n\n${educationalResources.title}\n\n${educationalResources.text}\n\n${educationalResources.explanation || ''}${facts}`;
 
         try {
-            // Try Web Share API with text only first (image+text combo often fails or drops text)
+            // Try Web Share API with text and files
+            if (navigator.share && capturedImage) {
+                try {
+                    const file = dataURLtoFile(capturedImage);
+                    if (navigator.canShare && navigator.canShare({ files: [file], title: educationalResources.title, text: shareText })) {
+                        await navigator.share({ title: educationalResources.title, text: shareText, files: [file] });
+                        showToast('Shared successfully', 'success');
+                        return;
+                    }
+                } catch (e) {
+                    // Fall through to text-only share
+                }
+            }
+
+            // Try text-only native share
             if (navigator.share) {
                 await navigator.share({ title: educationalResources.title, text: shareText });
                 showToast('Shared successfully', 'success');
@@ -406,18 +420,17 @@ const CameraScreen = () => {
 
     const shareViaEmail = () => {
         if (!educationalResources) return;
-        const intro = 'Look what I found with Curiocity!';
+        const intro = 'Look what I found with Curiocity! https://curiocity-vn5n.onrender.com';
         const subject = encodeURIComponent(`${educationalResources.title} — Curiocity`);
         let body = `${intro}\n\n${educationalResources.title}\n\n${educationalResources.text}\n\n${educationalResources.explanation || ''}`;
         if (educationalResources.funFacts && educationalResources.funFacts.length > 0) {
             body += `\n\nFun facts:\n${educationalResources.funFacts.map(f => '• ' + f).join('\n')}`;
         }
-        // If the image is small enough, include base64; otherwise suggest download and attach manually
-        if (capturedImage && capturedImage.length < 200000) {
-            body += `\n\nImage (base64):\n${capturedImage}`;
-        } else if (capturedImage) {
-            body += `\n\n(Attach the image: use the "Download Image" button in the app)`;
+        // Always include image as base64 data URL in body for email clients that support it
+        if (capturedImage) {
+            body += `\n\n---\nImage: ${capturedImage}`;
         }
+        body += '\n\nLearn more at: https://curiocity-vn5n.onrender.com';
         const mailto = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
         window.open(mailto);
         showToast('Opened mail composer', 'info');
@@ -426,11 +439,14 @@ const CameraScreen = () => {
 
     const shareViaWhatsApp = () => {
         if (!educationalResources) return;
-        const intro = 'Look what I found with Curiocity!';
+        const intro = 'Look what I found with Curiocity! https://curiocity-vn5n.onrender.com';
         let text = `${intro}\n\n${educationalResources.title}\n\n${educationalResources.text}\n\n${educationalResources.explanation || ''}`;
         if (educationalResources.funFacts && educationalResources.funFacts.length > 0) {
             text += `\n\nFun facts:\n${educationalResources.funFacts.map(f => '• ' + f).join('\n')}`;
         }
+        // Note: WhatsApp Web and app don't support file sharing via wa.me URL
+        // User will need to share image separately or use Download Image button
+        text += '\n\n(To share the image: Save it using the Download button and attach manually)';
         const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
         showToast('Opened WhatsApp', 'info');
@@ -479,7 +495,7 @@ const CameraScreen = () => {
                         <div style={{ background: '#ffffff', borderRadius: '50%', width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                             <img src="/curiocity-logo.svg" alt="Curiocity" style={{ width: 128, height: 128 }} />
                         </div>
-                        
+                        <h2 style={{ color: '#000000', fontWeight: 900, fontSize: 28, margin: 0 }}>Learn from the world around you.</h2>
                         <p style={{ color: '#333', fontSize: 14, marginTop: 8 }}>Loading…</p>
                     </div>
                 </div>

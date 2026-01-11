@@ -1,6 +1,7 @@
 {
-  "short_name": "curiocity",
-  "name": "curiocity",
+  "short_name": "Curiocity",
+  "name": "Curiocity - Learn from the world",
+  "description": "Discover the world around you through multiple perspectives and subjects",
   "icons": [
     { "src": "icons/icon-16x16.png", "sizes": "16x16", "type": "image/png" },
     { "src": "icons/icon-32x32.png", "sizes": "32x32", "type": "image/png" },
@@ -11,12 +12,31 @@
     { "src": "icons/icon-144x144.png", "sizes": "144x144", "type": "image/png" },
     { "src": "icons/icon-152x152.png", "sizes": "152x152", "type": "image/png" },
     { "src": "icons/icon-180x180.png", "sizes": "180x180", "type": "image/png" },
-    { "src": "icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
     { "src": "icons/icon-256x256.png", "sizes": "256x256", "type": "image/png" },
-    { "src": "icons/icon-512x512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "theme_color": "#bfa98a",
-  "background_color": "#faebd9"
+  "background_color": "#faebd9",
+  "categories": ["education", "productivity"],
+  "screenshots": [
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
 }
