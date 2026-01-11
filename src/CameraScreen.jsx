@@ -388,7 +388,7 @@ const CameraScreen = () => {
         const shareText = `${intro}\n\n${educationalResources.title}\n\n${educationalResources.text}\n\n${educationalResources.explanation || ''}${facts}`;
 
         try {
-            // Try Web Share API with text and files
+            // Prefer sharing both text and image when supported
             if (navigator.share && capturedImage) {
                 try {
                     const file = dataURLtoFile(capturedImage);
@@ -398,22 +398,30 @@ const CameraScreen = () => {
                         return;
                     }
                 } catch (e) {
-                    // Fall through to text-only share
+                    // Fall through
                 }
             }
 
-            // Try text-only native share
+            // Fallback: share text-only via native share, then auto-download image for manual attach
             if (navigator.share) {
                 await navigator.share({ title: educationalResources.title, text: shareText });
-                showToast('Shared successfully', 'success');
+                showToast('Shared text; image ready to download below', 'success');
+                if (capturedImage) {
+                    handleDownloadImage();
+                }
                 return;
             }
 
-            // Fallback to manual options UI (Email/WhatsApp handle text+image better)
+            // Manual options: Email/WhatsApp + auto-download for convenience
+            if (capturedImage) {
+                handleDownloadImage();
+            }
             setShowShareOptions(true);
         } catch (err) {
-            // User cancelled or share failed; show manual options
             console.info('Native share cancelled or unavailable, showing manual options', err && err.message ? err.message : '');
+            if (capturedImage) {
+                handleDownloadImage();
+            }
             setShowShareOptions(true);
         }
     };
