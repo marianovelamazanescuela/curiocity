@@ -590,6 +590,30 @@ const CameraScreen = () => {
                             maxHeight: '70vh',
                             overflowY: 'auto'
                         }}>
+                                {/* Close button */}
+                                <button
+                                    onClick={handleClose}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 12,
+                                        right: 12,
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: '50%',
+                                        background: '#000000',
+                                        color: '#faebd9',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: 20,
+                                        fontWeight: 'bold',
+                                        zIndex: 10,
+                                        fontFamily: "'Sofia Sans', sans-serif"
+                                    }}
+                                    aria-label="Close"
+                                >×</button>
                                 {selectedSubject ? (
                                     <>
                                         <div style={{ width: '100%', boxSizing: 'border-box', padding: '0 6px' }}>
