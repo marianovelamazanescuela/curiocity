@@ -305,10 +305,20 @@ const CameraScreen = () => {
             
             let detectedObjectName = null;
             try {
+                // Resize image to reduce payload size (Vision API doesn't need full resolution)
+                const resizeCanvas = document.createElement('canvas');
+                const maxSize = 800; // Max width/height for detection
+                const scale = Math.min(maxSize / canvas.width, maxSize / canvas.height, 1);
+                resizeCanvas.width = canvas.width * scale;
+                resizeCanvas.height = canvas.height * scale;
+                const ctx = resizeCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, 0, resizeCanvas.width, resizeCanvas.height);
+                const resizedDataUrl = resizeCanvas.toDataURL('image/jpeg', 0.8);
+                
                 const visionResp = await fetch(detectEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: dataUrl })
+                    body: JSON.stringify({ image: resizedDataUrl })
                 });
                 
                 if (visionResp.ok) {
@@ -317,6 +327,8 @@ const CameraScreen = () => {
                         detectedObjectName = visionData.object;
                         console.log('OpenAI Vision detected:', detectedObjectName);
                     }
+                } else {
+                    console.warn('Vision API error:', visionResp.status, await visionResp.text());
                 }
             } catch (err) {
                 console.info('Vision API unavailable, falling back to COCO-SSD', err.message || err);
