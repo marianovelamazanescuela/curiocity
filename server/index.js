@@ -40,12 +40,13 @@ const cache = new Map();
 const CACHE_TTL = parseInt(process.env.CACHE_TTL_SECONDS || '3600', 10);
 
 app.post('/api/ai', async (req, res) => {
-  const { objectName, subject } = req.body || {};
+  const { objectName, subject, language } = req.body || {};
   if (!objectName || !subject) {
     return res.status(400).json({ error: 'Missing objectName or subject' });
   }
 
-  const cacheKey = `${String(objectName).toLowerCase().trim()}::${String(subject).toLowerCase().trim()}`;
+  const userLanguage = language || 'English';
+  const cacheKey = `${String(objectName).toLowerCase().trim()}::${String(subject).toLowerCase().trim()}::${String(userLanguage).toLowerCase().trim()}`;
   const now = Date.now();
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
@@ -58,8 +59,8 @@ app.post('/api/ai', async (req, res) => {
   }
 
   try {
-    const systemMessage = `You are a friendly, simple teacher creating short, child-friendly educational text for ages 6-12. Output ONLY a JSON object with the fields: title (short string), text (one short intro paragraph), explanation (1-3 short paragraphs), funFacts (an array of 2-6 short bullet strings), links (an array of objects with fields {title, url, source}) and relatedObjects (an array of 1-3 short related object names as simple nouns). Links should be to trustworthy educational resources (Khan Academy, OpenStax, OER Commons, PBS, National Geographic, Wikimedia, YouTube educational videos, etc.) when available. If you are not certain of a valid URL, return an empty array for links. Keep language simple and positive.`;
-    const userMessage = `Create educational content about the object named "${objectName}" from the perspective of the subject "${subject}". Make the text engaging for children (6-12), include one clear, simple explanation and 2-5 fun activity/fact bullets. Also include a field "relatedObjects" listing 1 to 3 short related object names (single words or short phrases). If you cannot think of related objects, return an empty array for that field. If possible return up to 4 trustworthy resource links (title and url). Respond with JSON only.`;
+    const systemMessage = `You are a friendly, simple teacher creating short, child-friendly educational text for ages 6-12. Output ONLY a JSON object with the fields: title (short string), text (one short intro paragraph), explanation (1-3 short paragraphs), funFacts (an array of 2-6 short bullet strings), links (an array of objects with fields {title, url, source}) and relatedObjects (an array of 1-3 short related object names as simple nouns). Links should be to trustworthy educational resources (Khan Academy, OpenStax, OER Commons, PBS, National Geographic, Wikimedia, YouTube educational videos, etc.) when available. If you are not certain of a valid URL, return an empty array for links. Keep language simple and positive. IMPORTANT: Provide all content in ${userLanguage}.`;
+    const userMessage = `Create educational content about the object named "${objectName}" from the perspective of the subject "${subject}". Make the text engaging for children (6-12), include one clear, simple explanation and 2-5 fun activity/fact bullets. Also include a field "relatedObjects" listing 1 to 3 short related object names (single words or short phrases). If you cannot think of related objects, return an empty array for that field. If possible return up to 4 trustworthy resource links (title and url). Respond with JSON only. Remember: write everything in ${userLanguage}.`;
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

@@ -7,8 +7,144 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { MdScience, MdTerrain, MdHistoryEdu, MdCalculate, MdMenuBook, MdMusicNote, MdBrush, MdShare } from 'react-icons/md';
 
+const PROXY_BASE = process.env.REACT_APP_AI_PROXY_URL || '';
+const buildProxyUrl = (path) => `${PROXY_BASE.replace(/\/$/, '')}${path}`;
+
+// Translation dictionaries for different languages
+const translations = {
+    en: {
+        loading: 'Loading educational content...',
+        detected: 'I detected a',
+        explore: 'in your image! Choose a subject to explore and learn more about it.',
+        noObject: 'No object detected',
+        noObjectDesc: 'No main object could be identified in the photo.',
+        detectionError: 'Detection error',
+        detectionErrorDesc: 'Could not analyze the image.',
+        funFacts: 'Fun facts:',
+        recommendedResources: 'Recommended resources:',
+        relatedObjects: 'Related objects:',
+        shareContent: 'Share content',
+        shareViaEmail: 'Email',
+        shareViaWhatsApp: 'WhatsApp',
+        close: 'Close',
+        retake: 'Retake photo',
+        Biology: 'Biology',
+        Geology: 'Geology',
+        History: 'History',
+        Mathematics: 'Mathematics',
+        'Language Arts': 'Language Arts',
+        Music: 'Music',
+        Art: 'Art'
+    },
+    es: {
+        loading: 'Cargando contenido educativo...',
+        detected: 'He detectado',
+        explore: 'en tu imagen! Elige una asignatura para explorar y aprender más sobre ello.',
+        noObject: 'Sin objeto detectado',
+        noObjectDesc: 'No se ha podido identificar ningún objeto principal en la foto.',
+        detectionError: 'Error de detección',
+        detectionErrorDesc: 'No se pudo analizar la imagen.',
+        funFacts: 'Datos curiosos:',
+        recommendedResources: 'Recursos recomendados:',
+        relatedObjects: 'Objetos relacionados:',
+        shareContent: 'Compartir contenido',
+        shareViaEmail: 'Correo electrónico',
+        shareViaWhatsApp: 'WhatsApp',
+        close: 'Cerrar',
+        retake: 'Tomar otra foto',
+        Biology: 'Biología',
+        Geology: 'Geología',
+        History: 'Historia',
+        Mathematics: 'Matemáticas',
+        'Language Arts': 'Lengua',
+        Music: 'Música',
+        Art: 'Arte'
+    },
+    fr: {
+        loading: 'Chargement du contenu éducatif...',
+        detected: 'J\'ai détecté',
+        explore: 'dans votre image! Choisissez une matière pour explorer et en savoir plus.',
+        noObject: 'Aucun objet détecté',
+        noObjectDesc: 'Aucun objet principal n\'a pu être identifié dans la photo.',
+        detectionError: 'Erreur de détection',
+        detectionErrorDesc: 'Impossible d\'analyser l\'image.',
+        funFacts: 'Faits amusants:',
+        recommendedResources: 'Ressources recommandées:',
+        relatedObjects: 'Objets connexes:',
+        shareContent: 'Partager le contenu',
+        shareViaEmail: 'Email',
+        shareViaWhatsApp: 'WhatsApp',
+        close: 'Fermer',
+        retake: 'Reprendre la photo',
+        Biology: 'Biologie',
+        Geology: 'Géologie',
+        History: 'Histoire',
+        Mathematics: 'Mathématiques',
+        'Language Arts': 'Lettres',
+        Music: 'Musique',
+        Art: 'Art'
+    },
+    de: {
+        loading: 'Bildungsinhalte werden geladen...',
+        detected: 'Ich habe',
+        explore: 'in Ihrem Bild erkannt! Wählen Sie ein Fach, um mehr zu erfahren.',
+        noObject: 'Kein Objekt erkannt',
+        noObjectDesc: 'Es konnte kein Hauptobjekt im Foto identifiziert werden.',
+        detectionError: 'Erkennungsfehler',
+        detectionErrorDesc: 'Das Bild konnte nicht analysiert werden.',
+        funFacts: 'Lustige Fakten:',
+        recommendedResources: 'Empfohlene Ressourcen:',
+        relatedObjects: 'Verwandte Objekte:',
+        shareContent: 'Inhalt teilen',
+        shareViaEmail: 'E-Mail',
+        shareViaWhatsApp: 'WhatsApp',
+        close: 'Schließen',
+        retake: 'Foto erneut aufnehmen',
+        Biology: 'Biologie',
+        Geology: 'Geologie',
+        History: 'Geschichte',
+        Mathematics: 'Mathematik',
+        'Language Arts': 'Sprachwissenschaft',
+        Music: 'Musik',
+        Art: 'Kunst'
+    }
+};
+
+// Detect user's language from browser settings
+function detectUserLanguage() {
+    // 1) Check saved preference (optional override)
+    try {
+        const saved = localStorage.getItem('curiocity_lang');
+        if (saved && translations[saved]) return saved;
+    } catch (e) {}
+
+    // 2) Browser language preferences
+    const browserLang = (navigator.languages && navigator.languages.length > 0)
+        ? navigator.languages[0]
+        : (navigator.language || navigator.userLanguage || 'en');
+    const langCode = String(browserLang).split('-')[0].toLowerCase();
+    if (translations[langCode]) return langCode;
+
+    // 3) Locale fallback
+    try {
+        const locale = Intl.DateTimeFormat().resolvedOptions().locale || '';
+        const localeCode = String(locale).split('-')[0].toLowerCase();
+        if (translations[localeCode]) return localeCode;
+    } catch (e) {}
+
+    // 4) Time zone heuristics for regional defaults
+    try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        if (/Europe\/Madrid/i.test(tz)) return 'es';
+        if (/Europe\/Paris/i.test(tz)) return 'fr';
+        if (/Europe\/Berlin/i.test(tz)) return 'de';
+    } catch (e) {}
+
+    return 'en';
+}
+
 // Generate child-friendly educational text about an object from a subject perspective
-async function getEducationalResources(objectName, subject) {
+async function getEducationalResources(objectName, subject, userLanguage = 'en') {
     const subjectNames = {
         biologia: "Biology",
         geologia: "Geology",
@@ -20,76 +156,268 @@ async function getEducationalResources(objectName, subject) {
     };
 
     const subj = subjectNames[subject] || subject;
+    
+    // Map language codes to full language names for AI
+    const languageNames = {
+        en: 'English',
+        es: 'Spanish',
+        fr: 'French',
+        de: 'German'
+    };
+    const languageName = languageNames[userLanguage] || 'English';
 
     // If an OpenAI API key is provided via environment (REACT_APP_OPENAI_API_KEY),
     // attempt to generate child-friendly text with the Chat Completions API.
     // WARNING: Calling the OpenAI API directly from client-side code exposes the key
     // in the built bundle. Prefer a server-side proxy for production. This client-side
     // call is optional and falls back to a safe, local template generator on failure.
-    const PROXY_BASE = process.env.REACT_APP_AI_PROXY_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-
     const fallbackGenerator = () => {
-        // Create short, simple paragraphs suitable for children (age ~6-12).
-        const title = `${subj}: Getting to know ${objectName}`;
-        const intro = `Let's discover what ${objectName} is and why it's interesting from the ${subj} perspective.`;
+        const lang = userLanguage || 'en';
+        const fallback = {
+            en: {
+                title: `${subj}: Getting to know ${objectName}`,
+                intro: `Let's discover what ${objectName} is and why it's interesting from the ${subj} perspective.`,
+                subjects: {
+                    biologia: {
+                        explanation: `${objectName} is part of nature. We can observe how it lives, what it eats, and how it grows. In biology we study its body, life cycle and habitat to understand how it interacts with other living things.`,
+                        funFacts: [
+                            `Did you know observing ${objectName} can teach us about adaptation and survival?`,
+                            `Try simple experiments to see how it reacts to light, water or food.`
+                        ]
+                    },
+                    geologia: {
+                        explanation: `${objectName} can tell stories about the Earth. In geology we look at what it is made of, how it formed and what signs it leaves on the landscape.`,
+                        funFacts: [
+                            `Sometimes ${objectName} is made from materials that formed millions of years ago.`,
+                            `Looking at its shape and texture helps us understand processes like erosion or sedimentation.`
+                        ]
+                    },
+                    historia: {
+                        explanation: `${objectName} can be a clue to the past. In history we investigate who used it, when and why. Objects help us imagine how people lived before.`,
+                        funFacts: [
+                            `A simple object can reveal customs, technology or art from other times.`,
+                            `Try asking: Who made it? What was it used for?`
+                        ]
+                    },
+                    matematicas: {
+                        explanation: `From math we can measure ${objectName}, count parts, compare sizes and look for patterns. Numbers and shapes help us describe it precisely.`,
+                        funFacts: [
+                            `You can measure its length, height or volume with rulers and measuring cups.`,
+                            `Looking for patterns in ${objectName} (like repeated shapes) is a great logic exercise.`
+                        ]
+                    },
+                    lengua: {
+                        explanation: `In language arts we can write a story or poem about ${objectName}. We can describe it using adjectives, comparisons and questions to practice expression.`,
+                        funFacts: [
+                            `Try describing ${objectName} with five different adjectives.`,
+                            `You can invent a story where ${objectName} is the main character.`
+                        ]
+                    },
+                    musica: {
+                        explanation: `In music we can think about sounds that ${objectName} reminds us of. Maybe it has a rhythm or tone we can use to inspire a melody.`,
+                        funFacts: [
+                            `Imagine which instrument would sound like ${objectName} and clap a rhythm.`,
+                            `Try turning its name into a short song or chorus.`
+                        ]
+                    },
+                    artes: {
+                        explanation: `In art we can draw, paint or sculpt ${objectName}. Look at its colors, textures and shapes to create a work inspired by it.`,
+                        funFacts: [
+                            `Try drawing ${objectName} using only two colors.`,
+                            `Try creating an abstract version focusing on its shapes.`
+                        ]
+                    },
+                    default: {
+                        explanation: `Let's observe ${objectName} and ask interesting questions: what is it, how does it work and why does it exist?`,
+                        funFacts: [`Ask curious questions and try to answer them with examples.`]
+                    }
+                }
+            },
+            es: {
+                title: `${subj}: Conociendo ${objectName}`,
+                intro: `Descubramos qué es ${objectName} y por qué es interesante desde ${subj}.`,
+                subjects: {
+                    biologia: {
+                        explanation: `${objectName} es parte de la naturaleza. Podemos observar cómo vive, qué come y cómo crece. En biología estudiamos su cuerpo, ciclo de vida y hábitat para entender cómo se relaciona con otros seres vivos.`,
+                        funFacts: [
+                            `¿Sabías que observar ${objectName} puede enseñar adaptación y supervivencia?`,
+                            `Haz experimentos sencillos para ver cómo reacciona a la luz, el agua o la comida.`
+                        ]
+                    },
+                    geologia: {
+                        explanation: `${objectName} puede contar historias de la Tierra. En geología miramos de qué está hecho, cómo se formó y qué señales deja en el paisaje.`,
+                        funFacts: [
+                            `A veces ${objectName} está hecho de materiales formados hace millones de años.`,
+                            `Su forma y textura ayudan a entender procesos como la erosión o la sedimentación.`
+                        ]
+                    },
+                    historia: {
+                        explanation: `${objectName} puede ser una pista del pasado. En historia investigamos quién lo usó, cuándo y por qué. Los objetos nos ayudan a imaginar cómo vivía la gente antes.`,
+                        funFacts: [
+                            `Un objeto sencillo puede mostrar costumbres, tecnología o arte de otras épocas.`,
+                            `Pregunta: ¿Quién lo hizo? ¿Para qué se usaba?`
+                        ]
+                    },
+                    matematicas: {
+                        explanation: `Desde matemáticas podemos medir ${objectName}, contar partes, comparar tamaños y buscar patrones. Los números y las formas nos ayudan a describirlo con precisión.`,
+                        funFacts: [
+                            `Mide su largo, alto o volumen con reglas o recipientes.`,
+                            `Buscar patrones en ${objectName} (formas repetidas) es un gran ejercicio de lógica.`
+                        ]
+                    },
+                    lengua: {
+                        explanation: `En lengua podemos escribir un cuento o poema sobre ${objectName}. Podemos describirlo con adjetivos, comparaciones y preguntas para practicar la expresión.`,
+                        funFacts: [
+                            `Describe ${objectName} con cinco adjetivos diferentes.`,
+                            `Inventa una historia donde ${objectName} sea el personaje principal.`
+                        ]
+                    },
+                    musica: {
+                        explanation: `En música podemos pensar qué sonidos nos recuerda ${objectName}. Tal vez tiene un ritmo o tono que inspire una melodía.`,
+                        funFacts: [
+                            `Imagina qué instrumento sonaría como ${objectName} y marca un ritmo.`,
+                            `Convierte su nombre en una pequeña canción o estribillo.`
+                        ]
+                    },
+                    artes: {
+                        explanation: `En arte podemos dibujar, pintar o esculpir ${objectName}. Observa colores, texturas y formas para crear una obra inspirada en él.`,
+                        funFacts: [
+                            `Dibuja ${objectName} usando solo dos colores.`,
+                            `Crea una versión abstracta enfocándote en sus formas.`
+                        ]
+                    },
+                    default: {
+                        explanation: `Observemos ${objectName} y hagamos preguntas interesantes: ¿qué es, cómo funciona y por qué existe?`,
+                        funFacts: [`Haz preguntas curiosas y trata de responderlas con ejemplos.`]
+                    }
+                }
+            },
+            fr: {
+                title: `${subj} : Découvrir ${objectName}`,
+                intro: `Découvrons ce qu'est ${objectName} et pourquoi c'est intéressant en ${subj}.`,
+                subjects: {
+                    biologia: {
+                        explanation: `${objectName} fait partie de la nature. On peut observer comment il vit, ce qu'il mange et comment il grandit. En biologie, on étudie son corps, son cycle de vie et son habitat.`,
+                        funFacts: [
+                            `Observer ${objectName} peut apprendre l'adaptation et la survie.`,
+                            `Fais des expériences simples pour voir sa réaction à la lumière, à l'eau ou à la nourriture.`
+                        ]
+                    },
+                    geologia: {
+                        explanation: `${objectName} peut raconter l'histoire de la Terre. En géologie, on regarde de quoi il est fait, comment il s'est formé et quelles traces il laisse.`,
+                        funFacts: [
+                            `Parfois ${objectName} est fait de matériaux très anciens.`,
+                            `Sa forme et sa texture aident à comprendre l'érosion ou la sédimentation.`
+                        ]
+                    },
+                    historia: {
+                        explanation: `${objectName} peut être un indice du passé. En histoire, on cherche qui l'a utilisé, quand et pourquoi.`,
+                        funFacts: [
+                            `Un objet simple peut révéler des coutumes, des technologies ou de l'art d'autrefois.`,
+                            `Demande : Qui l'a fabriqué ? À quoi servait-il ?`
+                        ]
+                    },
+                    matematicas: {
+                        explanation: `En mathématiques, on peut mesurer ${objectName}, compter des parties, comparer des tailles et chercher des motifs.`,
+                        funFacts: [
+                            `Mesure sa longueur, sa hauteur ou son volume.`,
+                            `Chercher des motifs dans ${objectName} est un bon exercice de logique.`
+                        ]
+                    },
+                    lengua: {
+                        explanation: `En français, on peut écrire une histoire ou un poème sur ${objectName}. On le décrit avec des adjectifs et des comparaisons.`,
+                        funFacts: [
+                            `Décris ${objectName} avec cinq adjectifs différents.`,
+                            `Invente une histoire où ${objectName} est le personnage principal.`
+                        ]
+                    },
+                    musica: {
+                        explanation: `En musique, on peut imaginer les sons que ${objectName} évoque. Peut-être un rythme ou une mélodie.`,
+                        funFacts: [
+                            `Imagine quel instrument ressemblerait à ${objectName} et tape un rythme.`,
+                            `Transforme son nom en une petite chanson.`
+                        ]
+                    },
+                    artes: {
+                        explanation: `En art, on peut dessiner, peindre ou sculpter ${objectName}. Observe ses couleurs, textures et formes.`,
+                        funFacts: [
+                            `Dessine ${objectName} avec seulement deux couleurs.`,
+                            `Crée une version abstraite centrée sur ses formes.`
+                        ]
+                    },
+                    default: {
+                        explanation: `Observons ${objectName} et posons des questions : qu'est-ce que c'est, comment ça marche, pourquoi existe-t-il ?`,
+                        funFacts: [`Pose des questions curieuses et essaie d'y répondre.`]
+                    }
+                }
+            },
+            de: {
+                title: `${subj}: ${objectName} entdecken`,
+                intro: `Entdecken wir, was ${objectName} ist und warum es aus Sicht von ${subj} spannend ist.`,
+                subjects: {
+                    biologia: {
+                        explanation: `${objectName} gehört zur Natur. Wir können beobachten, wie es lebt, was es frisst und wie es wächst. In der Biologie untersuchen wir Körper, Lebenszyklus und Lebensraum.`,
+                        funFacts: [
+                            `Durch das Beobachten von ${objectName} lernen wir etwas über Anpassung und Überleben.`,
+                            `Probiere einfache Experimente: Licht, Wasser oder Nahrung.`
+                        ]
+                    },
+                    geologia: {
+                        explanation: `${objectName} kann Geschichten über die Erde erzählen. In der Geologie schauen wir, woraus es besteht und wie es entstanden ist.`,
+                        funFacts: [
+                            `Manches ${objectName} besteht aus sehr alten Materialien.`,
+                            `Form und Oberfläche helfen, Erosion oder Ablagerung zu verstehen.`
+                        ]
+                    },
+                    historia: {
+                        explanation: `${objectName} kann ein Hinweis auf die Vergangenheit sein. In Geschichte fragen wir: Wer hat es benutzt, wann und warum?`,
+                        funFacts: [
+                            `Ein einfaches Objekt zeigt Bräuche, Technik oder Kunst von früher.`,
+                            `Frage: Wer hat es gemacht? Wozu diente es?`
+                        ]
+                    },
+                    matematicas: {
+                        explanation: `In Mathe messen wir ${objectName}, zählen Teile, vergleichen Größen und suchen Muster.`,
+                        funFacts: [
+                            `Miss Länge, Höhe oder Volumen mit Lineal oder Messbecher.`,
+                            `Muster in ${objectName} zu finden ist ein gutes Logiktraining.`
+                        ]
+                    },
+                    lengua: {
+                        explanation: `Im Sprachunterricht können wir eine Geschichte oder ein Gedicht über ${objectName} schreiben und es mit Adjektiven beschreiben.`,
+                        funFacts: [
+                            `Beschreibe ${objectName} mit fünf verschiedenen Adjektiven.`,
+                            `Erfinde eine Geschichte, in der ${objectName} die Hauptfigur ist.`
+                        ]
+                    },
+                    musica: {
+                        explanation: `In Musik überlegen wir, welche Klänge ${objectName} erinnert. Vielleicht ein Rhythmus oder eine Melodie.`,
+                        funFacts: [
+                            `Stell dir ein Instrument vor, das wie ${objectName} klingt, und klatsche einen Rhythmus.`,
+                            `Mach aus dem Namen eine kleine Melodie.`
+                        ]
+                    },
+                    artes: {
+                        explanation: `In Kunst können wir ${objectName} zeichnen, malen oder modellieren. Achte auf Farben, Texturen und Formen.`,
+                        funFacts: [
+                            `Zeichne ${objectName} nur mit zwei Farben.`,
+                            `Erstelle eine abstrakte Version, die die Formen betont.`
+                        ]
+                    },
+                    default: {
+                        explanation: `Beobachten wir ${objectName} und stellen Fragen: Was ist es, wie funktioniert es, warum gibt es das?`,
+                        funFacts: [`Stelle neugierige Fragen und versuche, sie zu beantworten.`]
+                    }
+                }
+            }
+        };
 
-        let explanation = "";
-        let funFacts = [];
-
-        switch (subject) {
-            case 'biologia':
-                explanation = `${objectName} is part of nature. We can observe how it lives, what it eats, and how it grows. In biology we study its body, life cycle and habitat to understand how it interacts with other living things.`;
-                funFacts = [
-                    `Did you know observing ${objectName} can teach us about adaptation and survival?`,
-                    `Try simple experiments to see how it reacts to light, water or food.`
-                ];
-                break;
-            case 'geologia':
-                explanation = `${objectName} can tell stories about the Earth. In geology we look at what it is made of, how it formed and what signs it leaves on the landscape.`;
-                funFacts = [
-                    `Sometimes ${objectName} is made from materials that formed millions of years ago.`,
-                    `Looking at its shape and texture helps us understand processes like erosion or sedimentation.`
-                ];
-                break;
-            case 'historia':
-                explanation = `${objectName} can be a clue to the past. In history we investigate who used it, when and why. Objects help us imagine how people lived before.`;
-                funFacts = [
-                    `A simple object can reveal customs, technology or art from other times.`,
-                    `Try asking: Who made it? What was it used for?`
-                ];
-                break;
-            case 'matematicas':
-                explanation = `From math we can measure ${objectName}, count parts, compare sizes and look for patterns. Numbers and shapes help us describe it precisely.`;
-                funFacts = [
-                    `You can measure its length, height or volume with rulers and measuring cups.`,
-                    `Looking for patterns in ${objectName} (like repeated shapes) is a great logic exercise.`
-                ];
-                break;
-            case 'lengua':
-                explanation = `In language arts we can write a story or poem about ${objectName}. We can describe it using adjectives, comparisons and questions to practice expression.`;
-                funFacts = [
-                    `Try describing ${objectName} with five different adjectives.`,
-                    `You can invent a story where ${objectName} is the main character.`
-                ];
-                break;
-            case 'musica':
-                explanation = `In music we can think about sounds that ${objectName} reminds us of. Maybe it has a rhythm or tone we can use to inspire a melody.`;
-                funFacts = [
-                    `Imagine which instrument would sound like ${objectName} and clap a rhythm.`,
-                    `Try turning its name into a short song or chorus.`
-                ];
-                break;
-            case 'artes':
-                explanation = `In art we can draw, paint or sculpt ${objectName}. Look at its colors, textures and shapes to create a work inspired by it.`;
-                funFacts = [
-                    `Try drawing ${objectName} using only two colors.`,
-                    `Try creating an abstract version focusing on its shapes.`
-                ];
-                break;
-            default:
-                explanation = `Let's observe ${objectName} and ask interesting questions: what is it, how does it work and why does it exist?`;
-                funFacts = [`Ask curious questions and try to answer them with examples.`];
-        }
+        const base = fallback[lang] || fallback.en;
+        const subjectBlock = (base.subjects && (base.subjects[subject] || base.subjects.default)) || fallback.en.subjects.default;
+        const title = base.title;
+        const intro = base.intro;
+        const explanation = subjectBlock.explanation;
+        const funFacts = subjectBlock.funFacts;
 
         // Simple related-objects heuristics for the fallback path.
         const relatedMap = {
@@ -118,11 +446,11 @@ async function getEducationalResources(objectName, subject) {
     // and avoids exposing it in the client bundle. If the proxy is unavailable or returns
     // an error, fall back to the safe local generator.
     try {
-        const proxyEndpoint = `${PROXY_BASE.replace(/\/$/, '')}/api/ai`;
+        const proxyEndpoint = buildProxyUrl('/api/ai');
         const resp = await fetch(proxyEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ objectName, subject: subj })
+            body: JSON.stringify({ objectName, subject: subj, language: languageName })
         });
         if (resp.ok) {
             const json = await resp.json();
@@ -162,6 +490,10 @@ const CameraScreen = () => {
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
 
+    // Detect and set user's language
+    const [userLanguage] = useState(() => detectUserLanguage());
+    const t = translations[userLanguage] || translations.en;
+
     // State management
     const [capturedImage, setCapturedImage] = useState(null);
     const [showModal, setShowModal] = useState(false);
@@ -179,15 +511,15 @@ const CameraScreen = () => {
     // Store raw predictions from the detector in case we want to use them later (we only need the setter)
     const [, setPredictionsState] = useState([]);
 
-    // Default subject list used for detected objects
+    // Default subject list used for detected objects (translated based on user language)
     const defaultSubjects = [
-        { key: "biologia", label: "Biology" },
-        { key: "geologia", label: "Geology" },
-        { key: "historia", label: "History" },
-        { key: "matematicas", label: "Mathematics" },
-        { key: "lengua", label: "Language Arts" },
-        { key: "musica", label: "Music" },
-        { key: "artes", label: "Art" }
+        { key: "biologia", label: t.Biology },
+        { key: "geologia", label: t.Geology },
+        { key: "historia", label: t.History },
+        { key: "matematicas", label: t.Mathematics },
+        { key: "lengua", label: t['Language Arts'] },
+        { key: "musica", label: t.Music },
+        { key: "artes", label: t.Art }
     ];
 
     // Camera enable function
@@ -300,8 +632,7 @@ const CameraScreen = () => {
 
         try {
             // Try OpenAI Vision API first (more accurate)
-            const PROXY_BASE = process.env.REACT_APP_AI_PROXY_URL || window.location.origin;
-            const detectEndpoint = `${PROXY_BASE.replace(/\/$/, '')}/api/detect`;
+            const detectEndpoint = buildProxyUrl('/api/detect');
             
             let detectedObjectName = null;
             try {
@@ -353,13 +684,13 @@ const CameraScreen = () => {
             if (detectedObjectName) {
                 setDetectedObject({
                     title: detectedObjectName.charAt(0).toUpperCase() + detectedObjectName.slice(1),
-                    description: `I detected a ${detectedObjectName} in your image! Choose a subject to explore and learn more about it.`,
+                    description: `${t.detected} ${detectedObjectName} ${t.explore}`,
                     subjects: defaultSubjects
                 });
             } else {
                 setDetectedObject({
-                    title: "Sin objeto detectado",
-                    description: "No se ha podido identificar ningún objeto principal en la foto.",
+                    title: t.noObject,
+                    description: t.noObjectDesc,
                     subjects: []
                 });
             }
@@ -367,8 +698,8 @@ const CameraScreen = () => {
         } catch (e) {
             console.error('Error detecting objects:', e);
             setDetectedObject({
-                title: "Error de detección",
-                description: "No se pudo analizar la imagen.",
+                title: t.detectionError,
+                description: t.detectionErrorDesc,
                 subjects: []
             });
             setLoadingDetection(false);
@@ -511,7 +842,7 @@ const CameraScreen = () => {
     const handleRelatedObjectClick = (related) => {
         setDetectedObject({
             title: related.charAt(0).toUpperCase() + related.slice(1),
-            description: `I detected a ${related} in your image! Choose a subject to explore and learn more about it.`,
+            description: `${t.detected} ${related} ${t.explore}`,
             subjects: defaultSubjects
         });
         setSelectedSubject(null);
@@ -636,7 +967,7 @@ const CameraScreen = () => {
 
                                                     {educationalResources.funFacts && educationalResources.funFacts.length > 0 && (
                                                         <div style={{ marginTop: 12, textAlign: 'left', background: '#FFF2E8', borderRadius: 14, padding: 12, marginBottom: 12 }}>
-                                                            <h3 style={{ color: "#000000", fontSize: 20, marginBottom: 8 }}>Fun facts:</h3>
+                                                            <h3 style={{ color: "#000000", fontSize: 20, marginBottom: 8 }}>{t.funFacts}</h3>
                                                             <ul style={{ paddingLeft: 20, color: '#333', fontSize: 15, lineHeight: 1.6, maxWidth: '100%', wordBreak: 'break-word' }}>
                                                                 {educationalResources.funFacts.map((fact, i) => (
                                                                     <li key={i}>💡 {fact}</li>
@@ -646,7 +977,7 @@ const CameraScreen = () => {
                                                     )}
                                                     {educationalResources.links && educationalResources.links.length > 0 && (
                                                         <div style={{ marginTop: 12, textAlign: 'left', background: '#FFF8E6', borderRadius: 14, padding: 12, marginBottom: 12 }}>
-                                                            <h3 style={{ color: "#000000", fontSize: 20, marginBottom: 8 }}>Recommended resources:</h3>
+                                                            <h3 style={{ color: "#000000", fontSize: 20, marginBottom: 8 }}>{t.recommendedResources}</h3>
                                                             <ul style={{ paddingLeft: 20, color: '#333', fontSize: 15, lineHeight: 1.6, maxWidth: '100%', wordBreak: 'break-word' }}>
                                                                 {educationalResources.links.map((link, i) => (
                                                                     <li key={i}>
@@ -662,7 +993,7 @@ const CameraScreen = () => {
 
                                                     {educationalResources.relatedObjects && educationalResources.relatedObjects.length > 0 && (
                                                         <div style={{ marginTop: 12, textAlign: 'left', background: '#FFF5E6', borderRadius: 14, padding: 12, marginBottom: 12 }}>
-                                                            <h3 style={{ color: "#000000", fontSize: 20, marginBottom: 8 }}>Related objects:</h3>
+                                                            <h3 style={{ color: "#000000", fontSize: 20, marginBottom: 8 }}>{t.relatedObjects}</h3>
                                                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                                                 {educationalResources.relatedObjects.map((ro, i) => (
                                                                     <button key={i} onClick={() => handleRelatedObjectClick(ro)} style={{
@@ -703,7 +1034,7 @@ const CameraScreen = () => {
                                                                     alignItems: 'center',
                                                                     gap: 8
                                                                 }}
-                                                            ><MdShare style={{ fontSize: 18, color: '#faebd9' }} />Share</button>
+                                                            ><MdShare style={{ fontSize: 18, color: '#faebd9' }} />{t.shareContent}</button>
 
                                                             {/* Download hidden per request */}
                                                             <button
@@ -728,7 +1059,7 @@ const CameraScreen = () => {
                                                                         cursor: "pointer",
                                                                         margin: 2
                                                                     }}
-                                                                >📧 Email</button>
+                                                                >📧 {t.shareViaEmail}</button>
 
                                                                 <button
                                                                     onClick={shareViaWhatsApp}
@@ -744,7 +1075,7 @@ const CameraScreen = () => {
                                                                         cursor: "pointer",
                                                                         margin: 2
                                                                     }}
-                                                                >💬 WhatsApp</button>
+                                                                >💬 {t.shareViaWhatsApp}</button>
 
                                                                 <button
                                                                     onClick={handleDownloadImage}
@@ -776,19 +1107,19 @@ const CameraScreen = () => {
                                                                         cursor: "pointer",
                                                                         margin: 2
                                                                     }}
-                                                                >Close</button>
+                                                                >{t.close}</button>
                                                             </div>
                                                         )}
                                                     </div>
                                                 </>
                                             ) : (
-                                                <p style={{ color: "#000000", fontSize: 20, maxWidth: '100%', wordBreak: 'break-word' }}>Loading educational content...</p>
+                                                <p style={{ color: "#000000", fontSize: 20, maxWidth: '100%', wordBreak: 'break-word' }}>{t.loading}</p>
                                             )}
 
                                             {/* Connect with more subjects — only show after educational content is loaded */}
                                             {educationalResources && (
                                                 <div style={{ marginTop: 18, textAlign: 'left' }}>
-                                                    <h3 style={{ color: "#000000", fontSize: 20, marginBottom: 16 }}>Connect with more subjects:</h3>
+                                                    <h3 style={{ color: "#000000", fontSize: 20, marginBottom: 16 }}>{userLanguage === 'es' ? 'Explora más asignaturas:' : userLanguage === 'fr' ? 'Explorez plus de matières:' : userLanguage === 'de' ? 'Entdecken Sie mehr Fächer:' : 'Connect with more subjects:'}</h3>
                                                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 12 }}>
                                                         {(detectedObject && detectedObject.subjects ? detectedObject.subjects : defaultSubjects).map(subj => {
                                                             const icons = {
@@ -820,7 +1151,7 @@ const CameraScreen = () => {
                                                                     }}
                                                                     onClick={async () => {
                                                                         setSelectedSubject(subj.key);
-                                                                        const resources = await getEducationalResources(detectedObject ? detectedObject.title : '', subj.key);
+                                                                        const resources = await getEducationalResources(detectedObject ? detectedObject.title : '', subj.key, userLanguage);
                                                                         setEducationalResources(resources);
                                                                     }}
                                                                 >
@@ -837,7 +1168,7 @@ const CameraScreen = () => {
                                 ) : (
                                     <>
                                         {loadingDetection || !detectedObject ? (
-                                                            <p style={{ color: "#000000", fontSize: 20 }}>Loading educational content...</p>
+                                                            <p style={{ color: "#000000", fontSize: 20 }}>{t.loading}</p>
                                         ) : (
                                             <>
                                                 <h2 style={{ color: "#000000", fontWeight: 800, fontSize: 32, margin: 0 }}>
@@ -879,7 +1210,7 @@ const CameraScreen = () => {
                                                                 }}
                                                                 onClick={async () => {
                                                                     setSelectedSubject(subj.key);
-                                                                    const resources = await getEducationalResources(detectedObject.title, subj.key);
+                                                                    const resources = await getEducationalResources(detectedObject.title, subj.key, userLanguage);
                                                                     setEducationalResources(resources);
                                                                 }}
                                                             >
