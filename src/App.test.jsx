@@ -26,25 +26,39 @@ afterEach(() => {
   localStorage.clear();
 });
 
-const aiContent = {
-  title: 'La manzana y la vida',
-  text: 'Las manzanas crecen en árboles.',
-  explanation: 'Primer párrafo.\n\nSegundo párrafo.',
-  funFacts: ['Flotan en el agua.'],
-  links: [{ title: 'Khan Academy', url: 'https://www.khanacademy.org/x', source: '' }],
-  relatedObjects: ['pera']
+const lesson = {
+  pregunta_inicial: { pregunta: '¿Dónde están las semillas?', opciones: ['En la piel', 'En el centro', 'En el rabito'], correcta: 1 },
+  dato_sorprendente: 'Si cortas una manzana por la mitad, ves una estrella.',
+  por_que: 'Las semillas están en el centro.\n\nAsí están protegidas.',
+  reto: 'Cuenta las semillas de tu manzana.',
+  reto_foto: false,
+  para_seguir_pensando: '¿Qué pasaría si plantas una semilla?',
+  conexion_debil: false,
+  objetos_relacionados: ['pera'],
+  enlaces: [{ title: 'Manzana', url: 'https://es.vikidia.org/wiki/Manzana', source: 'Vikidia' }]
 };
 
-function mockServer({ detect = { object: 'manzana' }, ai = aiContent, aiStatus = 200, subjects = null } = {}) {
+const ranking = {
+  featured: [
+    { key: 'biologia', hook: 'Dentro hay una estrella escondida' },
+    { key: 'historia', hook: 'Hace miles de años ya se comían' },
+    { key: 'artes', hook: 'Muchos pintores las han pintado' }
+  ],
+  others: ['matematicas', 'lengua', 'geologia', 'musica']
+};
+
+function mockServer({ detect = { object: 'manzana' }, ai = lesson, aiStatus = 200, subjects = { ranking } } = {}) {
   const fetchMock = vi.fn(async url => {
     if (url.endsWith('/api/detect')) return Response.json(detect);
-    if (url.endsWith('/api/subjects')) return Response.json({ subjects });
+    if (url.endsWith('/api/subjects')) return Response.json(subjects);
     if (url.endsWith('/api/ai')) return aiStatus === 200 ? Response.json(ai) : new Response('', { status: aiStatus });
     throw new Error('unexpected ' + url);
   });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
+
+const bodyOf = (fetchMock, path) => JSON.parse(fetchMock.mock.calls.filter(([url]) => url.endsWith(path)).at(-1)[1].body);
 
 async function takePhoto(user) {
   const shutter = await screen.findByRole('button', { name: 'Hacer foto' });
@@ -53,29 +67,101 @@ async function takePhoto(user) {
 }
 
 describe('App', () => {
-  it('photo → subject → content, in the browser language', async () => {
+  it('shows the 3 best subjects with a hook and the rest under "Más asignaturas"', async () => {
     const fetchMock = mockServer();
     const user = userEvent.setup();
     render(<App />);
 
     await takePhoto(user);
     expect(await screen.findByRole('heading', { name: 'Manzana' })).toBeInTheDocument();
-    expect(screen.getByText('¿Qué quieres descubrir?')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Biología.*Dentro hay una estrella escondida/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Historia.*Hace miles de años/ })).toBeInTheDocument();
+    expect(bodyOf(fetchMock, '/api/subjects')).toEqual({ objectName: 'Manzana', language: 'Spanish', ageGroup: '6-8' });
 
-    await user.click(screen.getByRole('button', { name: /Biología/ }));
-    expect(await screen.findByRole('heading', { name: aiContent.title })).toBeInTheDocument();
-    expect(screen.getByText('Segundo párrafo.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Khan Academy/ })).toHaveAttribute('href', aiContent.links[0].url);
-
-    const aiCall = fetchMock.mock.calls.find(([url]) => url.endsWith('/api/ai'));
-    expect(JSON.parse(aiCall[1].body)).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish', ageGroup: '6-8' });
-
-    // Related object → back to the subject picker for that object
-    await user.click(screen.getByRole('button', { name: 'pera' }));
-    expect(await screen.findByRole('heading', { name: 'Pera' })).toBeInTheDocument();
+    const more = screen.getByText('Más asignaturas');
+    expect(more.closest('details')).not.toHaveAttribute('open');
+    await user.click(more);
+    expect(more.closest('details')).toHaveAttribute('open');
+    expect(screen.getByRole('button', { name: 'Música' })).toBeInTheDocument();
   });
 
-  it('sends the chosen age group and remembers it on the device', async () => {
+  it('shows every subject, without hooks, when the ranking is unknown', async () => {
+    mockServer({ subjects: { ranking: null } });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    expect(await screen.findByRole('button', { name: 'Música' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^(Biología|Geología|Historia|Matemáticas|Lengua|Música|Arte)$/ })).toHaveLength(7);
+    expect(screen.queryByText('Más asignaturas')).not.toBeInTheDocument();
+  });
+
+  it('question first, then fact and why, then the challenge, then the open question', async () => {
+    const fetchMock = mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    expect(await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta })).toBeInTheDocument();
+    expect(bodyOf(fetchMock, '/api/ai')).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish', ageGroup: '6-8' });
+
+    // Nothing is explained before the child answers
+    expect(screen.queryByText(lesson.dato_sorprendente)).not.toBeInTheDocument();
+    expect(screen.queryByText(lesson.reto)).not.toBeInTheDocument();
+
+    // A wrong answer gets a kind message with the right one
+    await user.click(screen.getByRole('button', { name: 'En la piel' }));
+    expect(screen.getByText('¡Casi! La respuesta es: En el centro')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'En el centro' })).toBeDisabled();
+    expect(screen.getByText(lesson.dato_sorprendente)).toBeInTheDocument();
+    expect(screen.getByText('Así están protegidas.')).toBeInTheDocument();
+    expect(screen.getByText(lesson.reto)).toBeInTheDocument();
+
+    // The open question, links and related objects come after the challenge
+    expect(screen.queryByText(lesson.para_seguir_pensando)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
+    expect(screen.getByText('¡Genial, qué buena investigación!')).toBeInTheDocument();
+    expect(screen.getByText(lesson.para_seguir_pensando)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Manzana.*Vikidia/ })).toHaveAttribute('href', lesson.enlaces[0].url);
+    // other subjects, best connected first
+    const others = screen.getAllByRole('button', { name: /Historia|Arte|Matemáticas/ }).map(b => b.textContent.trim());
+    expect(others.slice(0, 2)).toEqual(['Historia', 'Arte']);
+
+    // Related object → subject picker for that object
+    await user.click(screen.getByRole('button', { name: 'pera' }));
+    expect(await screen.findByRole('heading', { name: 'Pera' })).toBeInTheDocument();
+    await waitFor(() => expect(bodyOf(fetchMock, '/api/subjects').objectName).toBe('Pera'));
+  });
+
+  it('celebrates a right answer, and "Ahora no" skips the challenge without blocking the child', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await user.click(await screen.findByRole('button', { name: 'En el centro' }));
+    expect(screen.getByText('¡Bien visto!')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ahora no' }));
+    expect(screen.getByText(lesson.para_seguir_pensando)).toBeInTheDocument();
+  });
+
+  it('offers a new photo when the challenge is to find a similar object', async () => {
+    mockServer({ ai: { ...lesson, reto: 'Busca otra fruta redonda y hazle una foto.', reto_foto: true } });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await user.click(await screen.findByRole('button', { name: 'En el centro' }));
+    await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
+    await user.click(screen.getByRole('button', { name: 'Hacer otra foto' }));
+    expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Manzana' })).not.toBeInTheDocument());
+  });
+
+  it('sends the chosen age group, asks the subjects again for it, and remembers it', async () => {
     const fetchMock = mockServer();
     const user = userEvent.setup();
     render(<App />);
@@ -86,14 +172,14 @@ describe('App', () => {
     await user.click(older);
     expect(older).toBeChecked();
     expect(localStorage.getItem('curiocity_age')).toBe('9-12');
+    await waitFor(() => expect(bodyOf(fetchMock, '/api/subjects').ageGroup).toBe('9-12'));
 
-    await user.click(screen.getByRole('button', { name: 'Biología' }));
-    await screen.findByRole('heading', { name: aiContent.title });
-    const aiCall = fetchMock.mock.calls.find(([url]) => url.endsWith('/api/ai'));
-    expect(JSON.parse(aiCall[1].body).ageGroup).toBe('9-12');
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta });
+    expect(bodyOf(fetchMock, '/api/ai').ageGroup).toBe('9-12');
   });
 
-  it('reads the content aloud with the device voice, in the child\'s language', async () => {
+  it('reads aloud what is on screen, with the device voice, in the child\'s language', async () => {
     mockServer();
     const spoken = [];
     const synth = { speak: vi.fn(u => spoken.push(u)), cancel: vi.fn(), getVoices: () => [] };
@@ -103,34 +189,19 @@ describe('App', () => {
     render(<App />);
 
     await takePhoto(user);
-    await user.click(await screen.findByRole('button', { name: 'Biología' }));
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
     await user.click(await screen.findByRole('button', { name: 'Escuchar' }));
-
-    expect(spoken.map(u => u.text)).toEqual([
-      aiContent.title, aiContent.text, 'Primer párrafo.', 'Segundo párrafo.', '¿Sabías que…?', ...aiContent.funFacts
-    ]);
+    // Before answering: only the question and the options (no spoilers)
+    expect(spoken.map(u => u.text)).toEqual([lesson.pregunta_inicial.pregunta, ...lesson.pregunta_inicial.opciones]);
     expect(spoken[0].lang).toBe('es-ES');
 
     await user.click(screen.getByRole('button', { name: 'Parar' }));
     expect(synth.cancel).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Escuchar' })).toBeInTheDocument();
-  });
-
-  it('only shows the subjects related to the object', async () => {
-    mockServer({ detect: { object: 'plátano', subjects: ['biologia', 'historia'] } });
-    const user = userEvent.setup();
-    render(<App />);
-
-    await takePhoto(user);
-    expect(await screen.findByRole('button', { name: 'Biología' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Historia' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Música' })).not.toBeInTheDocument();
-
-    // "other subjects" in the content view is filtered too
-    await user.click(screen.getByRole('button', { name: 'Biología' }));
-    await screen.findByRole('heading', { name: aiContent.title });
-    expect(screen.getByRole('button', { name: /Historia/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Música/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    spoken.length = 0;
+    await user.click(screen.getByRole('button', { name: 'Escuchar' }));
+    expect(spoken.map(u => u.text)).toContain(lesson.dato_sorprendente);
+    expect(spoken.map(u => u.text)).toContain(`Reto de un minuto. ${lesson.reto}`);
   });
 
   it('keeps discoveries in a local history that can be reopened and cleared', async () => {
@@ -145,6 +216,7 @@ describe('App', () => {
     await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
     await user.click(await screen.findByRole('button', { name: /Manzana/ }));
     expect(await screen.findByText('¿Qué quieres descubrir?')).toBeInTheDocument();
+    expect(await screen.findByText('Dentro hay una estrella escondida')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Cerrar' }));
     await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
@@ -161,10 +233,12 @@ describe('App', () => {
 
     await takePhoto(user);
     await user.click(await screen.findByRole('button', { name: /Arte/ }));
-    expect(await screen.findByRole('heading', { name: 'Arte: Manzana' })).toBeInTheDocument();
-    // offline templates are activities, so the list isn't titled "Did you know…?"
+    expect(await screen.findByText(/Ahora no puedo preparar tu explicación/)).toBeInTheDocument();
+    // no quiz offline: nothing true is known about the object
+    expect(screen.queryByText('¡Adivina primero!')).not.toBeInTheDocument();
+    expect(screen.getByText('Dibuja tu objeto usando solo dos colores.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
     expect(screen.getByRole('heading', { name: 'Prueba esto' })).toBeInTheDocument();
-    expect(screen.queryByText('¿Sabías que…?')).not.toBeInTheDocument();
   });
 
   it('does not describe people in the photo', async () => {
