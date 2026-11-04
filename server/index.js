@@ -1,6 +1,7 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const path = require('path');
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 // Use built-in global fetch when available (Node 18+). Only dynamically import node-fetch
 // as a fallback for older Node versions. This avoids adding node-fetch to package.json.
 let fetchFunc;
@@ -15,34 +16,90 @@ const fetch = (...args) => fetchFunc(...args);
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Increase body size limit to handle base64 images (default is 100kb)
-app.use(express.json({ limit: '10mb' }));
-// Simple CORS middleware so the browser can call this proxy from a different port
+// Render (and most PaaS) sit behind a reverse proxy; trust it so req.ip is the real
+// client IP. Without this, rate limiting would treat every user as the same client.
+app.set('trust proxy', 1);
+
+// Images are resized to ~800px JPEG on the client (~100-300 KB as base64).
+// 2 MB leaves headroom without letting anyone push huge payloads to OpenAI.
+app.use(express.json({ limit: '2mb' }));
+
+// ---- CORS ----
+// Same-origin requests (frontend served by this server, or the CRA dev proxy) don't need CORS.
+// Only origins listed in ALLOWED_ORIGINS (comma-separated) may call the API cross-origin.
+// Note: CORS only restricts browsers; the rate limiter below is what protects the OpenAI key from scripts.
+const DEFAULT_DEV_ORIGINS = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000';
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || DEFAULT_DEV_ORIGINS)
+    .split(',')
+    .map(o => o.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+);
 app.use((req, res, next) => {
-  // Allow any origin for local development. For production, restrict this to your domain.
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  // Allow credentials if needed
-  // res.header('Access-Control-Allow-Credentials', 'true');
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.has(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  }
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
+    return res.sendStatus(204);
   }
   next();
 });
+
+// ---- Rate limiting (protects the OpenAI key and your bill) ----
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: parseInt(process.env.RATE_LIMIT_PER_15MIN || '60', 10),
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+app.use('/api/ai', apiLimiter);
+app.use('/api/detect', apiLimiter);
 
 // ---- API routes ----
 // Simple health endpoint
 app.get('/api/health', (req, res) => res.json({ ok: true, time: Date.now() }));
 
-// Simple in-memory cache: key -> { data, expiresAt }
+// Bounded in-memory cache: key -> { data, expiresAt }.
+// Map keeps insertion order, so deleting the first key evicts the oldest entry.
 const cache = new Map();
 const CACHE_TTL = parseInt(process.env.CACHE_TTL_SECONDS || '3600', 10);
+const CACHE_MAX_ENTRIES = parseInt(process.env.CACHE_MAX_ENTRIES || '500', 10);
+function cacheSet(key, data) {
+  cache.delete(key);
+  cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL * 1000 });
+  while (cache.size > CACHE_MAX_ENTRIES) {
+    cache.delete(cache.keys().next().value);
+  }
+}
+
+// Only these sites (and their subdomains) may appear as links shown to children.
+const ALLOWED_LINK_DOMAINS = [
+  'khanacademy.org', 'youtube.com', 'youtube-nocookie.com', 'oercommons.org',
+  'openstax.org', 'wikimedia.org', 'wikipedia.org', 'pbs.org', 'nationalgeographic.com',
+  'edutopia.org', 'creativecommons.org'
+];
+function isAllowedLink(u) {
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  const host = u.hostname.toLowerCase();
+  // Exact match or real subdomain: blocks lookalikes like "khanacademy.org.evil.com".
+  return ALLOWED_LINK_DOMAINS.some(d => host === d || host.endsWith('.' + d));
+}
+
+const MAX_TEXT_FIELD = 100;
 
 app.post('/api/ai', async (req, res) => {
   const { objectName, subject, language } = req.body || {};
   if (!objectName || !subject) {
     return res.status(400).json({ error: 'Missing objectName or subject' });
+  }
+  // These strings go into the prompt; keep them short to limit abuse and prompt injection.
+  if ([objectName, subject, language].some(v => v != null && (typeof v !== 'string' || v.length > MAX_TEXT_FIELD))) {
+    return res.status(400).json({ error: 'Invalid input' });
   }
 
   const userLanguage = language || 'English';
@@ -108,17 +165,12 @@ app.post('/api/ai', async (req, res) => {
 
     if (parsed && parsed.title && parsed.text) {
       // Validate and filter any provided links to avoid model-hallucinated or unsafe URLs.
-      const allowedDomains = [
-        'khanacademy.org', 'youtube.com', 'youtube-nocookie.com', 'oercommons.org',
-        'openstax.org', 'wikimedia.org', 'pbs.org', 'nationalgeographic.com', 'edutopia.org', 'creativecommons.org'
-      ];
       if (Array.isArray(parsed.links)) {
         const filtered = [];
         for (const l of parsed.links) {
           try {
-            const u = new URL(String(l.url));
-            const hostname = u.hostname.toLowerCase();
-            if (allowedDomains.some(d => hostname.includes(d))) {
+            const u = new URL(String(l && l.url));
+            if (isAllowedLink(u)) {
               filtered.push({ title: l.title || u.hostname, url: u.href, source: l.source || '' });
             }
           } catch (e) {
@@ -134,12 +186,7 @@ app.post('/api/ai', async (req, res) => {
       if (!Array.isArray(parsed.relatedObjects)) parsed.relatedObjects = [];
       parsed.relatedObjects = parsed.relatedObjects.map(r => String(r).trim()).filter(r => r.length > 0).slice(0, 3);
 
-      // store in cache
-      try {
-        cache.set(cacheKey, { data: parsed, expiresAt: Date.now() + CACHE_TTL * 1000 });
-      } catch (e) {
-        console.warn('Cache set failed', e && e.message ? e.message : e);
-      }
+      cacheSet(cacheKey, parsed);
 
       return res.json(parsed);
     }
@@ -162,6 +209,10 @@ app.post('/api/detect', async (req, res) => {
   const { image } = req.body || {};
   if (!image) {
     return res.status(400).json({ error: 'Missing image data' });
+  }
+  // Only accept inline base64 images; never let the client make OpenAI fetch arbitrary URLs.
+  if (typeof image !== 'string' || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) {
+    return res.status(400).json({ error: 'Invalid image data' });
   }
 
   const OPENAI_KEY = process.env.OPENAI_API_KEY;

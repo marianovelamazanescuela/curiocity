@@ -1,13 +1,19 @@
 services:
   - type: web
     name: curiocity
-    env: node
+    runtime: node
     plan: free
     buildCommand: npm install && npm run build
     startCommand: node server/index.js
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 22
+      - key: NODE_ENV
+        value: production
       - key: OPENAI_API_KEY
         sync: false # set in Render dashboard
+      # Optional: comma-separated origins allowed to call the API cross-origin
+      # (e.g. a Netlify frontend). Not needed when Render serves the frontend itself.
+      - key: ALLOWED_ORIGINS
+        sync: false
