@@ -102,4 +102,4 @@ public/             logo, iconos, manifest
 
 ### Diseño
 
-Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color suave por asignatura (en [src/subjects.js](src/subjects.js)). Tipografía: Sofia Sans Condensed. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).
+Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color suave por asignatura (en [src/subjects.js](src/subjects.js)). Tipografía: Sofia Sans. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).
