@@ -40,48 +40,54 @@ async function detectWithCoco(canvas) {
 }
 
 /**
- * Returns { object, person, subjects }: object is the main object's name (in the user's
- * language when the Vision API answers) or null; person is true when the photo shows people;
- * subjects lists the relevant subject keys, or null to show them all (e.g. on-device fallback).
+ * Returns { object, person }: object is the main object's name (in the user's language when the
+ * Vision API answers) or null; person is true when the photo shows people.
  * Throws only if both detectors fail.
  */
 export async function detectObject(canvas, lang, signal) {
   try {
     const data = await postJson('/api/detect', { image: canvas.toDataURL('image/jpeg', 0.8), language: LANGUAGE_NAMES[lang] }, signal);
-    return { object: data.object || null, person: data.person === true, subjects: data.subjects || null };
+    return { object: data.object || null, person: data.person === true };
   } catch (err) {
     if (err.name === 'AbortError') throw err;
     console.info('Vision API unavailable, falling back to COCO-SSD:', err.message);
   }
-  return { ...(await detectWithCoco(canvas)), subjects: null };
+  return detectWithCoco(canvas);
 }
 
-/** Relevant subject keys for an object name, or null (= show all) if the server can't say. */
-export async function fetchSubjects(objectName, lang, signal) {
+/**
+ * How well each subject connects with the object: { featured: [{ key, hook }], others: [key] },
+ * or null (= show every subject, no hooks) if the server can't say.
+ */
+export async function fetchRanking(objectName, lang, ageGroup, signal) {
   try {
-    const data = await postJson('/api/subjects', { objectName, language: LANGUAGE_NAMES[lang] }, signal);
-    return data.subjects || null;
+    const data = await postJson('/api/subjects', { objectName, language: LANGUAGE_NAMES[lang], ageGroup }, signal);
+    const r = data && data.ranking;
+    if (r && Array.isArray(r.featured) && r.featured.length && Array.isArray(r.others)) return r;
   } catch (err) {
     if (err.name === 'AbortError') throw err;
-    return null;
   }
+  return null;
 }
 
-/** Educational content from the AI server, or localized offline templates if it is unavailable. */
-export async function fetchContent({ objectName, subject, subjectLabel, lang, ageGroup, signal }) {
+const isLesson = j =>
+  j && j.pregunta_inicial && Array.isArray(j.pregunta_inicial.opciones) && j.pregunta_inicial.opciones.length === 3 &&
+  Number.isInteger(j.pregunta_inicial.correcta) && j.dato_sorprendente && j.por_que && j.reto && j.para_seguir_pensando;
+
+/** Interactive lesson from the AI server, or localized offline content if it is unavailable. */
+export async function fetchContent({ objectName, subject, lang, ageGroup, signal }) {
   try {
     const json = await postJson('/api/ai', { objectName, subject: subject.aiName, language: LANGUAGE_NAMES[lang], ageGroup }, signal);
-    if (json && json.title && json.text) {
+    if (isLesson(json)) {
       return {
         ...json,
-        funFacts: Array.isArray(json.funFacts) ? json.funFacts : [],
-        links: Array.isArray(json.links) ? json.links : [],
-        relatedObjects: Array.isArray(json.relatedObjects) ? json.relatedObjects : []
+        enlaces: Array.isArray(json.enlaces) ? json.enlaces : [],
+        objetos_relacionados: Array.isArray(json.objetos_relacionados) ? json.objetos_relacionados : []
       };
     }
   } catch (err) {
     if (err.name === 'AbortError') throw err;
-    console.info('AI server unavailable, using offline templates:', err.message);
+    console.info('AI server unavailable, using offline content:', err.message);
   }
-  return buildFallbackContent(objectName, subject.key, subjectLabel, lang);
+  return buildFallbackContent(subject.key, lang);
 }
