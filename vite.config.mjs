@@ -12,7 +12,9 @@ export default defineConfig({
   },
   build: {
     // Keep CRA's output folder so server/index.js, netlify.toml and render.yaml keep working.
-    outDir: 'build'
+    outDir: 'build',
+    // TensorFlow.js (~1.1 MB) is a lazily loaded fallback chunk, not part of the initial page.
+    chunkSizeWarningLimit: 800
   },
   test: {
     environment: 'jsdom',

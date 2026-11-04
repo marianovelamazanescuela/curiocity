@@ -1,117 +1,105 @@
-# Getting Started with Create React App
+# Curiocity
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Aplicación web (PWA) educativa para niños y niñas de 6 a 12 años: apuntan con la cámara a un objeto, la app lo reconoce y les propone descubrirlo desde distintas asignaturas (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte) con textos adaptados a su edad, datos curiosos, enlaces seguros y objetos relacionados para seguir explorando.
 
-## Available Scripts
+Idiomas: español, inglés, francés y alemán (se detecta automáticamente del navegador).
 
-In the project directory, you can run:
+## Cómo funciona
 
-### `npm start`
+```
+Navegador (React + Vite)                     Servidor (Express)                 OpenAI
+────────────────────────                     ──────────────────                 ──────
+Cámara → foto 800 px ── POST /api/detect ──▶ valida imagen, límite peticiones ─▶ visión: nombre del objeto
+Elige asignatura ────── POST /api/ai ──────▶ valida, caché, filtra enlaces ───▶ JSON educativo
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Si algo falla, la app sigue funcionando:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+| Falla… | Entonces… |
+|---|---|
+| `/api/detect` | Reconoce el objeto en el propio navegador con TensorFlow.js (COCO-SSD), que solo se descarga en ese caso |
+| `/api/ai` | Muestra contenido de plantillas locales en el idioma del usuario |
 
-### `npm test`
+## Puesta en marcha
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Requisitos: Node.js 20 o superior.
 
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
----
-
-## Branding, Icons & Splash Screens (added)
-
-I added a scalable SVG logo and an icon generator script to produce PNG assets for the site and mobile devices.
-
-Files added:
-
-- `public/curiocity-logo.svg` — a scalable SVG logo (edit this file if you want different colors or typography).
-- `scripts/generate-icons.js` — Node script using `sharp` to generate PNG icons and a splash placeholder in `public/icons/`.
-
-How to generate icons locally:
-
-1. Install dev dependencies (already added to `package.json`):
-
-```powershell
+```bash
 npm install
+cp .env.example .env      # y pon tu OPENAI_API_KEY
 ```
 
-2. Run the generator:
+En dos terminales:
 
-```powershell
-npm run generate-icons
+```bash
+npm run start:proxy       # servidor API en http://localhost:4000
+npm start                 # frontend en http://localhost:3000 (redirige /api al servidor)
 ```
 
-This creates:
+Para probar la cámara desde el móvil hace falta HTTPS (o `localhost`).
 
-- `public/icons/icon-16x16.png`, `icon-32x32.png`, ..., `icon-512x512.png`
-- `public/icons/apple-touch-icon.png`
-- `public/icons/splash-2048x2732.png`
+## Scripts
 
-What I changed in the project:
+| Comando | Qué hace |
+|---|---|
+| `npm start` / `npm run dev` | Frontend en modo desarrollo (Vite) |
+| `npm run start:proxy` | Servidor Express (API + build estático) |
+| `npm run build` | Genera `build/` para producción |
+| `npm run preview` | Sirve `build/` localmente |
+| `npm test` | Tests (Vitest) del servidor y de la interfaz |
+| `npm run lint` | ESLint |
+| `npm run generate-icons` | Regenera los PNG de `public/icons/` desde los SVG |
 
-- `public/manifest.json` updated to reference generated icons and set app name to `curiocity`.
-- `public/index.html` updated with `apple-touch-icon`, `apple-touch-startup-image` and theme color.
+## Variables de entorno
 
-Deployment tip (Netlify):
+Servidor (`.env` o panel de Render):
 
-- Run `npm run build` and deploy the `build` folder to Netlify. The manifest and icons will be included in the build.
+| Variable | Por defecto | Descripción |
+|---|---|---|
+| `OPENAI_API_KEY` | — | **Obligatoria.** Clave de OpenAI |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Modelo para visión y textos |
+| `RATE_LIMIT_PER_15MIN` | `60` | Peticiones por IP cada 15 min. **En un centro educativo todo el alumnado suele compartir IP: súbelo (p. ej. 400) para uso en clase** |
+| `ALLOWED_ORIGINS` | `http://localhost:3000` en desarrollo | Orígenes que pueden llamar a la API desde otro dominio (separados por comas). No hace falta si el servidor sirve también el frontend |
+| `CACHE_TTL_SECONDS` | `3600` | Duración de la caché de respuestas |
+| `CACHE_MAX_ENTRIES` | `500` | Tamaño máximo de la caché |
 
-If you'd like, I can also:
+Frontend (en el momento del build):
 
-- Add fine-grained Apple startup images per device using media queries,
-- Produce a high-quality PNG pack from the original Illustrator source (requires the original assets), or
-- Replace the simple gradient in the SVG with an embedded raster/logo artwork if you provide a PNG.
+| Variable | Descripción |
+|---|---|
+| `VITE_AI_PROXY_URL` | URL del servidor si está en otro dominio. Vacía = mismo dominio |
+| `VITE_PUBLIC_URL` | URL que aparece en los mensajes compartidos. Por defecto, la de la propia app |
 
+## Despliegue (Render)
 
-## Learn More
+[render.yaml](render.yaml) define un único servicio web que compila el frontend y lo sirve junto con la API. Solo hay que configurar `OPENAI_API_KEY` (y conviene `RATE_LIMIT_PER_15MIN`) en el panel de Render.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Estructura
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+server/
+  app.js            API: validación, CORS, límite de peticiones, caché, llamadas a OpenAI
+  index.js          arranca el servidor
+  app.test.js
+src/
+  App.jsx           flujo: cámara → análisis → asignaturas → contenido
+  components/       CameraView, Sheet (<dialog>), SubjectPicker, ContentView, ObjectHeader, Toast, Splash
+  useCamera.js      gestión de la cámara
+  api.js            llamadas al servidor + reconocimiento local de respaldo
+  i18n.js           todos los textos de la interfaz y detección de idioma
+  subjects.js       asignaturas: icono y color
+  fallbackContent.js plantillas sin conexión
+  share.js          compartir (nativo, correo, WhatsApp)
+  styles.css        diseño: tokens de color, tipografía y componentes
+public/             logo, iconos, manifest
+```
 
-### Code Splitting
+### Añadir un idioma
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+1. Copia el bloque `en` de [src/i18n.js](src/i18n.js) con el nuevo código (p. ej. `pt`) y tradúcelo; añade también el nombre en `LANGUAGE_NAMES`.
+2. Añade sus plantillas en [src/fallbackContent.js](src/fallbackContent.js).
+3. `npm test` comprueba que no falta ninguna clave.
 
-### Analyzing the Bundle Size
+### Diseño
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color suave por asignatura (en [src/subjects.js](src/subjects.js)). Tipografía: Sofia Sans Condensed. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).
