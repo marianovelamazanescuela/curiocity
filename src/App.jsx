@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { translations, detectUserLanguage, loadAgeGroup, saveAgeGroup } from './i18n';
-import { getSubject, subjectsFor } from './subjects';
-import { detectObject, fetchContent, fetchSubjects } from './api';
+import { getSubject, orderedSubjects } from './subjects';
+import { detectObject, fetchContent, fetchRanking } from './api';
 import { addToHistory, clearHistory, loadHistory } from './history';
 import { useCamera } from './useCamera';
 import Splash from './components/Splash';
@@ -54,19 +54,35 @@ export default function App() {
   // camera → analyzing (frozen photo in the viewfinder) → result (sheet open); or history (sheet open)
   const [phase, setPhase] = useState('camera');
   const [photo, setPhoto] = useState(null);
-  // { status: 'found'|'none'|'person'|'error', object, subjects, fromPhoto }
-  // subjects: array of relevant keys, null = show all, undefined = still loading
+  // { status: 'found'|'none'|'person'|'error', object, fromPhoto }
   const [detection, setDetection] = useState(null);
   const [history, setHistory] = useState(loadHistory);
   const [ageGroup, setAgeGroup] = useState(loadAgeGroup);
   const [subjectKey, setSubjectKey] = useState(null);
   const [content, setContent] = useState(null);
   const [toast, setToast] = useState(null);
+  // Subject ranking for the current object and age: { forKey, value } (value null = unknown)
+  const [ranking, setRanking] = useState({ forKey: null, value: null });
 
   const videoRef = useRef(null);
   const requestRef = useRef(null); // AbortController of the in-flight request
 
   const camera = useCamera(phase === 'camera');
+
+  // Which subjects connect best with the object (with a hook each). Asked whenever the object or the
+  // age group changes: after a photo, a related object or a history entry. Hooks depend on the age.
+  const foundObject = detection && detection.status === 'found' ? detection.object : null;
+  const rankingKey = foundObject ? `${foundObject}|${ageGroup}` : null;
+  useEffect(() => {
+    if (!foundObject) return undefined;
+    const controller = new AbortController();
+    fetchRanking(foundObject, lang, ageGroup, controller.signal)
+      .then(value => setRanking({ forKey: rankingKey, value }))
+      .catch(() => {}); // aborted: a newer object or age replaced this one
+    return () => controller.abort();
+  }, [foundObject, ageGroup, lang, rankingKey]);
+  // undefined while loading, null if unknown (show every subject), else { featured, others }
+  const currentRanking = ranking.forKey === rankingKey ? ranking.value : undefined;
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -96,12 +112,12 @@ export default function App() {
     const signal = newRequest();
 
     try {
-      const { object, person, subjects } = await detectObject(canvas, lang, signal);
+      const { object, person } = await detectObject(canvas, lang, signal);
       if (person) setDetection({ status: 'person' });
       else if (object) {
         const name = capitalize(object);
-        setDetection({ status: 'found', object: name, subjects, fromPhoto: true });
-        setHistory(addToHistory({ object: name, subjects, thumb: makeThumbnail(canvas) }));
+        setDetection({ status: 'found', object: name, fromPhoto: true });
+        setHistory(addToHistory({ object: name, thumb: makeThumbnail(canvas) }));
       } else setDetection({ status: 'none' });
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -126,25 +142,18 @@ export default function App() {
     setContent(null); // show the loading state instead of the previous subject's content
     const signal = newRequest();
     try {
-      const result = await fetchContent({ objectName, subject, subjectLabel: t.subjects[key], lang, ageGroup, signal });
+      const result = await fetchContent({ objectName, subject, lang, ageGroup, signal });
       setContent(result);
     } catch (err) {
       if (err.name !== 'AbortError') console.error(err);
     }
   };
 
-  const handleRelatedObject = async name => {
-    const signal = newRequest();
-    const object = capitalize(name);
-    setDetection({ status: 'found', object, subjects: undefined, fromPhoto: false });
+  const handleRelatedObject = name => {
+    newRequest();
+    setDetection({ status: 'found', object: capitalize(name), fromPhoto: false });
     setSubjectKey(null);
     setContent(null);
-    try {
-      const subjects = await fetchSubjects(object, lang, signal);
-      setDetection(d => (d && d.object === object ? { ...d, subjects } : d));
-    } catch (err) {
-      if (err.name !== 'AbortError') console.error(err);
-    }
   };
 
   const openHistory = () => {
@@ -154,7 +163,7 @@ export default function App() {
 
   const openHistoryEntry = entry => {
     setPhoto(entry.thumb);
-    setDetection({ status: 'found', object: entry.object, subjects: entry.subjects, fromPhoto: true });
+    setDetection({ status: 'found', object: entry.object, fromPhoto: true });
     setSubjectKey(null);
     setContent(null);
     setHistory(addToHistory(entry)); // moves it to the top
@@ -190,7 +199,7 @@ export default function App() {
         t={t}
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
-        subjects={detection.subjects === undefined ? undefined : subjectsFor(detection.subjects)}
+        ranking={currentRanking}
         ageGroup={ageGroup}
         onAgeChange={age => {
           setAgeGroup(age);
@@ -203,17 +212,19 @@ export default function App() {
   } else if (detection) {
     sheetBody = (
       <ContentView
+        key={`${detection.object}|${subjectKey}`}
         t={t}
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
         subjectKey={subjectKey}
-        subjects={subjectsFor(detection.subjects)}
+        subjects={orderedSubjects(currentRanking || null)}
         lang={lang}
         content={content}
         onBack={backToSubjects}
         onSelectSubject={key => loadSubject(key)}
         onRelatedObject={handleRelatedObject}
         onToast={showToast}
+        onTakePhoto={handleClose}
       />
     );
   }
