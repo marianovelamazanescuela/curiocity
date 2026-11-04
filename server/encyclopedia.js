@@ -37,15 +37,39 @@ async function mediaWiki(source, params) {
 
 const pageUrl = (source, title) => `https://${source.host}/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
 
-// 1) exact title (following redirects, skipping disambiguation pages), 2) best title match.
-async function findInSource(source, term) {
+const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+// Exact title, following redirects (Girasol → Helianthus annuus) and skipping disambiguation pages.
+async function findExact(source, term) {
   const exact = await mediaWiki(source, { action: 'query', titles: term, redirects: '1', prop: 'pageprops', ppprop: 'disambiguation' });
   const page = exact?.query?.pages?.[0];
   if (page && !page.missing && !page.invalid && !(page.pageprops && 'disambiguation' in page.pageprops)) {
     return page.title;
   }
-  const search = await mediaWiki(source, { action: 'query', list: 'search', srsearch: `intitle:${term}`, srlimit: '1', srnamespace: '0' });
-  return search?.query?.search?.[0]?.title || null;
+  return null;
+}
+
+// Approximate title match, accepted only if the title starts with the term ("Concha marina" for
+// "concha"). Loose matches are real pages but useless for the child: "Playa de la Concha" for
+// "concha", or "Percepción pública de las matemáticas" for "matemáticas de la bicicleta".
+async function findApproximate(source, term) {
+  const search = await mediaWiki(source, { action: 'query', list: 'search', srsearch: `intitle:${term}`, srlimit: '5', srnamespace: '0' });
+  const hits = search?.query?.search || [];
+  const hit = hits.find(h => normalize(h.title).startsWith(normalize(term)));
+  return hit ? hit.title : null;
+}
+
+// All exact lookups first (most specific term wins), then approximate ones.
+async function findInSource(source, terms) {
+  for (const term of terms) {
+    const title = await findExact(source, term);
+    if (title) return title;
+  }
+  for (const term of terms) {
+    const title = await findApproximate(source, term);
+    if (title) return title;
+  }
+  return null;
 }
 
 /**
@@ -59,16 +83,13 @@ async function findArticles(terms, languageName) {
 
   const results = await Promise.all(
     sources.map(async source => {
-      for (const term of cleanTerms) {
-        try {
-          const title = await findInSource(source, term);
-          if (title) return { title, url: pageUrl(source, title), source: source.name };
-        } catch (err) {
-          console.warn(`Encyclopedia lookup failed (${source.host}):`, err.message);
-          return null; // source unreachable: don't try more terms on it
-        }
+      try {
+        const title = await findInSource(source, cleanTerms);
+        return title ? { title, url: pageUrl(source, title), source: source.name } : null;
+      } catch (err) {
+        console.warn(`Encyclopedia lookup failed (${source.host}):`, err.message);
+        return null; // source unreachable: no link from it
       }
-      return null;
     })
   );
   return results.filter(Boolean);

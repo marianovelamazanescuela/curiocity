@@ -62,7 +62,7 @@ Servidor (`.env` o panel de Render):
 | Variable | Por defecto | Descripción |
 |---|---|---|
 | `OPENAI_API_KEY` | — | **Obligatoria.** Clave de OpenAI |
-| `OPENAI_MODEL` | `gpt-4o-mini` | Modelo para visión y textos |
+| `OPENAI_MODEL` | `gpt-6-luna` | Modelo para visión y textos. Se usa sin razonamiento oculto (`reasoning_effort: none`): más rápido y barato. `gpt-4o-mini` funciona hasta que OpenAI lo retire (14-01-2027) |
 | `RATE_LIMIT_PER_15MIN` | `60` | Peticiones por IP cada 15 min (si varios dispositivos comparten conexión, comparten también el límite) |
 | `ALLOWED_ORIGINS` | `http://localhost:3000` en desarrollo | Orígenes que pueden llamar a la API desde otro dominio (separados por comas). No hace falta si el servidor sirve también el frontend |
 | `CACHE_TTL_SECONDS` | `3600` | Duración de la caché de respuestas |

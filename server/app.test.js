@@ -23,9 +23,10 @@ function mockMediaWiki(url) {
     const found = pages.has(titles);
     return Response.json({ query: { pages: [found ? { pageid: 1, title: titles } : { title: titles, missing: true }] } });
   }
-  const term = (u.searchParams.get('srsearch') || '').replace(/^intitle:/, '');
-  const hit = [...pages].find(p => p.toLowerCase().includes(term.toLowerCase()));
-  return Response.json({ query: { search: hit ? [{ title: hit }] : [] } });
+  // Loose like the real search: any page sharing a word of 4+ letters with the term.
+  const words = (u.searchParams.get('srsearch') || '').replace(/^intitle:/, '').toLowerCase().split(/\s+/).filter(w => w.length >= 4);
+  const hits = [...pages].filter(p => words.some(w => p.toLowerCase().includes(w)));
+  return Response.json({ query: { search: hits.map(title => ({ title })) } });
 }
 
 beforeAll(async () => {
@@ -118,6 +119,20 @@ describe('POST /api/ai', () => {
     ]);
     expect(JSON.stringify(body)).not.toContain('made-up');
     expect(body).not.toHaveProperty('searchTerms');
+  });
+
+  it('rejects loose matches that are real pages but not about the object', async () => {
+    wikiPages = { 'es.vikidia.org': new Set(['Percepción pública de las matemáticas', 'Playa de la Concha', 'Bicicleta']) };
+    openaiReply = modelContent({ searchTerms: ['Matemáticas de la bicicleta'] });
+    const body = await (await post('/api/ai', { ...valid, objectName: 'Bicicleta' })).json();
+    expect(body.links).toEqual([{ title: 'Bicicleta', url: 'https://es.vikidia.org/wiki/Bicicleta', source: 'Vikidia' }]);
+  });
+
+  it('does not accept a page that only mentions the word (Playa de la Concha for concha)', async () => {
+    wikiPages = { 'es.vikidia.org': new Set(['Playa de la Concha', 'Concha marina']) };
+    openaiReply = modelContent({ searchTerms: ['Concha'] });
+    const body = await (await post('/api/ai', { ...valid, objectName: 'Vieira' })).json();
+    expect(body.links.map(l => l.title)).toEqual(['Concha marina']);
   });
 
   it('returns no links when no article exists', async () => {

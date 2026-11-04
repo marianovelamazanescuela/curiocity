@@ -11,7 +11,7 @@ El frontend y el backend están **en el mismo repositorio, en la misma carpeta r
 - **Frontend:** React PWA con Vite (`src/`). Componentes propios, sin MUI; el bottom sheet usa el `<dialog>` nativo. Tiene *service worker* (`public/sw.js`) para abrir sin conexión.
 - **Backend:** servidor Express (`server/`) que actúa como proxy hacia OpenAI y busca los enlaces en enciclopedias. Está desplegado en Render. En producción sirve también el frontend compilado (`build/`).
 - **Detección de objetos:** primero se usa OpenAI Vision a través del backend. Si el servidor no está disponible, se recurre a COCO-SSD (TensorFlow.js) en el navegador.
-- **Generación de contenido:** GPT-4o-mini a través del backend produce explicaciones, curiosidades y actividades, adaptadas al grupo de edad elegido (6–8 o 9–12). Si el servidor falla, se usan plantillas locales con preguntas y actividades (nunca afirmaciones sobre el objeto).
+- **Generación de contenido:** `gpt-6-luna` (sustituto oficial de `gpt-4o-mini`, que OpenAI retira el 14-01-2027), a través del backend, produce explicaciones, curiosidades y actividades, adaptadas al grupo de edad elegido (6–8 o 9–12). Si el servidor falla, se usan plantillas locales con preguntas y actividades (nunca afirmaciones sobre el objeto).
 - **Idiomas:** la app detecta el idioma del navegador y admite ES, EN, FR y DE.
 - **Recursos externos:** enciclopedias infantiles reales: Vikidia (ES, FR, EN) y Klexikon (DE), además de Wikipedia (Simple English en inglés). La IA solo propone palabras de búsqueda y el servidor comprueba que la página existe. Se decidió no integrar YouTube ni otros repositorios por ahora.
 
