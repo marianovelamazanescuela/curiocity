@@ -4,6 +4,24 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-04 — Contenidos que despiertan curiosidad (fase 1)
+
+Rama `feature/contenidos-interesantes`. Respuesta al jurado de Ciencia en Acción: "el interés de algunos contenidos no es muy grande".
+
+**Qué se cambió y por qué**
+
+- **Las 3 asignaturas con más relación, destacadas y con un gancho.** El modelo puntúa de 0 a 3 la relación del objeto con cada asignatura y escribe una frase que invita a entrar (farola → Historia: "Antes, las farolas se encendían una a una al caer la noche"). El resto queda en "Más asignaturas". *Por qué:* antes todas salían al mismo nivel y sin ninguna razón para elegir una, y las de relación débil daban textos forzados.
+- **De la explicación a la mini-lección interactiva.** Pregunta con 3 opciones antes de explicar nada → dato sorprendente → porqué breve → reto de un minuto con el objeto real → pregunta para seguir pensando. *Por qué:* el texto tipo enciclopedia era pasivo; adivinar antes de leer y hacer algo con el objeto invitan a participar.
+- **Reglas del prompt:** adaptación a 6–8 y 9–12 años; datos comprobables y nada de explicaciones que la ciencia aún discute; si la relación es floja, decirlo; retos seguros (sin tocar animales, probar cosas, acercarse al tráfico, usar herramientas ni abrir el objeto); contexto de Sevilla solo cuando encaje.
+- **JSON con esquema estricto, validado en el servidor y con un reintento.** Las opciones se barajan en el servidor. Si falla, el contenido sin conexión no lleva pregunta ni dato.
+- **Se mantienen** la detección, el modelo (`gpt-6-luna`), las enciclopedias y el selector de edad del panel. La app no busca vídeos por ahora.
+
+**Cómo se probó:** manzana, botella y farola, en las dos franjas de edad, con la app completa en local (fotos reales, OpenAI real). Se hicieron cinco rondas de ajuste del prompt hasta quitar los fallos de la primera (Biología favorecida por ser la primera de la lista, preguntas mal construidas, un dato discutido sobre insectos y farolas).
+
+**Pendiente:** revisar con docentes una muestra de lecciones. Ejemplo de simplificación encontrada: "la pulpa de la manzana viene del ovario" (en la manzana viene sobre todo del receptáculo). Probarlo con niños y niñas, y la fase 2 de rediseño visual.
+
+---
+
 ## 2026-11-04 — Revisión completa: seguridad, rediseño, rigor del contenido y nuevo modelo de IA
 
 Diez commits (`b79de67` → `9245b57`) a partir del estado del 13-02-2026 (`f6c8703`).
