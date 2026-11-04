@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { translations, detectUserLanguage } from './i18n';
-import { getSubject } from './subjects';
-import { detectObject, fetchContent } from './api';
+import { getSubject, subjectsFor } from './subjects';
+import { detectObject, fetchContent, fetchSubjects } from './api';
+import { addToHistory, clearHistory, loadHistory } from './history';
 import { useCamera } from './useCamera';
 import Splash from './components/Splash';
 import CameraView from './components/CameraView';
 import Sheet from './components/Sheet';
 import SubjectPicker from './components/SubjectPicker';
 import ContentView from './components/ContentView';
+import HistoryView from './components/HistoryView';
 import Toast from './components/Toast';
 
 const SPLASH_MS = 1400;
 const MAX_IMAGE_SIDE = 800; // the Vision API doesn't need more; keeps uploads small
+const THUMB_SIDE = 160; // history thumbnails stay small (~8 KB each)
 
 const capitalize = s => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -28,6 +31,14 @@ function captureSquare(video) {
   return canvas;
 }
 
+function makeThumbnail(canvas) {
+  const thumb = document.createElement('canvas');
+  thumb.width = THUMB_SIDE;
+  thumb.height = THUMB_SIDE;
+  thumb.getContext('2d').drawImage(canvas, 0, 0, THUMB_SIDE, THUMB_SIDE);
+  return thumb.toDataURL('image/jpeg', 0.7);
+}
+
 function requestFullscreenOnMobile() {
   const el = document.documentElement;
   if (document.fullscreenElement || !el.requestFullscreen) return;
@@ -40,10 +51,13 @@ export default function App() {
   const t = translations[lang] || translations.en;
 
   const [showSplash, setShowSplash] = useState(true);
-  // camera → analyzing (frozen photo in the viewfinder) → result (sheet open)
+  // camera → analyzing (frozen photo in the viewfinder) → result (sheet open); or history (sheet open)
   const [phase, setPhase] = useState('camera');
   const [photo, setPhoto] = useState(null);
-  const [detection, setDetection] = useState(null); // { status: 'found'|'none'|'error', object }
+  // { status: 'found'|'none'|'person'|'error', object, subjects, fromPhoto }
+  // subjects: array of relevant keys, null = show all, undefined = still loading
+  const [detection, setDetection] = useState(null);
+  const [history, setHistory] = useState(loadHistory);
   const [subjectKey, setSubjectKey] = useState(null);
   const [content, setContent] = useState(null);
   const [toast, setToast] = useState(null);
@@ -81,10 +95,13 @@ export default function App() {
     const signal = newRequest();
 
     try {
-      const { object, person } = await detectObject(canvas, lang, signal);
+      const { object, person, subjects } = await detectObject(canvas, lang, signal);
       if (person) setDetection({ status: 'person' });
-      else if (object) setDetection({ status: 'found', object: capitalize(object), fromPhoto: true });
-      else setDetection({ status: 'none' });
+      else if (object) {
+        const name = capitalize(object);
+        setDetection({ status: 'found', object: name, subjects, fromPhoto: true });
+        setHistory(addToHistory({ object: name, subjects, thumb: makeThumbnail(canvas) }));
+      } else setDetection({ status: 'none' });
     } catch (err) {
       if (err.name === 'AbortError') return;
       console.error('Detection failed:', err);
@@ -115,11 +132,32 @@ export default function App() {
     }
   };
 
-  const handleRelatedObject = name => {
-    newRequest();
-    setDetection({ status: 'found', object: capitalize(name), fromPhoto: false });
+  const handleRelatedObject = async name => {
+    const signal = newRequest();
+    const object = capitalize(name);
+    setDetection({ status: 'found', object, subjects: undefined, fromPhoto: false });
     setSubjectKey(null);
     setContent(null);
+    try {
+      const subjects = await fetchSubjects(object, lang, signal);
+      setDetection(d => (d && d.object === object ? { ...d, subjects } : d));
+    } catch (err) {
+      if (err.name !== 'AbortError') console.error(err);
+    }
+  };
+
+  const openHistory = () => {
+    newRequest();
+    setPhase('history');
+  };
+
+  const openHistoryEntry = entry => {
+    setPhoto(entry.thumb);
+    setDetection({ status: 'found', object: entry.object, subjects: entry.subjects, fromPhoto: true });
+    setSubjectKey(null);
+    setContent(null);
+    setHistory(addToHistory(entry)); // moves it to the top
+    setPhase('result');
   };
 
   const backToSubjects = () => {
@@ -129,7 +167,9 @@ export default function App() {
   };
 
   let sheetBody = null;
-  if (detection && detection.status !== 'found') {
+  if (phase === 'history') {
+    sheetBody = <HistoryView t={t} lang={lang} entries={history} onOpen={openHistoryEntry} onClear={() => setHistory(clearHistory())} />;
+  } else if (detection && detection.status !== 'found') {
     const messages = {
       error: [t.detectionError, t.detectionErrorDesc],
       person: [t.personTitle, t.personDesc],
@@ -149,6 +189,7 @@ export default function App() {
         t={t}
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
+        subjects={detection.subjects === undefined ? undefined : subjectsFor(detection.subjects)}
         onSelect={key => loadSubject(key)}
         onWrongObject={handleClose}
       />
@@ -160,6 +201,7 @@ export default function App() {
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
         subjectKey={subjectKey}
+        subjects={subjectsFor(detection.subjects)}
         content={content}
         onBack={backToSubjects}
         onSelectSubject={key => loadSubject(key)}
@@ -180,12 +222,13 @@ export default function App() {
         analyzing={phase === 'analyzing'}
         onShutter={handleShutter}
         onRetryCamera={camera.retry}
+        onOpenHistory={openHistory}
       />
       <Sheet
-        open={phase === 'result'}
+        open={phase === 'result' || phase === 'history'}
         onClose={handleClose}
         closeLabel={t.close}
-        scrollKey={`${detection?.object}|${subjectKey}|${Boolean(content)}`}
+        scrollKey={`${phase}|${detection?.object}|${subjectKey}|${Boolean(content)}`}
         overlay={<Toast toast={toast} onDone={hideToast} />}
       >
         {sheetBody}

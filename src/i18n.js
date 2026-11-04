@@ -2,7 +2,7 @@
 export const translations = {
   en: {
     tagline: 'Learn from the world around you.',
-    hint: 'Point at an object that makes you curious',
+    hint: 'Point at a curious object',
     takePhoto: 'Take photo',
     analyzing: 'Looking closely…',
     loading: 'Preparing your discovery…',
@@ -37,6 +37,11 @@ export const translations = {
     shareIntro: 'Look what I discovered with Curiocity!',
     shareAttachHint: '(Save the photo and attach it to share it too.)',
     capturedPhoto: 'Your photo',
+    history: 'My discoveries',
+    historyEmpty: 'Your discoveries will appear here. Take a photo to start!',
+    historyPrivacy: 'Saved only on this device.',
+    clearHistory: 'Clear history',
+    confirmClear: 'Tap again to clear',
     subjects: {
       biologia: 'Biology',
       geologia: 'Geology',
@@ -49,7 +54,7 @@ export const translations = {
   },
   es: {
     tagline: 'Aprende del mundo que te rodea.',
-    hint: 'Apunta a un objeto que te dé curiosidad',
+    hint: 'Apunta a un objeto curioso',
     takePhoto: 'Hacer foto',
     analyzing: 'Mirando con atención…',
     loading: 'Preparando tu descubrimiento…',
@@ -84,6 +89,11 @@ export const translations = {
     shareIntro: '¡Mira lo que he descubierto con Curiocity!',
     shareAttachHint: '(Guarda la foto y adjúntala para compartirla también.)',
     capturedPhoto: 'Tu foto',
+    history: 'Mis descubrimientos',
+    historyEmpty: 'Aquí aparecerán tus descubrimientos. ¡Haz una foto para empezar!',
+    historyPrivacy: 'Se guarda solo en este dispositivo.',
+    clearHistory: 'Borrar historial',
+    confirmClear: 'Toca otra vez para borrar',
     subjects: {
       biologia: 'Biología',
       geologia: 'Geología',
@@ -96,7 +106,7 @@ export const translations = {
   },
   fr: {
     tagline: 'Apprends du monde qui t’entoure.',
-    hint: 'Vise un objet qui t’intrigue',
+    hint: 'Vise un objet curieux',
     takePhoto: 'Prendre une photo',
     analyzing: 'Je regarde attentivement…',
     loading: 'Je prépare ta découverte…',
@@ -131,6 +141,11 @@ export const translations = {
     shareIntro: 'Regarde ce que j’ai découvert avec Curiocity !',
     shareAttachHint: '(Enregistre la photo et joins-la pour la partager aussi.)',
     capturedPhoto: 'Ta photo',
+    history: 'Mes découvertes',
+    historyEmpty: 'Tes découvertes apparaîtront ici. Prends une photo pour commencer !',
+    historyPrivacy: 'Enregistré uniquement sur cet appareil.',
+    clearHistory: 'Effacer l’historique',
+    confirmClear: 'Touche encore pour effacer',
     subjects: {
       biologia: 'Biologie',
       geologia: 'Géologie',
@@ -143,7 +158,7 @@ export const translations = {
   },
   de: {
     tagline: 'Lerne von der Welt um dich herum.',
-    hint: 'Richte die Kamera auf einen spannenden Gegenstand',
+    hint: 'Zeig mir einen Gegenstand',
     takePhoto: 'Foto aufnehmen',
     analyzing: 'Ich schaue genau hin…',
     loading: 'Deine Entdeckung wird vorbereitet…',
@@ -178,6 +193,11 @@ export const translations = {
     shareIntro: 'Schau, was ich mit Curiocity entdeckt habe!',
     shareAttachHint: '(Speichere das Foto und hänge es an, um es auch zu teilen.)',
     capturedPhoto: 'Dein Foto',
+    history: 'Meine Entdeckungen',
+    historyEmpty: 'Hier erscheinen deine Entdeckungen. Mach ein Foto, um anzufangen!',
+    historyPrivacy: 'Nur auf diesem Gerät gespeichert.',
+    clearHistory: 'Verlauf löschen',
+    confirmClear: 'Nochmal tippen zum Löschen',
     subjects: {
       biologia: 'Biologie',
       geologia: 'Geologie',

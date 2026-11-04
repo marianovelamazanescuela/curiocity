@@ -167,8 +167,23 @@ p {
 }
 
 .camera__top {
+  position: relative;
+  width: 100%;
   display: flex;
   justify-content: center;
+}
+
+.camera__history {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--cream) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.camera__history:disabled {
+  opacity: 0;
 }
 
 .camera__logo {
@@ -747,6 +762,83 @@ p {
 .message__text {
   color: var(--ink-soft);
   margin-bottom: 14px;
+}
+
+/* =========================================================
+   History
+   ========================================================= */
+.history__title {
+  padding-right: 52px;
+  margin-bottom: 18px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.history__empty {
+  padding: 24px 0;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.history__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px 8px 8px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-m);
+  background: var(--paper);
+  text-align: left;
+  transition: border-color 0.15s;
+}
+
+.history__item:hover {
+  border-color: var(--ink);
+}
+
+.history__thumb {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  object-fit: cover;
+}
+
+.history__text {
+  display: grid;
+  min-width: 0;
+}
+
+.history__name {
+  font-size: 19px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.history__date {
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.history__privacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 20px 0 6px;
+  font-size: 14px;
+  color: var(--ink-soft);
 }
 
 /* =========================================================

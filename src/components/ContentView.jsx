@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MdArrowBack, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline } from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
-import { SUBJECTS, getSubject } from '../subjects';
+import { getSubject } from '../subjects';
 import { buildShareText, downloadDataUrl, mailtoUrl, nativeShare, whatsappUrl } from '../share';
 import ObjectHeader from './ObjectHeader';
 
@@ -69,7 +69,7 @@ function ShareBar({ t, content, photo, onToast }) {
   );
 }
 
-export default function ContentView({ t, photo, objectName, subjectKey, content, onBack, onSelectSubject, onRelatedObject, onToast }) {
+export default function ContentView({ t, photo, objectName, subjectKey, subjects, content, onBack, onSelectSubject, onRelatedObject, onToast }) {
   const subject = getSubject(subjectKey);
   const paragraphs = content ? String(content.explanation || '').split(/\n\s*\n/).filter(Boolean) : [];
 
@@ -147,16 +147,18 @@ export default function ContentView({ t, photo, objectName, subjectKey, content,
 
           <ShareBar t={t} content={content} photo={photo} onToast={onToast} />
 
+          {subjects.length > 1 && (
           <section>
             <h3 className="section-title">{t.otherSubjects}</h3>
             <div className="chips chips--scroll">
-              {SUBJECTS.filter(s => s.key !== subjectKey).map(({ key, icon: Icon, color }) => (
+              {subjects.filter(s => s.key !== subjectKey).map(({ key, icon: Icon, color }) => (
                 <button key={key} className="chip chip--button chip--tinted" style={{ '--subject': color }} onClick={() => onSelectSubject(key)}>
                   <Icon aria-hidden="true" /> {t.subjects[key]}
                 </button>
               ))}
             </div>
           </section>
+          )}
         </>
       )}
     </article>

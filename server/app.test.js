@@ -174,7 +174,7 @@ describe('POST /api/detect', () => {
   it('returns the detected object name, trimmed, in the requested language', async () => {
     openaiReply = JSON.stringify({ object: ' "manzana roja". ', person: false });
     const r = await post('/api/detect', { image, language: 'Spanish' });
-    expect(await r.json()).toEqual({ object: 'manzana roja' });
+    expect(await r.json()).toEqual({ object: 'manzana roja', subjects: null });
     expect(openaiCalls[0].messages[0].content[0].text).toContain('Spanish');
   });
 
@@ -185,9 +185,35 @@ describe('POST /api/detect', () => {
     expect(openaiCalls[0].messages[0].content[0].text).toMatch(/Never describe or identify people/);
   });
 
+  it('returns only valid relevant subjects', async () => {
+    openaiReply = JSON.stringify({ object: 'plátano', person: false, subjects: ['biologia', 'historia', 'musica', 'hacking', 'biologia'] });
+    const body = await (await post('/api/detect', { image })).json();
+    expect(body.subjects).toEqual(['biologia', 'historia', 'musica']);
+  });
+
+  it('returns subjects: null (show all) when the model gives too few', async () => {
+    openaiReply = JSON.stringify({ object: 'plátano', person: false, subjects: ['nope'] });
+    expect((await (await post('/api/detect', { image })).json()).subjects).toBeNull();
+  });
+
   it('returns null when there is no clear object', async () => {
     openaiReply = JSON.stringify({ object: null, person: false });
     expect(await (await post('/api/detect', { image })).json()).toEqual({ object: null });
+  });
+});
+
+describe('POST /api/subjects', () => {
+  it('validates input', async () => {
+    expect((await post('/api/subjects', {})).status).toBe(400);
+    expect((await post('/api/subjects', { objectName: 'x'.repeat(101) })).status).toBe(400);
+  });
+
+  it('returns relevant subjects and caches them', async () => {
+    openaiReply = JSON.stringify({ subjects: ['biologia', 'artes'] });
+    const r = await post('/api/subjects', { objectName: 'Abeja', language: 'Spanish' });
+    expect(await r.json()).toEqual({ subjects: ['biologia', 'artes'] });
+    await post('/api/subjects', { objectName: 'abeja', language: 'Spanish' });
+    expect(openaiCalls).toHaveLength(1);
   });
 });
 

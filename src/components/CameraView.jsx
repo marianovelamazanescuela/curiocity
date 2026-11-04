@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { MdNoPhotography } from 'react-icons/md';
+import { MdHistory, MdNoPhotography } from 'react-icons/md';
 
 // Attaches a MediaStream to a <video> element.
 function useStream(ref, stream) {
@@ -15,7 +15,7 @@ function useStream(ref, stream) {
   }, [ref, stream]);
 }
 
-export default function CameraView({ t, videoRef, stream, cameraStatus, photo, analyzing, onShutter, onRetryCamera }) {
+export default function CameraView({ t, videoRef, stream, cameraStatus, photo, analyzing, onShutter, onRetryCamera, onOpenHistory }) {
   const bgRef = useRef(null);
   useStream(bgRef, stream);
   useStream(videoRef, stream);
@@ -34,6 +34,9 @@ export default function CameraView({ t, videoRef, stream, cameraStatus, photo, a
 
       <header className="camera__top">
         <img className="camera__logo" src="/curiocity-logo.svg" alt="Curiocity" />
+        <button className="icon-btn camera__history" onClick={onOpenHistory} aria-label={t.history} disabled={frozen}>
+          <MdHistory aria-hidden="true" />
+        </button>
       </header>
 
       <div className={`viewfinder${analyzing ? ' viewfinder--analyzing' : ''}`}>

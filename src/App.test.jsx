@@ -23,6 +23,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  localStorage.clear();
 });
 
 const aiContent = {
@@ -34,9 +35,10 @@ const aiContent = {
   relatedObjects: ['pera']
 };
 
-function mockServer({ detect = { object: 'manzana' }, ai = aiContent, aiStatus = 200 } = {}) {
+function mockServer({ detect = { object: 'manzana' }, ai = aiContent, aiStatus = 200, subjects = null } = {}) {
   const fetchMock = vi.fn(async url => {
     if (url.endsWith('/api/detect')) return Response.json(detect);
+    if (url.endsWith('/api/subjects')) return Response.json({ subjects });
     if (url.endsWith('/api/ai')) return aiStatus === 200 ? Response.json(ai) : new Response('', { status: aiStatus });
     throw new Error('unexpected ' + url);
   });
@@ -71,6 +73,44 @@ describe('App', () => {
     // Related object → back to the subject picker for that object
     await user.click(screen.getByRole('button', { name: 'pera' }));
     expect(await screen.findByRole('heading', { name: 'Pera' })).toBeInTheDocument();
+  });
+
+  it('only shows the subjects related to the object', async () => {
+    mockServer({ detect: { object: 'plátano', subjects: ['biologia', 'historia'] } });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    expect(await screen.findByRole('button', { name: 'Biología' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Historia' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Música' })).not.toBeInTheDocument();
+
+    // "other subjects" in the content view is filtered too
+    await user.click(screen.getByRole('button', { name: 'Biología' }));
+    await screen.findByRole('heading', { name: aiContent.title });
+    expect(screen.getByRole('button', { name: /Historia/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Música/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps discoveries in a local history that can be reopened and cleared', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    await screen.findByRole('heading', { name: 'Manzana' });
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
+    await user.click(await screen.findByRole('button', { name: /Manzana/ }));
+    expect(await screen.findByText('¿Qué quieres descubrir?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+    await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
+    await user.click(await screen.findByRole('button', { name: 'Borrar historial' }));
+    await user.click(screen.getByRole('button', { name: 'Toca otra vez para borrar' }));
+    expect(screen.getByText(/Aquí aparecerán tus descubrimientos/)).toBeInTheDocument();
+    expect(localStorage.getItem('curiocity_history_v1')).toBeNull();
   });
 
   it('uses the localized offline content when the AI server fails', async () => {

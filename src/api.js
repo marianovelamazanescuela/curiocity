@@ -40,19 +40,31 @@ async function detectWithCoco(canvas) {
 }
 
 /**
- * Returns { object, person }: object is the main object's name (in the user's language when
- * the Vision API answers) or null; person is true when the photo shows people.
+ * Returns { object, person, subjects }: object is the main object's name (in the user's
+ * language when the Vision API answers) or null; person is true when the photo shows people;
+ * subjects lists the relevant subject keys, or null to show them all (e.g. on-device fallback).
  * Throws only if both detectors fail.
  */
 export async function detectObject(canvas, lang, signal) {
   try {
     const data = await postJson('/api/detect', { image: canvas.toDataURL('image/jpeg', 0.8), language: LANGUAGE_NAMES[lang] }, signal);
-    return { object: data.object || null, person: data.person === true };
+    return { object: data.object || null, person: data.person === true, subjects: data.subjects || null };
   } catch (err) {
     if (err.name === 'AbortError') throw err;
     console.info('Vision API unavailable, falling back to COCO-SSD:', err.message);
   }
-  return detectWithCoco(canvas);
+  return { ...(await detectWithCoco(canvas)), subjects: null };
+}
+
+/** Relevant subject keys for an object name, or null (= show all) if the server can't say. */
+export async function fetchSubjects(objectName, lang, signal) {
+  try {
+    const data = await postJson('/api/subjects', { objectName, language: LANGUAGE_NAMES[lang] }, signal);
+    return data.subjects || null;
+  } catch (err) {
+    if (err.name === 'AbortError') throw err;
+    return null;
+  }
 }
 
 /** Educational content from the AI server, or localized offline templates if it is unavailable. */
