@@ -764,6 +764,48 @@ p {
   margin-bottom: 14px;
 }
 
+/* Age selector (segmented control) */
+.age {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 18px 0 -6px;
+}
+
+.age__label {
+  margin-right: 4px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.age__option {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--pill);
+  background: transparent;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.age__option--on {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+.btn--small {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 16px;
+}
+
+.card__listen {
+  margin-top: 14px;
+  background: color-mix(in srgb, var(--paper) 60%, transparent);
+}
+
 /* =========================================================
    History
    ========================================================= */

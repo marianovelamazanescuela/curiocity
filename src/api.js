@@ -68,9 +68,9 @@ export async function fetchSubjects(objectName, lang, signal) {
 }
 
 /** Educational content from the AI server, or localized offline templates if it is unavailable. */
-export async function fetchContent({ objectName, subject, subjectLabel, lang, signal }) {
+export async function fetchContent({ objectName, subject, subjectLabel, lang, ageGroup, signal }) {
   try {
-    const json = await postJson('/api/ai', { objectName, subject: subject.aiName, language: LANGUAGE_NAMES[lang] }, signal);
+    const json = await postJson('/api/ai', { objectName, subject: subject.aiName, language: LANGUAGE_NAMES[lang], ageGroup }, signal);
     if (json && json.title && json.text) {
       return {
         ...json,

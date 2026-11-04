@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { translations, detectUserLanguage } from './i18n';
+import { translations, detectUserLanguage, loadAgeGroup, saveAgeGroup } from './i18n';
 import { getSubject, subjectsFor } from './subjects';
 import { detectObject, fetchContent, fetchSubjects } from './api';
 import { addToHistory, clearHistory, loadHistory } from './history';
@@ -58,6 +58,7 @@ export default function App() {
   // subjects: array of relevant keys, null = show all, undefined = still loading
   const [detection, setDetection] = useState(null);
   const [history, setHistory] = useState(loadHistory);
+  const [ageGroup, setAgeGroup] = useState(loadAgeGroup);
   const [subjectKey, setSubjectKey] = useState(null);
   const [content, setContent] = useState(null);
   const [toast, setToast] = useState(null);
@@ -125,7 +126,7 @@ export default function App() {
     setContent(null); // show the loading state instead of the previous subject's content
     const signal = newRequest();
     try {
-      const result = await fetchContent({ objectName, subject, subjectLabel: t.subjects[key], lang, signal });
+      const result = await fetchContent({ objectName, subject, subjectLabel: t.subjects[key], lang, ageGroup, signal });
       setContent(result);
     } catch (err) {
       if (err.name !== 'AbortError') console.error(err);
@@ -190,6 +191,11 @@ export default function App() {
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
         subjects={detection.subjects === undefined ? undefined : subjectsFor(detection.subjects)}
+        ageGroup={ageGroup}
+        onAgeChange={age => {
+          setAgeGroup(age);
+          saveAgeGroup(age);
+        }}
         onSelect={key => loadSubject(key)}
         onWrongObject={handleClose}
       />
@@ -202,6 +208,7 @@ export default function App() {
         objectName={detection.object}
         subjectKey={subjectKey}
         subjects={subjectsFor(detection.subjects)}
+        lang={lang}
         content={content}
         onBack={backToSubjects}
         onSelectSubject={key => loadSubject(key)}

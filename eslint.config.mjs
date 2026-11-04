@@ -31,6 +31,12 @@ export default [
     languageOptions: { ecmaVersion: 'latest', sourceType: 'commonjs', globals: globals.node }
   },
 
+  // Service worker (public/sw.js)
+  {
+    files: ['public/sw.js'],
+    languageOptions: { ecmaVersion: 'latest', sourceType: 'script', globals: globals.serviceworker }
+  },
+
   // Tests (ES modules run by Vitest), including server tests
   {
     files: ['**/*.test.{js,jsx}'],

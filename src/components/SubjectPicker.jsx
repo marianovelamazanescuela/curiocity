@@ -1,10 +1,27 @@
+import { AGE_GROUPS } from '../i18n';
 import ObjectHeader from './ObjectHeader';
 
+const AGE_LABEL_KEYS = { '6-8': 'age68', '9-12': 'age912' };
+
 // subjects: the relevant subjects for this object, or undefined while they are being worked out.
-export default function SubjectPicker({ t, photo, objectName, subjects, onSelect, onWrongObject }) {
+export default function SubjectPicker({ t, photo, objectName, subjects, ageGroup, onAgeChange, onSelect, onWrongObject }) {
   return (
     <section>
       <ObjectHeader photo={photo} objectName={objectName} photoAlt={t.capturedPhoto} />
+      <div className="age" role="radiogroup" aria-label={t.age}>
+        <span className="age__label" aria-hidden="true">{t.age}</span>
+        {AGE_GROUPS.map(age => (
+          <button
+            key={age}
+            role="radio"
+            aria-checked={ageGroup === age}
+            className={ageGroup === age ? 'age__option age__option--on' : 'age__option'}
+            onClick={() => onAgeChange(age)}
+          >
+            {t[AGE_LABEL_KEYS[age]]}
+          </button>
+        ))}
+      </div>
       <h3 className="section-title section-title--center">{t.whatToDiscover}</h3>
       {subjects === undefined ? (
         <p className="skeleton__label center" role="status">{t.loading}</p>

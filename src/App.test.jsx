@@ -68,11 +68,52 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: /Khan Academy/ })).toHaveAttribute('href', aiContent.links[0].url);
 
     const aiCall = fetchMock.mock.calls.find(([url]) => url.endsWith('/api/ai'));
-    expect(JSON.parse(aiCall[1].body)).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish' });
+    expect(JSON.parse(aiCall[1].body)).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish', ageGroup: '6-8' });
 
     // Related object → back to the subject picker for that object
     await user.click(screen.getByRole('button', { name: 'pera' }));
     expect(await screen.findByRole('heading', { name: 'Pera' })).toBeInTheDocument();
+  });
+
+  it('sends the chosen age group and remembers it on the device', async () => {
+    const fetchMock = mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    const older = await screen.findByRole('radio', { name: '9–12 años' });
+    expect(screen.getByRole('radio', { name: '6–8 años' })).toBeChecked(); // default
+    await user.click(older);
+    expect(older).toBeChecked();
+    expect(localStorage.getItem('curiocity_age')).toBe('9-12');
+
+    await user.click(screen.getByRole('button', { name: 'Biología' }));
+    await screen.findByRole('heading', { name: aiContent.title });
+    const aiCall = fetchMock.mock.calls.find(([url]) => url.endsWith('/api/ai'));
+    expect(JSON.parse(aiCall[1].body).ageGroup).toBe('9-12');
+  });
+
+  it('reads the content aloud with the device voice, in the child\'s language', async () => {
+    mockServer();
+    const spoken = [];
+    const synth = { speak: vi.fn(u => spoken.push(u)), cancel: vi.fn(), getVoices: () => [] };
+    vi.stubGlobal('speechSynthesis', synth);
+    vi.stubGlobal('SpeechSynthesisUtterance', function (text) { this.text = text; });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: 'Biología' }));
+    await user.click(await screen.findByRole('button', { name: 'Escuchar' }));
+
+    expect(spoken.map(u => u.text)).toEqual([
+      aiContent.title, aiContent.text, 'Primer párrafo.', 'Segundo párrafo.', '¿Sabías que…?', ...aiContent.funFacts
+    ]);
+    expect(spoken[0].lang).toBe('es-ES');
+
+    await user.click(screen.getByRole('button', { name: 'Parar' }));
+    expect(synth.cancel).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Escuchar' })).toBeInTheDocument();
   });
 
   it('only shows the subjects related to the object', async () => {

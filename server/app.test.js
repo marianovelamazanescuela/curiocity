@@ -151,6 +151,17 @@ describe('POST /api/ai', () => {
     expect(openaiCalls).toHaveLength(1);
   });
 
+  it('adapts the text to the age group and caches each age separately', async () => {
+    openaiReply = modelContent();
+    await post('/api/ai', { ...valid, ageGroup: '6-8' });
+    expect(openaiCalls[0].messages[0].content).toMatch(/6-8 years old/);
+    await post('/api/ai', { ...valid, ageGroup: '9-12' });
+    expect(openaiCalls[1].messages[0].content).toMatch(/9-12 years old/);
+    expect(openaiCalls).toHaveLength(2);
+    await post('/api/ai', { ...valid, ageGroup: 'hack' }); // invalid -> default 9-12, served from cache
+    expect(openaiCalls).toHaveLength(2);
+  });
+
   it('returns 502 when the model output is unusable, so the client can use its localized fallback', async () => {
     openaiReply = 'Sorry, I cannot help with that.';
     expect((await post('/api/ai', valid)).status).toBe(502);

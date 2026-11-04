@@ -37,6 +37,11 @@ export const translations = {
     shareIntro: 'Look what I discovered with Curiocity!',
     shareAttachHint: '(Save the photo and attach it to share it too.)',
     capturedPhoto: 'Your photo',
+    listen: 'Listen',
+    stopListening: 'Stop',
+    age: 'I am',
+    age68: '6–8 years old',
+    age912: '9–12 years old',
     history: 'My discoveries',
     historyEmpty: 'Your discoveries will appear here. Take a photo to start!',
     historyPrivacy: 'Saved only on this device.',
@@ -89,6 +94,11 @@ export const translations = {
     shareIntro: '¡Mira lo que he descubierto con Curiocity!',
     shareAttachHint: '(Guarda la foto y adjúntala para compartirla también.)',
     capturedPhoto: 'Tu foto',
+    listen: 'Escuchar',
+    stopListening: 'Parar',
+    age: 'Tengo',
+    age68: '6–8 años',
+    age912: '9–12 años',
     history: 'Mis descubrimientos',
     historyEmpty: 'Aquí aparecerán tus descubrimientos. ¡Haz una foto para empezar!',
     historyPrivacy: 'Se guarda solo en este dispositivo.',
@@ -141,6 +151,11 @@ export const translations = {
     shareIntro: 'Regarde ce que j’ai découvert avec Curiocity !',
     shareAttachHint: '(Enregistre la photo et joins-la pour la partager aussi.)',
     capturedPhoto: 'Ta photo',
+    listen: 'Écouter',
+    stopListening: 'Arrêter',
+    age: 'J’ai',
+    age68: '6–8 ans',
+    age912: '9–12 ans',
     history: 'Mes découvertes',
     historyEmpty: 'Tes découvertes apparaîtront ici. Prends une photo pour commencer !',
     historyPrivacy: 'Enregistré uniquement sur cet appareil.',
@@ -193,6 +208,11 @@ export const translations = {
     shareIntro: 'Schau, was ich mit Curiocity entdeckt habe!',
     shareAttachHint: '(Speichere das Foto und hänge es an, um es auch zu teilen.)',
     capturedPhoto: 'Dein Foto',
+    listen: 'Anhören',
+    stopListening: 'Stopp',
+    age: 'Ich bin',
+    age68: '6–8 Jahre',
+    age912: '9–12 Jahre',
     history: 'Meine Entdeckungen',
     historyEmpty: 'Hier erscheinen deine Entdeckungen. Mach ein Foto, um anzufangen!',
     historyPrivacy: 'Nur auf diesem Gerät gespeichert.',
@@ -209,6 +229,26 @@ export const translations = {
     }
   }
 };
+
+// Age groups: the AI adapts length and vocabulary. Stored only on the device.
+export const AGE_GROUPS = ['6-8', '9-12'];
+const AGE_KEY = 'curiocity_age';
+export function loadAgeGroup() {
+  try {
+    const saved = localStorage.getItem(AGE_KEY);
+    if (AGE_GROUPS.includes(saved)) return saved;
+  } catch {
+    // ignore
+  }
+  return '6-8';
+}
+export function saveAgeGroup(age) {
+  try {
+    localStorage.setItem(AGE_KEY, age);
+  } catch {
+    // ignore
+  }
+}
 
 // Language names sent to the AI so it writes in the child's language.
 export const LANGUAGE_NAMES = { en: 'English', es: 'Spanish', fr: 'French', de: 'German' };

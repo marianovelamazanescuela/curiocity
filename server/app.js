@@ -119,8 +119,13 @@ function cleanSubjects(list) {
 // Low temperature: the content must be accurate, not creative.
 const CONTENT_TEMPERATURE = 0.35;
 
-function contentPrompts({ objectName, subject, language }) {
-  const system = `You write short educational texts for children aged 6-12 in a learning app.
+const AGE_GUIDANCE = {
+  '6-8': 'The reader is 6-8 years old and may be learning to read: very short sentences, the most common words, at most 2 very short paragraphs, 2-3 fun facts.',
+  '9-12': 'The reader is 9-12 years old: short sentences, you may use a few subject words if you explain them simply, up to 3 short paragraphs, 3-5 fun facts.'
+};
+
+function contentPrompts({ objectName, subject, language, ageGroup }) {
+  const system = `You write short educational texts for children in a learning app. ${AGE_GUIDANCE[ageGroup]}
 Rules:
 - Scientific accuracy first. Only state facts you are sure about. If unsure, write less. Never make up facts, numbers or dates.
 - Friendly, positive tone; short sentences; simple vocabulary. Safe for children.
@@ -144,6 +149,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true, time: Date.now() }));
 
 app.post('/api/ai', async (req, res) => {
   const { objectName, subject, language = 'English' } = req.body || {};
+  const ageGroup = req.body && Object.hasOwn(AGE_GUIDANCE, req.body.ageGroup) ? req.body.ageGroup : '9-12';
   if (!objectName || !subject) {
     return res.status(400).json({ error: 'Missing objectName or subject' });
   }
@@ -152,7 +158,7 @@ app.post('/api/ai', async (req, res) => {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
-  const cacheKey = [objectName, subject, language].map(s => s.toLowerCase().trim()).join('::');
+  const cacheKey = [objectName, subject, language, ageGroup].map(s => s.toLowerCase().trim()).join('::');
   const cached = cacheGet(cacheKey);
   if (cached) return res.json(cached);
 
@@ -161,7 +167,7 @@ app.post('/api/ai', async (req, res) => {
   }
 
   try {
-    const { system, user } = contentPrompts({ objectName, subject, language });
+    const { system, user } = contentPrompts({ objectName, subject, language, ageGroup });
     const raw = await callOpenAI({
       messages: [
         { role: 'system', content: system },

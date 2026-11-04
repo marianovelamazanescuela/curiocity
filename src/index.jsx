@@ -8,3 +8,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </React.StrictMode>
 );
+
+// Offline support and faster loading (see public/sw.js). Only in production builds,
+// so the development server always serves fresh files.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.warn('Service worker registration failed:', err));
+  });
+}

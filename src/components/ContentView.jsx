@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { MdArrowBack, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline } from 'react-icons/md';
+import { useEffect, useState } from 'react';
+import { MdArrowBack, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline, MdVolumeUp, MdStop } from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
 import { getSubject } from '../subjects';
 import { buildShareText, downloadDataUrl, mailtoUrl, nativeShare, whatsappUrl } from '../share';
 import ObjectHeader from './ObjectHeader';
+import { useSpeech } from '../useSpeech';
 
 function hostnameOf(url) {
   try {
@@ -69,9 +70,20 @@ function ShareBar({ t, content, photo, onToast }) {
   );
 }
 
-export default function ContentView({ t, photo, objectName, subjectKey, subjects, content, onBack, onSelectSubject, onRelatedObject, onToast }) {
+export default function ContentView({ t, photo, objectName, subjectKey, subjects, lang, content, onBack, onSelectSubject, onRelatedObject, onToast }) {
   const subject = getSubject(subjectKey);
   const paragraphs = content ? String(content.explanation || '').split(/\n\s*\n/).filter(Boolean) : [];
+  const speech = useSpeech(lang);
+  const { stop } = speech;
+
+  // Stop reading when the content changes (another subject or object).
+  useEffect(() => () => stop(), [content, stop]);
+
+  const readAloud = () => {
+    if (speech.speaking) return speech.stop();
+    const factsTitle = content.offline ? t.tryThis : t.funFacts;
+    speech.speak([content.title, content.text, ...paragraphs, content.funFacts.length ? factsTitle : '', ...content.funFacts]);
+  };
 
   return (
     <article className="content" style={{ '--subject': subject.color }}>
@@ -92,6 +104,12 @@ export default function ContentView({ t, photo, objectName, subjectKey, subjects
           <section className="card card--subject">
             <h3 className="card__title">{content.title}</h3>
             <p className="card__lead">{content.text}</p>
+            {speech.supported && (
+              <button className="btn btn--outline btn--small card__listen" onClick={readAloud} aria-pressed={speech.speaking}>
+                {speech.speaking ? <MdStop aria-hidden="true" /> : <MdVolumeUp aria-hidden="true" />}
+                {speech.speaking ? t.stopListening : t.listen}
+              </button>
+            )}
           </section>
 
           {paragraphs.length > 0 && (
