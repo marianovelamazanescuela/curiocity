@@ -102,7 +102,8 @@ export default function ContentView({ t, photo, objectName, subjectKey, content,
 
           {content.funFacts.length > 0 && (
             <section>
-              <h3 className="section-title">{t.funFacts}</h3>
+              {/* Offline templates contain activities, not facts */}
+              <h3 className="section-title">{content.offline ? t.tryThis : t.funFacts}</h3>
               <ul className="facts">
                 {content.funFacts.map((fact, i) => (
                   <li key={i} className="facts__item">

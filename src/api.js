@@ -33,18 +33,21 @@ function loadCocoModel() {
 async function detectWithCoco(canvas) {
   const model = await loadCocoModel();
   const predictions = await model.detect(canvas);
-  if (!predictions.length) return null;
-  return predictions.reduce((a, b) => (a.score > b.score ? a : b)).class;
+  if (!predictions.length) return { object: null };
+  const best = predictions.reduce((a, b) => (a.score > b.score ? a : b)).class;
+  // Same rule as the server: never describe people.
+  return best === 'person' ? { object: null, person: true } : { object: best };
 }
 
 /**
- * Returns the main object's name (in the user's language when the Vision API answers),
- * or null if nothing recognisable is in the picture. Throws only if both detectors fail.
+ * Returns { object, person }: object is the main object's name (in the user's language when
+ * the Vision API answers) or null; person is true when the photo shows people.
+ * Throws only if both detectors fail.
  */
 export async function detectObject(canvas, lang, signal) {
   try {
     const data = await postJson('/api/detect', { image: canvas.toDataURL('image/jpeg', 0.8), language: LANGUAGE_NAMES[lang] }, signal);
-    return data.object || null;
+    return { object: data.object || null, person: data.person === true };
   } catch (err) {
     if (err.name === 'AbortError') throw err;
     console.info('Vision API unavailable, falling back to COCO-SSD:', err.message);

@@ -44,9 +44,19 @@ describe('buildFallbackContent', () => {
       for (const { key } of SUBJECTS) {
         const c = buildFallbackContent('Manzana', key, translations[lang].subjects[key], lang);
         expect(c.title).toContain(translations[lang].subjects[key]);
-        expect(c.text).toContain('Manzana');
+        expect(c.title).toContain('Manzana');
         expect(c.funFacts.length).toBeGreaterThan(0);
         expect(c.links).toEqual([]);
+        expect(c.offline).toBe(true);
+      }
+    }
+  });
+
+  it('never makes claims about the specific object (it is unknown offline)', () => {
+    for (const lang of Object.keys(translations)) {
+      for (const { key } of SUBJECTS) {
+        const c = buildFallbackContent('Manzana', key, 'X', lang);
+        expect([c.text, c.explanation, ...c.funFacts].join(' ')).not.toContain('Manzana');
       }
     }
   });

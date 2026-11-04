@@ -81,8 +81,10 @@ export default function App() {
     const signal = newRequest();
 
     try {
-      const object = await detectObject(canvas, lang, signal);
-      setDetection(object ? { status: 'found', object: capitalize(object), fromPhoto: true } : { status: 'none' });
+      const { object, person } = await detectObject(canvas, lang, signal);
+      if (person) setDetection({ status: 'person' });
+      else if (object) setDetection({ status: 'found', object: capitalize(object), fromPhoto: true });
+      else setDetection({ status: 'none' });
     } catch (err) {
       if (err.name === 'AbortError') return;
       console.error('Detection failed:', err);
@@ -128,11 +130,16 @@ export default function App() {
 
   let sheetBody = null;
   if (detection && detection.status !== 'found') {
-    const isError = detection.status === 'error';
+    const messages = {
+      error: [t.detectionError, t.detectionErrorDesc],
+      person: [t.personTitle, t.personDesc],
+      none: [t.noObject, t.noObjectDesc]
+    };
+    const [title, text] = messages[detection.status] || messages.none;
     sheetBody = (
       <div className="message">
-        <h2 className="message__title">{isError ? t.detectionError : t.noObject}</h2>
-        <p className="message__text">{isError ? t.detectionErrorDesc : t.noObjectDesc}</p>
+        <h2 className="message__title">{title}</h2>
+        <p className="message__text">{text}</p>
         <button className="btn btn--primary" onClick={handleClose}>{t.retake}</button>
       </div>
     );

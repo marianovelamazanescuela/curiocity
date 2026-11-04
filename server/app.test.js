@@ -7,24 +7,43 @@ let base;
 let mod;
 let openaiReply; // what the mocked OpenAI returns next: string content, or { status }
 let openaiCalls;
+let wikiPages; // host -> Set of existing page titles in the mocked encyclopedias
+let wikiCalls;
 
 const post = (path, body, headers = {}) =>
   realFetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
+
+// Minimal MediaWiki API mock: exact-title lookup and intitle: search.
+function mockMediaWiki(url) {
+  const u = new URL(url);
+  const pages = wikiPages[u.hostname] || new Set();
+  wikiCalls.push(u.hostname);
+  const titles = u.searchParams.get('titles');
+  if (titles) {
+    const found = pages.has(titles);
+    return Response.json({ query: { pages: [found ? { pageid: 1, title: titles } : { title: titles, missing: true }] } });
+  }
+  const term = (u.searchParams.get('srsearch') || '').replace(/^intitle:/, '');
+  const hit = [...pages].find(p => p.toLowerCase().includes(term.toLowerCase()));
+  return Response.json({ query: { search: hit ? [{ title: hit }] : [] } });
+}
 
 beforeAll(async () => {
   process.env.OPENAI_API_KEY = 'sk-test';
   process.env.RATE_LIMIT_PER_15MIN = '1000';
   process.env.NODE_ENV = 'development';
 
-  // Intercept only OpenAI calls; requests to our own server go through untouched.
+  // Intercept OpenAI and encyclopedia calls; requests to our own server go through untouched.
   vi.stubGlobal('fetch', async (url, opts) => {
-    if (String(url).startsWith('https://api.openai.com')) {
+    const s = String(url);
+    if (s.startsWith('https://api.openai.com')) {
       openaiCalls.push(JSON.parse(opts.body));
       if (openaiReply && typeof openaiReply === 'object') {
         return new Response('upstream error', { status: openaiReply.status });
       }
       return Response.json({ choices: [{ message: { content: openaiReply } }] });
     }
+    if (/vikidia\.org|wikipedia\.org|klexikon\.zum\.de/.test(s)) return mockMediaWiki(s);
     return realFetch(url, opts);
   });
 
@@ -43,20 +62,9 @@ afterAll(() => {
 beforeEach(() => {
   openaiCalls = [];
   openaiReply = '';
+  wikiCalls = [];
+  wikiPages = {};
   mod.cache.clear();
-});
-
-describe('isAllowedLink', () => {
-  it.each([
-    ['https://www.khanacademy.org/science', true],
-    ['https://khanacademy.org', true],
-    ['https://es.wikipedia.org/wiki/Manzana', true],
-    ['https://khanacademy.org.evil.com/', false],
-    ['https://notkhanacademy.org/', false],
-    ['ftp://khanacademy.org/file', false]
-  ])('%s → %s', (url, expected) => {
-    expect(mod.isAllowedLink(new URL(url))).toBe(expected);
-  });
 });
 
 describe('GET /api/health', () => {
@@ -80,7 +88,17 @@ describe('CORS', () => {
 });
 
 describe('POST /api/ai', () => {
-  const valid = { objectName: 'apple', subject: 'Biology', language: 'Spanish' };
+  const valid = { objectName: 'Girasol', subject: 'Biology', language: 'Spanish' };
+  const modelContent = (extra = {}) =>
+    JSON.stringify({
+      title: 'El girasol',
+      text: 'Intro',
+      explanation: ['Uno', 'Dos'],
+      funFacts: ['a', 'b'],
+      relatedObjects: ['abeja', 'semilla', 'sol', 'extra'],
+      searchTerms: ['Helianthus annuus'],
+      ...extra
+    });
 
   it('rejects missing or oversized fields', async () => {
     expect((await post('/api/ai', {})).status).toBe(400);
@@ -89,41 +107,53 @@ describe('POST /api/ai', () => {
     expect(openaiCalls).toHaveLength(0);
   });
 
-  it('sanitises model output, filters links and caches the result', async () => {
-    openaiReply = JSON.stringify({
-      title: 'La manzana',
-      text: 'Intro',
-      explanation: ['Uno', 'Dos'],
-      funFacts: ['a', 'b'],
-      links: [
-        { title: 'Khan', url: 'https://www.khanacademy.org/apple' },
-        { title: 'Phish', url: 'https://khanacademy.org.evil.com/' },
-        { title: 'Bad', url: 'not a url' }
-      ],
-      relatedObjects: ['pera', 'semilla', 'árbol', 'extra']
-    });
+  it('never uses URLs from the model: links come from real encyclopedia pages', async () => {
+    wikiPages = { 'es.vikidia.org': new Set(['Helianthus annuus']), 'es.wikipedia.org': new Set(['Helianthus annuus']) };
+    openaiReply = modelContent({ links: [{ title: 'Invented', url: 'https://www.khanacademy.org/made-up' }] });
 
-    const r = await post('/api/ai', valid);
-    expect(r.status).toBe(200);
-    const body = await r.json();
-    expect(body.title).toBe('La manzana');
+    const body = await (await post('/api/ai', valid)).json();
+    expect(body.links).toEqual([
+      { title: 'Helianthus annuus', url: 'https://es.vikidia.org/wiki/Helianthus_annuus', source: 'Vikidia' },
+      { title: 'Helianthus annuus', url: 'https://es.wikipedia.org/wiki/Helianthus_annuus', source: 'Wikipedia' }
+    ]);
+    expect(JSON.stringify(body)).not.toContain('made-up');
+    expect(body).not.toHaveProperty('searchTerms');
+  });
+
+  it('returns no links when no article exists', async () => {
+    openaiReply = modelContent();
+    const body = await (await post('/api/ai', valid)).json();
+    expect(body.links).toEqual([]);
+  });
+
+  it('uses the encyclopedias of the requested language', async () => {
+    wikiPages = { 'klexikon.zum.de': new Set(['Sonnenblume']) };
+    openaiReply = modelContent({ searchTerms: ['Sonnenblume'] });
+    const body = await (await post('/api/ai', { ...valid, language: 'German' })).json();
+    expect(body.links).toEqual([{ title: 'Sonnenblume', url: 'https://klexikon.zum.de/wiki/Sonnenblume', source: 'Klexikon' }]);
+    expect(new Set(wikiCalls)).toEqual(new Set(['klexikon.zum.de', 'de.wikipedia.org']));
+  });
+
+  it('sanitises output, asks for accuracy with a low temperature, and caches', async () => {
+    openaiReply = modelContent();
+    const body = await (await post('/api/ai', valid)).json();
+    expect(body.title).toBe('El girasol');
     expect(body.explanation).toBe('Uno\n\nDos');
-    expect(body.links).toEqual([{ title: 'Khan', url: 'https://www.khanacademy.org/apple', source: '' }]);
-    expect(body.relatedObjects).toEqual(['pera', 'semilla', 'árbol']);
+    expect(body.relatedObjects).toEqual(['abeja', 'semilla', 'sol']);
 
-    // The language reaches the prompt and JSON mode is requested
-    expect(openaiCalls[0].response_format).toEqual({ type: 'json_object' });
-    expect(openaiCalls[0].messages[0].content).toContain('Spanish');
+    const call = openaiCalls[0];
+    expect(call.response_format).toEqual({ type: 'json_object' });
+    expect(call.temperature).toBeLessThanOrEqual(0.4);
+    expect(call.messages[0].content).toContain('Spanish');
+    expect(call.messages[0].content).toMatch(/Never include URLs/);
 
-    // Second identical request is served from the cache
-    await post('/api/ai', { ...valid, objectName: '  APPLE ' });
+    await post('/api/ai', { ...valid, objectName: '  GIRASOL ' });
     expect(openaiCalls).toHaveLength(1);
   });
 
   it('returns 502 when the model output is unusable, so the client can use its localized fallback', async () => {
     openaiReply = 'Sorry, I cannot help with that.';
-    const r = await post('/api/ai', valid);
-    expect(r.status).toBe(502);
+    expect((await post('/api/ai', valid)).status).toBe(502);
   });
 
   it('returns 502 when OpenAI fails', async () => {
@@ -141,17 +171,23 @@ describe('POST /api/detect', () => {
     expect(openaiCalls).toHaveLength(0);
   });
 
-  it('returns the detected object name, trimmed', async () => {
-    openaiReply = ' "manzana roja". ';
+  it('returns the detected object name, trimmed, in the requested language', async () => {
+    openaiReply = JSON.stringify({ object: ' "manzana roja". ', person: false });
     const r = await post('/api/detect', { image, language: 'Spanish' });
     expect(await r.json()).toEqual({ object: 'manzana roja' });
     expect(openaiCalls[0].messages[0].content[0].text).toContain('Spanish');
   });
 
-  it('returns null when there is no clear object', async () => {
-    openaiReply = 'none';
+  it('never describes people', async () => {
+    openaiReply = JSON.stringify({ object: 'girl with glasses', person: true });
     const r = await post('/api/detect', { image });
-    expect(await r.json()).toEqual({ object: null });
+    expect(await r.json()).toEqual({ object: null, person: true });
+    expect(openaiCalls[0].messages[0].content[0].text).toMatch(/Never describe or identify people/);
+  });
+
+  it('returns null when there is no clear object', async () => {
+    openaiReply = JSON.stringify({ object: null, person: false });
+    expect(await (await post('/api/detect', { image })).json()).toEqual({ object: null });
   });
 });
 

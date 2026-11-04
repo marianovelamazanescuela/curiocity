@@ -1,139 +1,143 @@
-// Offline templates used when the AI server is unreachable or returns unusable output.
-// o = object name, s = translated subject label.
+// Offline content used when the AI server is unreachable or returns unusable output.
+//
+// These templates know nothing about the real object, so they never state facts about it
+// ("it lives and grows" would be false for a bottle). Instead they explain what the subject
+// looks at and propose questions and safe activities, so the child investigates.
+// The object name only appears in the title, which avoids grammar problems (gender, articles).
 const TEMPLATES = {
-  en: {
-    title: (s, o) => `${s}: getting to know ${o}`,
-    intro: (s, o) => `Let's discover what ${o} is and why it's interesting from the ${s} perspective.`,
+  es: {
+    title: (s, o) => `${s}: ${o}`,
+    intro: 'Ahora no puedo preparar tu explicación, ¡pero puedes investigar tú! Aquí tienes algunas preguntas y actividades sobre tu objeto.',
     subjects: {
       biologia: {
-        explanation: o => `${o} can be part of nature. We can observe how it lives, what it needs and how it grows. In biology we study bodies, life cycles and habitats to understand how living things interact.`,
-        funFacts: o => [`Observing ${o} can teach us about adaptation and survival.`, 'Try simple experiments to see how it reacts to light, water or food.']
+        explanation: 'La biología estudia los seres vivos: plantas, animales, hongos y personas. Piensa en tu objeto: ¿es un ser vivo? ¿Lo fue alguna vez? ¿Está hecho de algo que vino de una planta o de un animal?',
+        activities: ['Obsérvalo de cerca, con lupa si tienes, y dibuja los detalles que descubras.', 'Haz una lista de seres vivos que podrían usarlo, comerlo o vivir cerca de él.']
       },
       geologia: {
-        explanation: o => `${o} can tell stories about the Earth. In geology we look at what it is made of, how it formed and what signs it leaves on the landscape.`,
-        funFacts: o => [`Sometimes ${o} is made from materials that formed millions of years ago.`, 'Its shape and texture help us understand processes like erosion or sedimentation.']
+        explanation: 'La geología estudia la Tierra: las rocas, los minerales, el suelo y cómo cambian con el tiempo. Pregúntate: ¿de qué materiales está hecho tu objeto? ¿Alguno de ellos viene de debajo de la tierra?',
+        activities: ['Toca tu objeto y describe su textura: ¿es duro o blando, rugoso o liso?', 'Investiga con un adulto de dónde salen los materiales con los que está hecho.']
       },
       historia: {
-        explanation: o => `${o} can be a clue to the past. In history we investigate who used it, when and why. Objects help us imagine how people lived before.`,
-        funFacts: () => ['A simple object can reveal customs, technology or art from other times.', 'Ask: who made it? What was it used for?']
+        explanation: 'La historia estudia cómo vivían las personas en el pasado. Pregúntate: ¿existía tu objeto hace cien años? ¿Y hace mil? ¿Cómo crees que era antes?',
+        activities: ['Pregunta a una persona mayor si recuerda cómo era tu objeto cuando era pequeña.', 'Dibuja cómo crees que era tu objeto hace mucho tiempo y cómo será en el futuro.']
       },
       matematicas: {
-        explanation: o => `With maths we can measure ${o}, count its parts, compare sizes and look for patterns. Numbers and shapes help us describe it precisely.`,
-        funFacts: o => ['Measure its length, height or volume with a ruler or a measuring cup.', `Looking for patterns in ${o} (like repeated shapes) is a great logic exercise.`]
+        explanation: 'Las matemáticas nos ayudan a medir, contar y encontrar patrones. Pregúntate: ¿cuánto mide tu objeto? ¿Qué formas geométricas ves en él?',
+        activities: ['Mide tu objeto con una regla o con tu mano y apunta el resultado.', 'Busca en él círculos, triángulos, rectángulos o formas que se repitan.']
       },
       lengua: {
-        explanation: o => `We can write a story or poem about ${o}. Describe it with adjectives, comparisons and questions to practise expressing yourself.`,
-        funFacts: o => [`Describe ${o} with five different adjectives.`, `Invent a story where ${o} is the main character.`]
+        explanation: 'Con las palabras podemos describir el mundo y contar historias. Pregúntate: ¿qué palabras usarías para describir tu objeto a alguien que no puede verlo?',
+        activities: ['Describe tu objeto con cinco adjetivos diferentes.', 'Inventa una historia corta en la que tu objeto sea el protagonista.']
       },
       musica: {
-        explanation: o => `In music we can think about the sounds ${o} reminds us of. Maybe it has a rhythm or tone that could inspire a melody.`,
-        funFacts: o => [`Imagine which instrument would sound like ${o} and clap a rhythm.`, 'Turn its name into a short song or chorus.']
+        explanation: 'La música se hace con sonidos, ritmos y silencios. Pregúntate: ¿tu objeto hace algún sonido? ¿Cómo sonaría si lo tocas suavemente?',
+        activities: ['Con permiso de un adulto, prueba qué sonidos suaves puede hacer y crea un ritmo con ellos.', 'Inventa una canción corta con el nombre de tu objeto.']
       },
       artes: {
-        explanation: o => `In art we can draw, paint or sculpt ${o}. Look at its colours, textures and shapes to create a work inspired by it.`,
-        funFacts: o => [`Draw ${o} using only two colours.`, 'Create an abstract version focusing on its shapes.']
+        explanation: 'En el arte observamos colores, formas y texturas para crear. Pregúntate: ¿qué colores tiene tu objeto? ¿Qué forma tiene si lo miras desde arriba?',
+        activities: ['Dibuja tu objeto usando solo dos colores.', 'Haz una versión abstracta: dibuja solo sus formas principales.']
       }
     }
   },
-  es: {
-    title: (s, o) => `${s}: conociendo ${o}`,
-    intro: (s, o) => `Descubramos qué es ${o} y por qué es interesante desde ${s}.`,
+  en: {
+    title: (s, o) => `${s}: ${o}`,
+    intro: "I can't prepare your explanation right now, but you can investigate it yourself! Here are some questions and activities about your object.",
     subjects: {
       biologia: {
-        explanation: o => `${o} puede ser parte de la naturaleza. Podemos observar cómo vive, qué necesita y cómo crece. En biología estudiamos cuerpos, ciclos de vida y hábitats para entender cómo se relacionan los seres vivos.`,
-        funFacts: o => [`Observar ${o} puede enseñarnos sobre adaptación y supervivencia.`, 'Haz experimentos sencillos para ver cómo reacciona a la luz, el agua o la comida.']
+        explanation: 'Biology studies living things: plants, animals, fungi and people. Think about your object: is it alive? Was it ever alive? Is it made of something that came from a plant or an animal?',
+        activities: ['Look at it closely, with a magnifying glass if you have one, and draw the details you find.', 'Make a list of living things that might use it, eat it or live near it.']
       },
       geologia: {
-        explanation: o => `${o} puede contar historias de la Tierra. En geología miramos de qué está hecho, cómo se formó y qué señales deja en el paisaje.`,
-        funFacts: o => [`A veces ${o} está hecho de materiales formados hace millones de años.`, 'Su forma y textura ayudan a entender procesos como la erosión o la sedimentación.']
+        explanation: 'Geology studies the Earth: rocks, minerals, soil and how they change over time. Ask yourself: what materials is your object made of? Do any of them come from under the ground?',
+        activities: ['Touch your object and describe its texture: is it hard or soft, rough or smooth?', 'With an adult, find out where the materials it is made of come from.']
       },
       historia: {
-        explanation: o => `${o} puede ser una pista del pasado. En historia investigamos quién lo usó, cuándo y por qué. Los objetos nos ayudan a imaginar cómo vivía la gente antes.`,
-        funFacts: () => ['Un objeto sencillo puede mostrar costumbres, tecnología o arte de otras épocas.', 'Pregunta: ¿quién lo hizo? ¿Para qué se usaba?']
+        explanation: 'History studies how people lived in the past. Ask yourself: did your object exist a hundred years ago? A thousand years ago? What do you think it was like before?',
+        activities: ['Ask an older person if they remember what your object was like when they were young.', 'Draw what you think your object looked like long ago and what it will look like in the future.']
       },
       matematicas: {
-        explanation: o => `Con las matemáticas podemos medir ${o}, contar sus partes, comparar tamaños y buscar patrones. Los números y las formas nos ayudan a describirlo con precisión.`,
-        funFacts: o => ['Mide su largo, alto o volumen con una regla o un recipiente.', `Buscar patrones en ${o} (formas repetidas) es un gran ejercicio de lógica.`]
+        explanation: 'Maths helps us measure, count and find patterns. Ask yourself: how big is your object? What shapes can you see in it?',
+        activities: ['Measure your object with a ruler or your hand and write down the result.', 'Look for circles, triangles, rectangles or repeating shapes in it.']
       },
       lengua: {
-        explanation: o => `Podemos escribir un cuento o un poema sobre ${o}. Descríbelo con adjetivos, comparaciones y preguntas para practicar la expresión.`,
-        funFacts: o => [`Describe ${o} con cinco adjetivos diferentes.`, `Inventa una historia donde ${o} sea el personaje principal.`]
+        explanation: 'With words we can describe the world and tell stories. Ask yourself: what words would you use to describe your object to someone who cannot see it?',
+        activities: ['Describe your object with five different adjectives.', 'Make up a short story where your object is the main character.']
       },
       musica: {
-        explanation: o => `En música podemos pensar qué sonidos nos recuerda ${o}. Tal vez tiene un ritmo o un tono que inspire una melodía.`,
-        funFacts: o => [`Imagina qué instrumento sonaría como ${o} y marca un ritmo.`, 'Convierte su nombre en una pequeña canción o estribillo.']
+        explanation: 'Music is made of sounds, rhythms and silences. Ask yourself: does your object make any sound? What would it sound like if you tapped it gently?',
+        activities: ['With an adult’s permission, try the gentle sounds it can make and create a rhythm with them.', 'Make up a short song with the name of your object.']
       },
       artes: {
-        explanation: o => `En arte podemos dibujar, pintar o esculpir ${o}. Observa sus colores, texturas y formas para crear una obra inspirada en él.`,
-        funFacts: o => [`Dibuja ${o} usando solo dos colores.`, 'Crea una versión abstracta fijándote en sus formas.']
+        explanation: 'In art we look at colours, shapes and textures to create. Ask yourself: what colours does your object have? What shape is it when you look at it from above?',
+        activities: ['Draw your object using only two colours.', 'Make an abstract version: draw only its main shapes.']
       }
     }
   },
   fr: {
-    title: (s, o) => `${s} : découvrir ${o}`,
-    intro: (s, o) => `Découvrons ce qu'est ${o} et pourquoi c'est intéressant en ${s}.`,
+    title: (s, o) => `${s} : ${o}`,
+    intro: 'Je ne peux pas préparer ton explication pour le moment, mais tu peux enquêter toi-même ! Voici des questions et des activités sur ton objet.',
     subjects: {
       biologia: {
-        explanation: o => `${o} peut faire partie de la nature. On peut observer comment il vit, ce dont il a besoin et comment il grandit. En biologie, on étudie les corps, les cycles de vie et les habitats.`,
-        funFacts: o => [`Observer ${o} peut nous apprendre l'adaptation et la survie.`, "Fais des expériences simples pour voir sa réaction à la lumière, à l'eau ou à la nourriture."]
+        explanation: 'La biologie étudie les êtres vivants : plantes, animaux, champignons et humains. Pense à ton objet : est-il vivant ? L’a-t-il déjà été ? Est-il fait de quelque chose qui vient d’une plante ou d’un animal ?',
+        activities: ['Observe-le de près, avec une loupe si tu en as une, et dessine les détails que tu découvres.', 'Fais une liste des êtres vivants qui pourraient l’utiliser, le manger ou vivre près de lui.']
       },
       geologia: {
-        explanation: o => `${o} peut raconter l'histoire de la Terre. En géologie, on regarde de quoi il est fait, comment il s'est formé et quelles traces il laisse.`,
-        funFacts: o => [`Parfois ${o} est fait de matériaux très anciens.`, "Sa forme et sa texture aident à comprendre l'érosion ou la sédimentation."]
+        explanation: 'La géologie étudie la Terre : les roches, les minéraux, le sol et leurs changements. Demande-toi : de quelles matières ton objet est-il fait ? L’une d’elles vient-elle du sous-sol ?',
+        activities: ['Touche ton objet et décris sa texture : est-il dur ou mou, rugueux ou lisse ?', 'Cherche avec un adulte d’où viennent les matières qui le composent.']
       },
       historia: {
-        explanation: o => `${o} peut être un indice du passé. En histoire, on cherche qui l'a utilisé, quand et pourquoi.`,
-        funFacts: () => ["Un objet simple peut révéler des coutumes, des technologies ou de l'art d'autrefois.", "Demande : qui l'a fabriqué ? À quoi servait-il ?"]
+        explanation: 'L’histoire étudie la vie des gens dans le passé. Demande-toi : ton objet existait-il il y a cent ans ? Et il y a mille ans ? Comment était-il avant ?',
+        activities: ['Demande à une personne âgée si elle se souvient de ton objet quand elle était petite.', 'Dessine ton objet tel qu’il était il y a longtemps et tel qu’il sera dans le futur.']
       },
       matematicas: {
-        explanation: o => `En mathématiques, on peut mesurer ${o}, compter ses parties, comparer des tailles et chercher des motifs.`,
-        funFacts: o => ['Mesure sa longueur, sa hauteur ou son volume.', `Chercher des motifs dans ${o} est un bon exercice de logique.`]
+        explanation: 'Les mathématiques nous aident à mesurer, compter et trouver des motifs. Demande-toi : quelle taille fait ton objet ? Quelles formes géométriques vois-tu ?',
+        activities: ['Mesure ton objet avec une règle ou avec ta main et note le résultat.', 'Cherche des cercles, des triangles, des rectangles ou des formes qui se répètent.']
       },
       lengua: {
-        explanation: o => `On peut écrire une histoire ou un poème sur ${o}. Décris-le avec des adjectifs et des comparaisons.`,
-        funFacts: o => [`Décris ${o} avec cinq adjectifs différents.`, `Invente une histoire où ${o} est le personnage principal.`]
+        explanation: 'Avec les mots, on peut décrire le monde et raconter des histoires. Demande-toi : quels mots utiliserais-tu pour décrire ton objet à quelqu’un qui ne le voit pas ?',
+        activities: ['Décris ton objet avec cinq adjectifs différents.', 'Invente une petite histoire dont ton objet est le héros.']
       },
       musica: {
-        explanation: o => `En musique, on peut imaginer les sons que ${o} évoque. Peut-être un rythme ou une mélodie.`,
-        funFacts: o => [`Imagine quel instrument ressemblerait à ${o} et tape un rythme.`, 'Transforme son nom en une petite chanson.']
+        explanation: 'La musique est faite de sons, de rythmes et de silences. Demande-toi : ton objet fait-il un bruit ? Comment sonnerait-il si tu le tapotais doucement ?',
+        activities: ['Avec la permission d’un adulte, essaie les sons doux qu’il peut faire et crée un rythme.', 'Invente une petite chanson avec le nom de ton objet.']
       },
       artes: {
-        explanation: o => `En art, on peut dessiner, peindre ou sculpter ${o}. Observe ses couleurs, ses textures et ses formes.`,
-        funFacts: o => [`Dessine ${o} avec seulement deux couleurs.`, 'Crée une version abstraite centrée sur ses formes.']
+        explanation: 'En art, on observe les couleurs, les formes et les textures pour créer. Demande-toi : quelles couleurs a ton objet ? Quelle forme a-t-il vu d’en haut ?',
+        activities: ['Dessine ton objet avec seulement deux couleurs.', 'Fais une version abstraite : dessine seulement ses formes principales.']
       }
     }
   },
   de: {
-    title: (s, o) => `${s}: ${o} entdecken`,
-    intro: (s, o) => `Entdecken wir, was ${o} ist und warum es im Fach ${s} spannend ist.`,
+    title: (s, o) => `${s}: ${o}`,
+    intro: 'Ich kann deine Erklärung gerade nicht vorbereiten, aber du kannst selbst forschen! Hier sind Fragen und Ideen zu deinem Gegenstand.',
     subjects: {
       biologia: {
-        explanation: o => `${o} kann ein Teil der Natur sein. Wir können beobachten, wie es lebt, was es braucht und wie es wächst. In der Biologie untersuchen wir Körper, Lebenszyklen und Lebensräume.`,
-        funFacts: o => [`Durch das Beobachten von ${o} lernen wir etwas über Anpassung und Überleben.`, 'Probiere einfache Experimente mit Licht, Wasser oder Nahrung.']
+        explanation: 'Die Biologie erforscht Lebewesen: Pflanzen, Tiere, Pilze und Menschen. Denk an deinen Gegenstand: Lebt er? Hat er einmal gelebt? Ist er aus etwas gemacht, das von einer Pflanze oder einem Tier stammt?',
+        activities: ['Schau ihn dir genau an, mit einer Lupe, wenn du eine hast, und zeichne die Details.', 'Schreib auf, welche Lebewesen ihn benutzen, fressen oder in seiner Nähe leben könnten.']
       },
       geologia: {
-        explanation: o => `${o} kann Geschichten über die Erde erzählen. In der Geologie schauen wir, woraus es besteht und wie es entstanden ist.`,
-        funFacts: () => ['Manche Dinge bestehen aus Materialien, die vor Millionen Jahren entstanden sind.', 'Form und Oberfläche helfen, Erosion oder Ablagerung zu verstehen.']
+        explanation: 'Die Geologie erforscht die Erde: Gesteine, Mineralien, den Boden und wie sie sich verändern. Frag dich: Aus welchen Materialien besteht dein Gegenstand? Kommt eines davon aus der Erde?',
+        activities: ['Fühle deinen Gegenstand und beschreibe ihn: Ist er hart oder weich, rau oder glatt?', 'Finde mit einem Erwachsenen heraus, woher seine Materialien kommen.']
       },
       historia: {
-        explanation: o => `${o} kann ein Hinweis auf die Vergangenheit sein. In Geschichte fragen wir: Wer hat es benutzt, wann und warum?`,
-        funFacts: () => ['Ein einfaches Objekt zeigt Bräuche, Technik oder Kunst von früher.', 'Frage: Wer hat es gemacht? Wozu diente es?']
+        explanation: 'Die Geschichte erforscht, wie Menschen früher gelebt haben. Frag dich: Gab es deinen Gegenstand schon vor hundert Jahren? Vor tausend Jahren? Wie sah er früher aus?',
+        activities: ['Frag einen älteren Menschen, wie dein Gegenstand früher aussah.', 'Zeichne, wie dein Gegenstand vor langer Zeit aussah und wie er in der Zukunft aussehen wird.']
       },
       matematicas: {
-        explanation: o => `In Mathe messen wir ${o}, zählen Teile, vergleichen Größen und suchen Muster.`,
-        funFacts: o => ['Miss Länge, Höhe oder Volumen mit Lineal oder Messbecher.', `Muster in ${o} zu finden ist ein gutes Logiktraining.`]
+        explanation: 'Mathe hilft uns, zu messen, zu zählen und Muster zu finden. Frag dich: Wie groß ist dein Gegenstand? Welche Formen siehst du daran?',
+        activities: ['Miss deinen Gegenstand mit einem Lineal oder deiner Hand und schreib das Ergebnis auf.', 'Such nach Kreisen, Dreiecken, Rechtecken oder Formen, die sich wiederholen.']
       },
       lengua: {
-        explanation: o => `Wir können eine Geschichte oder ein Gedicht über ${o} schreiben und es mit Adjektiven beschreiben.`,
-        funFacts: o => [`Beschreibe ${o} mit fünf verschiedenen Adjektiven.`, `Erfinde eine Geschichte, in der ${o} die Hauptfigur ist.`]
+        explanation: 'Mit Wörtern können wir die Welt beschreiben und Geschichten erzählen. Frag dich: Mit welchen Wörtern würdest du deinen Gegenstand jemandem beschreiben, der ihn nicht sieht?',
+        activities: ['Beschreibe deinen Gegenstand mit fünf verschiedenen Adjektiven.', 'Erfinde eine kurze Geschichte, in der dein Gegenstand die Hauptfigur ist.']
       },
       musica: {
-        explanation: o => `In Musik überlegen wir, an welche Klänge uns ${o} erinnert. Vielleicht an einen Rhythmus oder eine Melodie.`,
-        funFacts: o => [`Stell dir ein Instrument vor, das wie ${o} klingt, und klatsche einen Rhythmus.`, 'Mach aus dem Namen eine kleine Melodie.']
+        explanation: 'Musik besteht aus Klängen, Rhythmen und Pausen. Frag dich: Macht dein Gegenstand ein Geräusch? Wie klingt er, wenn du sanft darauf tippst?',
+        activities: ['Probiere mit Erlaubnis eines Erwachsenen leise Klänge aus und mach daraus einen Rhythmus.', 'Erfinde ein kurzes Lied mit dem Namen deines Gegenstands.']
       },
       artes: {
-        explanation: o => `In Kunst können wir ${o} zeichnen, malen oder modellieren. Achte auf Farben, Texturen und Formen.`,
-        funFacts: o => [`Zeichne ${o} nur mit zwei Farben.`, 'Erstelle eine abstrakte Version, die die Formen betont.']
+        explanation: 'In der Kunst schauen wir auf Farben, Formen und Oberflächen, um etwas zu gestalten. Frag dich: Welche Farben hat dein Gegenstand? Welche Form hat er von oben gesehen?',
+        activities: ['Zeichne deinen Gegenstand mit nur zwei Farben.', 'Mach eine abstrakte Version: Zeichne nur seine wichtigsten Formen.']
       }
     }
   }
@@ -144,11 +148,11 @@ export function buildFallbackContent(objectName, subjectKey, subjectLabel, lang)
   const block = tpl.subjects[subjectKey] || tpl.subjects.biologia;
   return {
     title: tpl.title(subjectLabel, objectName),
-    text: tpl.intro(subjectLabel, objectName),
-    explanation: block.explanation(objectName),
-    funFacts: block.funFacts(objectName),
+    text: tpl.intro,
+    explanation: block.explanation,
+    funFacts: block.activities,
     links: [],
     relatedObjects: [],
-    offline: true
+    offline: true // the UI titles the list "Try this" instead of "Did you know…?"
   };
 }

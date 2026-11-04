@@ -80,7 +80,20 @@ describe('App', () => {
 
     await takePhoto(user);
     await user.click(await screen.findByRole('button', { name: /Arte/ }));
-    expect(await screen.findByRole('heading', { name: 'Arte: conociendo Manzana' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Arte: Manzana' })).toBeInTheDocument();
+    // offline templates are activities, so the list isn't titled "Did you know…?"
+    expect(screen.getByRole('heading', { name: 'Prueba esto' })).toBeInTheDocument();
+    expect(screen.queryByText('¿Sabías que…?')).not.toBeInTheDocument();
+  });
+
+  it('does not describe people in the photo', async () => {
+    mockServer({ detect: { object: null, person: true } });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    expect(await screen.findByText('Eso parece una persona')).toBeInTheDocument();
+    expect(screen.queryByText('¿Qué quieres descubrir?')).not.toBeInTheDocument();
   });
 
   it('tells the child when nothing was recognised', async () => {
