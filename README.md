@@ -1,24 +1,29 @@
 # Curiocity
 
-Aplicación web (PWA) educativa para niños y niñas de 6 a 12 años: apuntan con la cámara a un objeto, la app lo reconoce y les propone descubrirlo desde distintas asignaturas (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte) con textos adaptados a su edad, datos curiosos, enlaces seguros y objetos relacionados para seguir explorando.
+Aplicación web (PWA) educativa para niños y niñas de 6 a 12 años: apuntan con la cámara a un objeto, la app lo reconoce y les propone descubrirlo desde las asignaturas que tienen relación con él (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte), con textos adaptados a su edad (6–8 o 9–12), datos curiosos, enlaces a enciclopedias infantiles reales, objetos relacionados para seguir explorando y lectura en voz alta. Guarda un historial de descubrimientos solo en el dispositivo.
 
 Idiomas: español, inglés, francés y alemán (se detecta automáticamente del navegador).
 
 ## Cómo funciona
 
 ```
-Navegador (React + Vite)                     Servidor (Express)                 OpenAI
-────────────────────────                     ──────────────────                 ──────
-Cámara → foto 800 px ── POST /api/detect ──▶ valida imagen, límite peticiones ─▶ visión: nombre del objeto
-Elige asignatura ────── POST /api/ai ──────▶ valida, caché, filtra enlaces ───▶ JSON educativo
+Navegador (React + Vite)                     Servidor (Express)                 Servicios
+────────────────────────                     ──────────────────                 ─────────
+Cámara → foto 800 px ── POST /api/detect ──▶ valida imagen, límite peticiones ─▶ OpenAI visión: objeto + asignaturas
+Elige asignatura ────── POST /api/ai ──────▶ valida, caché ───────────────────▶ OpenAI: texto + palabras de búsqueda
+                                             busca esas palabras ─────────────▶ Vikidia / Klexikon / Wikipedia
+Objeto relacionado ──── POST /api/subjects ▶ asignaturas relevantes ──────────▶ OpenAI
 ```
+
+**Los enlaces nunca los inventa la IA:** solo propone palabras de búsqueda y el servidor devuelve páginas que existen de verdad.
 
 Si algo falla, la app sigue funcionando:
 
 | Falla… | Entonces… |
 |---|---|
 | `/api/detect` | Reconoce el objeto en el propio navegador con TensorFlow.js (COCO-SSD), que solo se descarga en ese caso |
-| `/api/ai` | Muestra contenido de plantillas locales en el idioma del usuario |
+| `/api/ai` | Muestra plantillas locales con preguntas y actividades en el idioma del usuario (no afirman nada sobre el objeto, porque no lo conocen) |
+| La red | El *service worker* abre la app igualmente (la detección necesita conexión) |
 
 ## Puesta en marcha
 
@@ -58,7 +63,7 @@ Servidor (`.env` o panel de Render):
 |---|---|---|
 | `OPENAI_API_KEY` | — | **Obligatoria.** Clave de OpenAI |
 | `OPENAI_MODEL` | `gpt-4o-mini` | Modelo para visión y textos |
-| `RATE_LIMIT_PER_15MIN` | `60` | Peticiones por IP cada 15 min. **En un centro educativo todo el alumnado suele compartir IP: súbelo (p. ej. 400) para uso en clase** |
+| `RATE_LIMIT_PER_15MIN` | `60` | Peticiones por IP cada 15 min (si varios dispositivos comparten conexión, comparten también el límite) |
 | `ALLOWED_ORIGINS` | `http://localhost:3000` en desarrollo | Orígenes que pueden llamar a la API desde otro dominio (separados por comas). No hace falta si el servidor sirve también el frontend |
 | `CACHE_TTL_SECONDS` | `3600` | Duración de la caché de respuestas |
 | `CACHE_MAX_ENTRIES` | `500` | Tamaño máximo de la caché |
@@ -72,34 +77,43 @@ Frontend (en el momento del build):
 
 ## Despliegue (Render)
 
-[render.yaml](render.yaml) define un único servicio web que compila el frontend y lo sirve junto con la API. Solo hay que configurar `OPENAI_API_KEY` (y conviene `RATE_LIMIT_PER_15MIN`) en el panel de Render.
+[render.yaml](render.yaml) define un único servicio web que compila el frontend y lo sirve junto con la API. Solo hay que configurar `OPENAI_API_KEY` en el panel de Render.
+
+En el plan gratuito, Render apaga el servidor tras 15 minutos sin uso y la primera petición puede tardar cerca de un minuto: conviene abrir la app unos minutos antes de una demostración.
 
 ## Estructura
 
 ```
 server/
-  app.js            API: validación, CORS, límite de peticiones, caché, llamadas a OpenAI
+  app.js            rutas de la API: validación, CORS, límite de peticiones, caché, prompts
+  openai.js         llamada a OpenAI (la clave solo existe en el servidor)
+  encyclopedia.js   búsqueda de páginas reales en Vikidia, Klexikon y Wikipedia
   index.js          arranca el servidor
   app.test.js
 src/
-  App.jsx           flujo: cámara → análisis → asignaturas → contenido
-  components/       CameraView, Sheet (<dialog>), SubjectPicker, ContentView, ObjectHeader, Toast, Splash
+  App.jsx           flujo: cámara → análisis → asignaturas → contenido; historial
+  components/       CameraView, Sheet (<dialog>), SubjectPicker, ContentView, HistoryView, ObjectHeader, Toast, Splash
   useCamera.js      gestión de la cámara
+  useSpeech.js      lectura en voz alta (voz del dispositivo)
   api.js            llamadas al servidor + reconocimiento local de respaldo
-  i18n.js           todos los textos de la interfaz y detección de idioma
+  history.js        historial guardado solo en el dispositivo
+  i18n.js           textos de la interfaz, idioma y grupo de edad
   subjects.js       asignaturas: icono y color
-  fallbackContent.js plantillas sin conexión
+  fallbackContent.js plantillas sin conexión (preguntas y actividades)
   share.js          compartir (nativo, correo, WhatsApp)
-  styles.css        diseño: tokens de color, tipografía y componentes
-public/             logo, iconos, manifest
+  styles.css        diseño: tipografía, tokens de color y componentes
+public/
+  sw.js             service worker (abrir sin conexión)
+  fonts/            Sofia Sans alojada en el proyecto (licencia OFL)
+  …                 logo, iconos, manifest
 ```
 
 ### Añadir un idioma
 
 1. Copia el bloque `en` de [src/i18n.js](src/i18n.js) con el nuevo código (p. ej. `pt`) y tradúcelo; añade también el nombre en `LANGUAGE_NAMES`.
-2. Añade sus plantillas en [src/fallbackContent.js](src/fallbackContent.js).
+2. Añade sus plantillas en [src/fallbackContent.js](src/fallbackContent.js), sus enciclopedias en [server/encyclopedia.js](server/encyclopedia.js) y su voz en [src/useSpeech.js](src/useSpeech.js).
 3. `npm test` comprueba que no falta ninguna clave.
 
 ### Diseño
 
-Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color suave por asignatura (en [src/subjects.js](src/subjects.js)). Tipografía: Sofia Sans. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).
+Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color cálido por asignatura (ocre, piedra, terracota, caramelo, coral, arcilla y naranja; en [src/subjects.js](src/subjects.js)). Tipografía: Sofia Sans, alojada en `public/fonts/`. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).
