@@ -1,0 +1,25 @@
+# Iteraciones de Curiocity
+
+Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué se cambió y por qué. Las entradas más recientes van arriba.
+
+---
+
+## 2026-11-04 — Revisión completa: seguridad, rediseño, rigor del contenido y nuevo modelo de IA
+
+Diez commits (`b79de67` → `9245b57`) a partir del estado del 13-02-2026 (`f6c8703`).
+
+**Qué se cambió y por qué**
+
+- **Seguridad del servidor** (`b79de67`). El servidor ya solo acepta peticiones de la propia app, tiene un límite de peticiones, solo admite fotos en formato imagen y textos cortos, y la caché tiene un tamaño máximo. *Por qué:* cualquiera podía usar la API de OpenAI del proyecto desde fuera.
+- **Migración de Create React App a Vite** (`6bf7a00`). *Por qué:* Create React App está abandonado. Las vulnerabilidades de las dependencias pasan de 68 a 0.
+- **Rediseño de la interfaz y reorganización del código** (`16cea32`). Diseño basado en la marca (crema, tinta, "ojos" del logo), panel inferior accesible y el archivo de 1.350 líneas dividido en módulos, sin MUI. *Por qué:* coherencia visual, accesibilidad y un código mantenible. La carga inicial pasa de 1,4 MB a 232 KB.
+- **Tipografía Sofia Sans** (`4eb77ad`), alojada en el propio proyecto (`dac39b1`). *Por qué:* lo pide la guía de diseño, y servirla desde aquí evita enviar la IP de los niños a Google Fonts.
+- **Rigor del contenido** (`b459c79`). Los enlaces salen de enciclopedias reales (Vikidia, Klexikon, Wikipedia) en lugar de generarlos la IA, se baja la temperatura del modelo, las fotos de personas no se describen y las plantillas sin conexión pasan a ser preguntas y actividades. *Por qué:* cumplir las reglas "nunca inventar URLs" y "mejor menos contenido que contenido dudoso".
+- **Asignaturas relevantes, historial local y paleta cálida** (`58549db`). *Por qué:* lo pide el flujo de la app (un plátano no muestra Música). El historial se guarda solo en el dispositivo, por privacidad.
+- **Lectura en voz alta, selector de edad (6–8 / 9–12) y PWA que abre sin conexión** (`fbe1098`). *Por qué:* hay niños de 6–7 años que aún leen con dificultad, y el texto debe adaptarse a la edad.
+- **Documentación** (`a22e7ca`). `CLAUDE.md` entra en el repositorio y se reescribe el README. *Por qué:* dejar por escrito la arquitectura y las decisiones del proyecto.
+- **Cambio de modelo de `gpt-4o-mini` a `gpt-6-luna`** (`9245b57`), y una búsqueda en enciclopedias más estricta. *Por qué:* OpenAI retira `gpt-4o-mini` el 14-01-2027. En una comparación con 10 fotos y 5 textos reales, la detección fue equivalente y los textos más rigurosos y mejor adaptados a la edad.
+
+**Decisiones de no hacer:** no se integran vídeos de YouTube, Khan Academy ni repositorios OER; no se ajusta el límite de peticiones para el aula, porque la app no se usará allí; no se añade un selector manual de idioma; se mantienen los iconos de Material Design.
+
+**Pendiente:** probar en móviles reales (sobre todo iPhone); alojar en el proyecto el modelo de reconocimiento local de respaldo, que ahora se descarga de servidores de Google; tener en cuenta el arranque lento del plan gratuito de Render en las demostraciones.
