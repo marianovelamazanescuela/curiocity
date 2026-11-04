@@ -31,7 +31,7 @@ const sizes = [16, 32, 48, 72, 96, 128, 144, 152, 180, 192, 256, 512, 1024];
 
     // Create a large splash placeholder (2048x2732) using the full logo
     const splashOut = path.join(outDir, `splash-2048x2732.png`);
-    await sharp(splashInput).resize(2048, 2048, { fit: 'contain', background: { r: 250, g: 235, b: 217, alpha: 1 } }).extend({ top: 364, bottom: 364, background: { r: 250, g: 235, b: 217, alpha: 1 } }).png().toFile(splashOut);
+    await sharp(splashInput).resize(2048, 2048, { fit: 'contain', background: { r: 250, g: 235, b: 217, alpha: 1 } }).extend({ top: 342, bottom: 342, background: { r: 250, g: 235, b: 217, alpha: 1 } }).png().toFile(splashOut);
     console.log('Written', splashOut);
 
     console.log('All icons generated.');

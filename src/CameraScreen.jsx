@@ -7,7 +7,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { MdScience, MdTerrain, MdHistoryEdu, MdCalculate, MdMenuBook, MdMusicNote, MdBrush, MdShare } from 'react-icons/md';
 
-const PROXY_BASE = process.env.REACT_APP_AI_PROXY_URL || '';
+const PROXY_BASE = import.meta.env.VITE_AI_PROXY_URL || '';
 const buildProxyUrl = (path) => `${PROXY_BASE.replace(/\/$/, '')}${path}`;
 
 // Translation dictionaries for different languages
