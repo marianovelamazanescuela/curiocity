@@ -65,7 +65,6 @@ export const translations = {
     cardProgress: 'Card {n} of {total}',
     answerToContinue: 'Choose an answer to continue',
     investigate: 'Investigate it yourself',
-    weakLink: 'This subject has only a small link with your object, but there is one!',
     subjects: {
       biologia: 'Biology',
       geologia: 'Geology',
@@ -141,7 +140,6 @@ export const translations = {
     cardProgress: 'Tarjeta {n} de {total}',
     answerToContinue: 'Elige una respuesta para seguir',
     investigate: 'Investiga tú',
-    weakLink: 'Esta asignatura tiene poca relación con tu objeto, ¡pero algo hay!',
     subjects: {
       biologia: 'Biología',
       geologia: 'Geología',
@@ -217,7 +215,6 @@ export const translations = {
     cardProgress: 'Carte {n} sur {total}',
     answerToContinue: 'Choisis une réponse pour continuer',
     investigate: 'Mène l’enquête',
-    weakLink: 'Cette matière a peu de lien avec ton objet, mais il y en a un !',
     subjects: {
       biologia: 'Biologie',
       geologia: 'Géologie',
@@ -293,7 +290,6 @@ export const translations = {
     cardProgress: 'Karte {n} von {total}',
     answerToContinue: 'Wähle eine Antwort, um weiterzumachen',
     investigate: 'Forsche selbst',
-    weakLink: 'Dieses Fach hat nur wenig mit deinem Gegenstand zu tun – aber ein bisschen schon!',
     subjects: {
       biologia: 'Biologie',
       geologia: 'Geologie',

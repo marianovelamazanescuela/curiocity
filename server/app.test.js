@@ -187,8 +187,16 @@ describe('POST /api/ai', () => {
     await post('/api/ai', { ...valid, ageGroup: '9-12' });
     expect(openaiCalls[1].messages[0].content).toMatch(/9-12 years old/);
     expect(openaiCalls).toHaveLength(2);
-    await post('/api/ai', { ...valid, ageGroup: 'hack' }); // invalid -> default 9-12, served from cache
+    await post('/api/ai', { ...valid, ageGroup: 'hack' }); // invalid -> default 6-8, served from cache
     expect(openaiCalls).toHaveLength(2);
+  });
+
+  it('uses 6-8 when no age group is sent, the same default as the app', async () => {
+    openaiReply = modelLesson();
+    await post('/api/ai', valid); // no ageGroup
+    expect(openaiCalls[0].messages[0].content).toMatch(/6-8 years old/);
+    await post('/api/subjects', { objectName: 'Farola', language: 'Spanish' });
+    expect(openaiCalls[1].messages[0].content).toMatch(/6-8 years old/);
   });
 
   it('retries once when the output is invalid', async () => {

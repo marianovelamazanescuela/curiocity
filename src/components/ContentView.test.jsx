@@ -121,6 +121,18 @@ describe('Lesson cards', () => {
     expect(next()).toBeEnabled();
   });
 
+  it('warns about a weak link only once: in the first sentence of "why", not with an extra note', async () => {
+    const user = userEvent.setup();
+    const weak = { ...lesson, conexion_debil: true, por_que: 'Una manzana tiene poco que ver con la música, pero…\n\nAl morderla suena.' };
+    const { container } = renderLesson({ content: weak });
+    expect(screen.queryByText(/poca relación/)).not.toBeInTheDocument(); // no note before the question
+    expect(container.querySelector('.note')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    await user.click(next());
+    await user.click(next());
+    expect(screen.getByText('Una manzana tiene poco que ver con la música, pero…')).toBeInTheDocument();
+  });
+
   it('skips the fact card when there is no fact, and the offline lesson has 3 cards', () => {
     const { unmount } = renderLesson({ content: { ...lesson, dato_sorprendente: '' } });
     expect(currentCard()).toHaveAccessibleName(/de 4/);

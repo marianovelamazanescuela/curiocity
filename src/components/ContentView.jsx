@@ -326,8 +326,6 @@ export default function ContentView({
     <article className={`content lesson lesson--${ageGroup}`} style={{ '--subject': subject.color }}>
       {header}
 
-      {content.conexion_debil && <p className="note">{t.weakLink}</p>}
-
       <div className="lesson__bar">
         <ol className="dots" aria-hidden="true">
           {cards.map((card, i) => (
