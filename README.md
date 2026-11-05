@@ -1,6 +1,6 @@
 # Curiocity
 
-Aplicación web (PWA) educativa para niños y niñas de 6 a 12 años: apuntan con la cámara a un objeto, la app lo reconoce y les propone descubrirlo desde las asignaturas que tienen relación con él (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte), con textos adaptados a su edad (6–8 o 9–12), datos curiosos, enlaces a enciclopedias infantiles reales, objetos relacionados para seguir explorando y lectura en voz alta. Guarda un historial de descubrimientos solo en el dispositivo.
+Aplicación web (PWA) educativa para niños y niñas de 6 a 12 años: apuntan con la cámara a un objeto, la app lo reconoce y les propone las 3 asignaturas que más relación tienen con él, cada una con un gancho (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte). En cada asignatura, una mini-lección interactiva adaptada a su edad (6–8 o 9–12): primero adivinan una pregunta, luego un dato sorprendente y el porqué, un reto de un minuto con el objeto real y una pregunta para seguir pensando. También ofrece enlaces a enciclopedias infantiles reales, objetos relacionados y lectura en voz alta. Guarda un historial de descubrimientos solo en el dispositivo.
 
 Idiomas: español, inglés, francés y alemán (se detecta automáticamente del navegador).
 
@@ -9,10 +9,12 @@ Idiomas: español, inglés, francés y alemán (se detecta automáticamente del 
 ```
 Navegador (React + Vite)                     Servidor (Express)                 Servicios
 ────────────────────────                     ──────────────────                 ─────────
-Cámara → foto 800 px ── POST /api/detect ──▶ valida imagen, límite peticiones ─▶ OpenAI visión: objeto + asignaturas
-Elige asignatura ────── POST /api/ai ──────▶ valida, caché ───────────────────▶ OpenAI: texto + palabras de búsqueda
+Cámara → foto 800 px ── POST /api/detect ──▶ valida imagen, límite peticiones ─▶ OpenAI visión: objeto
+Objeto (foto, relacionado o historial)
+                ─────── POST /api/subjects ▶ puntúa 7 asignaturas, valida ───▶ OpenAI (JSON con esquema): 3 mejores + gancho
+Elige asignatura ────── POST /api/ai ──────▶ valida, baraja opciones, caché ─▶ OpenAI (JSON con esquema): pregunta, dato,
+                                                                               porqué, reto, pregunta final, palabras de búsqueda
                                              busca esas palabras ─────────────▶ Vikidia / Klexikon / Wikipedia
-Objeto relacionado ──── POST /api/subjects ▶ asignaturas relevantes ──────────▶ OpenAI
 ```
 
 **Los enlaces nunca los inventa la IA:** solo propone palabras de búsqueda y el servidor devuelve páginas que existen de verdad.
@@ -22,7 +24,8 @@ Si algo falla, la app sigue funcionando:
 | Falla… | Entonces… |
 |---|---|
 | `/api/detect` | Reconoce el objeto en el propio navegador con TensorFlow.js (COCO-SSD), que solo se descarga en ese caso |
-| `/api/ai` | Muestra plantillas locales con preguntas y actividades en el idioma del usuario (no afirman nada sobre el objeto, porque no lo conocen) |
+| `/api/subjects` | Muestra las 7 asignaturas sin destacar |
+| `/api/ai` | Muestra contenido local con preguntas abiertas y retos en el idioma del usuario, sin pregunta de respuesta única ni dato (no afirman nada sobre el objeto, porque no lo conocen) |
 | La red | El *service worker* abre la app igualmente (la detección necesita conexión) |
 
 ## Puesta en marcha
@@ -85,11 +88,12 @@ En el plan gratuito, Render apaga el servidor tras 15 minutos sin uso y la prime
 
 ```
 server/
-  app.js            rutas de la API: validación, CORS, límite de peticiones, caché, prompts
+  app.js            rutas de la API: validación, CORS, límite de peticiones, caché
+  content.js        prompts, esquemas JSON y validación del ranking de asignaturas y de las lecciones
   openai.js         llamada a OpenAI (la clave solo existe en el servidor)
   encyclopedia.js   búsqueda de páginas reales en Vikidia, Klexikon y Wikipedia
   index.js          arranca el servidor
-  app.test.js
+  app.test.js, content.test.js
 src/
   App.jsx           flujo: cámara → análisis → asignaturas → contenido; historial
   components/       CameraView, Sheet (<dialog>), SubjectPicker, ContentView, HistoryView, ObjectHeader, Toast, Splash
@@ -98,8 +102,8 @@ src/
   api.js            llamadas al servidor + reconocimiento local de respaldo
   history.js        historial guardado solo en el dispositivo
   i18n.js           textos de la interfaz, idioma y grupo de edad
-  subjects.js       asignaturas: icono y color
-  fallbackContent.js plantillas sin conexión (preguntas y actividades)
+  subjects.js       asignaturas: icono, color y orden según el ranking
+  fallbackContent.js contenido sin conexión (preguntas abiertas y retos)
   share.js          compartir (nativo, correo, WhatsApp)
   styles.css        diseño: tipografía, tokens de color y componentes
 public/

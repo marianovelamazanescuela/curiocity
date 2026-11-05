@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { translations, detectUserLanguage } from './i18n';
-import { SUBJECTS } from './subjects';
+import { SUBJECTS, orderedSubjects } from './subjects';
 import { buildFallbackContent } from './fallbackContent';
 import { buildShareText } from './share';
 
@@ -39,36 +39,44 @@ describe('detectUserLanguage', () => {
 });
 
 describe('buildFallbackContent', () => {
-  it('produces localized content for every language and subject', () => {
+  it('produces localized offline content for every language and subject', () => {
     for (const lang of Object.keys(translations)) {
       for (const { key } of SUBJECTS) {
-        const c = buildFallbackContent('Manzana', key, translations[lang].subjects[key], lang);
-        expect(c.title).toContain(translations[lang].subjects[key]);
-        expect(c.title).toContain('Manzana');
-        expect(c.funFacts.length).toBeGreaterThan(0);
-        expect(c.links).toEqual([]);
+        const c = buildFallbackContent(key, lang);
         expect(c.offline).toBe(true);
+        expect(c.intro && c.por_que && c.reto && c.otra_idea, `${lang}.${key}`).toBeTruthy();
+        expect(c.enlaces).toEqual([]);
       }
     }
   });
 
-  it('never makes claims about the specific object (it is unknown offline)', () => {
-    for (const lang of Object.keys(translations)) {
-      for (const { key } of SUBJECTS) {
-        const c = buildFallbackContent('Manzana', key, 'X', lang);
-        expect([c.text, c.explanation, ...c.funFacts].join(' ')).not.toContain('Manzana');
-      }
-    }
+  it('has no quiz or fact: offline nothing true is known about the object', () => {
+    const c = buildFallbackContent('historia', 'es');
+    expect(c.pregunta_inicial).toBeNull();
+    expect(c.dato_sorprendente).toBeNull();
+  });
+});
+
+describe('orderedSubjects', () => {
+  it('puts the featured subjects first and keeps every subject', () => {
+    const keys = orderedSubjects({ featured: [{ key: 'historia', hook: 'x' }], others: ['artes', 'biologia'] }).map(s => s.key);
+    expect(keys.slice(0, 3)).toEqual(['historia', 'artes', 'biologia']);
+    expect(keys).toHaveLength(SUBJECTS.length);
+    expect(orderedSubjects(null)).toBe(SUBJECTS);
   });
 });
 
 describe('buildShareText', () => {
-  const content = { title: 'T', text: 'Intro', explanation: 'Exp', funFacts: ['uno', 'dos'] };
+  const content = {
+    pregunta_inicial: { pregunta: '¿Pregunta?', opciones: ['a', 'b', 'c'], correcta: 1 },
+    dato_sorprendente: 'Dato', por_que: 'Porque', reto: 'Cuenta', para_seguir_pensando: '¿Y si…?'
+  };
 
-  it('includes the content, fun facts and never a base64 image', () => {
-    const text = buildShareText(content, translations.es, { withAttachHint: true });
+  it('includes the answer, the challenge and never a base64 image', () => {
+    const text = buildShareText('Historia: Farola', content, translations.es, { withAttachHint: true });
     expect(text).toContain(translations.es.shareIntro);
-    expect(text).toContain('• uno\n• dos');
+    expect(text).toContain('¿Pregunta?\n→ b');
+    expect(text).toContain('Reto de un minuto: Cuenta');
     expect(text).toContain(translations.es.shareAttachHint);
     expect(text).not.toContain('base64');
   });

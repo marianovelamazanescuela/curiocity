@@ -1,12 +1,15 @@
 // Public URL included in shared messages. Defaults to wherever the app is running.
 export const APP_URL = import.meta.env.VITE_PUBLIC_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
-export function buildShareText(content, t, { withAttachHint = false } = {}) {
-  const parts = [`${t.shareIntro} ${APP_URL}`, content.title, content.text];
-  if (content.explanation) parts.push(content.explanation);
-  if (content.funFacts && content.funFacts.length) {
-    parts.push(`${t.funFacts}\n${content.funFacts.map(f => `• ${f}`).join('\n')}`);
-  }
+/** Plain-text summary of a lesson for WhatsApp, email or the native share sheet. */
+export function buildShareText(heading, content, t, { withAttachHint = false } = {}) {
+  const parts = [`${t.shareIntro} ${APP_URL}`, heading];
+  const q = content.pregunta_inicial;
+  if (q) parts.push(`${q.pregunta}\n→ ${q.opciones[q.correcta]}`);
+  if (content.dato_sorprendente) parts.push(content.dato_sorprendente);
+  if (content.por_que) parts.push(content.por_que);
+  if (content.reto) parts.push(`${t.challenge}: ${content.reto}`);
+  if (content.para_seguir_pensando) parts.push(`${t.keepThinking}: ${content.para_seguir_pensando}`);
   if (withAttachHint) parts.push(t.shareAttachHint);
   return parts.join('\n\n');
 }

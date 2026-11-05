@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
-import { MdArrowBack, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline, MdVolumeUp, MdStop } from 'react-icons/md';
+import { useEffect, useRef, useState } from 'react';
+import {
+  MdArrowBack, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline, MdVolumeUp, MdStop,
+  MdCheckCircle, MdTimer, MdPhotoCamera, MdChatBubbleOutline
+} from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
 import { getSubject } from '../subjects';
 import { buildShareText, downloadDataUrl, mailtoUrl, nativeShare, whatsappUrl } from '../share';
@@ -26,7 +29,7 @@ function LoadingContent({ label }) {
   );
 }
 
-function ShareBar({ t, content, photo, onToast }) {
+function ShareBar({ t, heading, content, photo, onToast }) {
   const [showOptions, setShowOptions] = useState(false);
 
   const savePhoto = () => {
@@ -36,7 +39,7 @@ function ShareBar({ t, content, photo, onToast }) {
   };
 
   const share = async () => {
-    const result = await nativeShare({ title: content.title, text: buildShareText(content, t), imageDataUrl: photo });
+    const result = await nativeShare({ title: heading, text: buildShareText(heading, content, t), imageDataUrl: photo });
     if (result === 'shared') onToast(t.shared);
     else if (result === 'shared-text') {
       if (photo) downloadDataUrl(photo, 'curiocity.jpg');
@@ -45,12 +48,12 @@ function ShareBar({ t, content, photo, onToast }) {
   };
 
   const viaEmail = () => {
-    window.open(mailtoUrl(`${content.title} — Curiocity`, buildShareText(content, t, { withAttachHint: Boolean(photo) })));
+    window.open(mailtoUrl(`${heading} — Curiocity`, buildShareText(heading, content, t, { withAttachHint: Boolean(photo) })));
     onToast(t.openedMail, 'info');
   };
 
   const viaWhatsApp = () => {
-    window.open(whatsappUrl(buildShareText(content, t, { withAttachHint: Boolean(photo) })), '_blank', 'noopener');
+    window.open(whatsappUrl(buildShareText(heading, content, t, { withAttachHint: Boolean(photo) })), '_blank', 'noopener');
     onToast(t.openedWhatsApp, 'info');
   };
 
@@ -70,19 +73,89 @@ function ShareBar({ t, content, photo, onToast }) {
   );
 }
 
-export default function ContentView({ t, photo, objectName, subjectKey, subjects, lang, content, onBack, onSelectSubject, onRelatedObject, onToast }) {
+/** Curiosity question with 3 options. The child answers before seeing any explanation. */
+function Quiz({ t, question, answer, onAnswer, feedbackRef }) {
+  const answered = answer !== null;
+  const right = question.opciones[question.correcta];
+  return (
+    <>
+      <ul className="quiz">
+        {question.opciones.map((option, i) => {
+          let cls = 'quiz__option';
+          if (answered && i === question.correcta) cls += ' quiz__option--correct';
+          else if (answered && i === answer) cls += ' quiz__option--chosen';
+          return (
+            <li key={i}>
+              <button className={cls} onClick={() => onAnswer(i)} disabled={answered} aria-pressed={answered ? i === answer : undefined}>
+                <span>{option}</span>
+                {answered && i === question.correcta && <MdCheckCircle className="quiz__mark" aria-hidden="true" />}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {answered && (
+        <p ref={feedbackRef} className="quiz__feedback reveal" role="status">
+          {answer === question.correcta ? t.correct : `${t.almost} ${right}`}
+        </p>
+      )}
+    </>
+  );
+}
+
+// Interactive lesson: question → surprising fact + why → one-minute challenge → open question,
+// then links, related objects and sharing. Offline content has no question, so it starts revealed.
+export default function ContentView({
+  t, photo, objectName, subjectKey, subjects, lang, content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
+}) {
   const subject = getSubject(subjectKey);
-  const paragraphs = content ? String(content.explanation || '').split(/\n\s*\n/).filter(Boolean) : [];
+  const heading = `${t.subjects[subjectKey]}: ${objectName}`;
+  const [answer, setAnswer] = useState(null);
+  const [challenge, setChallenge] = useState('pending'); // pending | done | skipped
   const speech = useSpeech(lang);
   const { stop } = speech;
+  const feedbackRef = useRef(null);
+  const finalRef = useRef(null);
 
   // Stop reading when the content changes (another subject or object).
   useEffect(() => () => stop(), [content, stop]);
 
+  // Bring each newly revealed step into view (the sheet is small on phones).
+  useEffect(() => {
+    if (answer !== null) feedbackRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [answer]);
+  useEffect(() => {
+    if (challenge !== 'pending') finalRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [challenge]);
+
+  if (!content) {
+    return (
+      <article className="content" style={{ '--subject': subject.color }}>
+        <button className="link-btn" onClick={onBack}><MdArrowBack aria-hidden="true" /> {t.back}</button>
+        <ObjectHeader photo={photo} objectName={objectName} photoAlt={t.capturedPhoto}>
+          <span className="chip chip--subject"><subject.icon aria-hidden="true" /> {t.subjects[subjectKey]}</span>
+        </ObjectHeader>
+        <LoadingContent label={t.loading} />
+      </article>
+    );
+  }
+
+  const question = content.pregunta_inicial;
+  const revealed = !question || answer !== null;
+  const finished = revealed && challenge !== 'pending';
+  const finalText = content.offline ? content.otra_idea : content.para_seguir_pensando;
+
   const readAloud = () => {
     if (speech.speaking) return speech.stop();
-    const factsTitle = content.offline ? t.tryThis : t.funFacts;
-    speech.speak([content.title, content.text, ...paragraphs, content.funFacts.length ? factsTitle : '', ...content.funFacts]);
+    const parts = [];
+    if (content.offline) parts.push(content.intro);
+    if (question) parts.push(question.pregunta, ...question.opciones);
+    if (revealed) {
+      if (question) parts.push(answer === question.correcta ? t.correct : `${t.almost} ${question.opciones[question.correcta]}`);
+      parts.push(content.dato_sorprendente, content.por_que, `${t.challenge}. ${content.reto}`);
+    }
+    if (finished && finalText) parts.push(finalText);
+    speech.speak(parts.filter(Boolean));
   };
 
   return (
@@ -97,47 +170,89 @@ export default function ContentView({ t, photo, objectName, subjectKey, subjects
         </span>
       </ObjectHeader>
 
-      {!content ? (
-        <LoadingContent label={t.loading} />
-      ) : (
-        <>
-          <section className="card card--subject">
-            <h3 className="card__title">{content.title}</h3>
-            <p className="card__lead">{content.text}</p>
-            {speech.supported && (
-              <button className="btn btn--outline btn--small card__listen" onClick={readAloud} aria-pressed={speech.speaking}>
-                {speech.speaking ? <MdStop aria-hidden="true" /> : <MdVolumeUp aria-hidden="true" />}
-                {speech.speaking ? t.stopListening : t.listen}
-              </button>
-            )}
+      {content.conexion_debil && <p className="note">{t.weakLink}</p>}
+
+      <section className="card card--subject">
+        {question ? (
+          <>
+            <p className="card__kicker">{t.guessFirst}</p>
+            <h3 className="card__title">{question.pregunta}</h3>
+          </>
+        ) : (
+          <p className="card__lead">{content.intro}</p>
+        )}
+        {speech.supported && (
+          <button className="btn btn--outline btn--small card__listen" onClick={readAloud} aria-pressed={speech.speaking}>
+            {speech.speaking ? <MdStop aria-hidden="true" /> : <MdVolumeUp aria-hidden="true" />}
+            {speech.speaking ? t.stopListening : t.listen}
+          </button>
+        )}
+        {question && <Quiz t={t} question={question} answer={answer} onAnswer={setAnswer} feedbackRef={feedbackRef} />}
+      </section>
+
+      {revealed && (
+        <div className="reveal">
+          {content.dato_sorprendente && (
+            <section>
+              <h3 className="section-title">{t.surprisingFact}</h3>
+              <p className="facts__item">
+                <MdLightbulbOutline className="facts__icon" aria-hidden="true" />
+                <span>{content.dato_sorprendente}</span>
+              </p>
+            </section>
+          )}
+
+          <section>
+            {!content.offline && <h3 className="section-title">{t.why}</h3>}
+            <div className="prose">
+              {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
+            </div>
           </section>
 
-          {paragraphs.length > 0 && (
-            <section className="prose">
-              {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-            </section>
-          )}
+          <section>
+            <h3 className="section-title">{t.challenge}</h3>
+            <div className="challenge">
+              <MdTimer className="challenge__icon" aria-hidden="true" />
+              <p className="challenge__text">{content.reto}</p>
+              {challenge === 'pending' ? (
+                <div className="challenge__actions">
+                  <button className="btn btn--primary" onClick={() => setChallenge('done')}>{t.challengeDone}</button>
+                  <button className="btn btn--ghost" onClick={() => setChallenge('skipped')}>{t.challengeSkip}</button>
+                </div>
+              ) : (
+                challenge === 'done' && (
+                  <p className="challenge__done" role="status">
+                    <MdCheckCircle aria-hidden="true" /> {t.challengeCheer}
+                  </p>
+                )
+              )}
+              {challenge === 'done' && content.reto_foto && (
+                <button className="btn btn--outline" onClick={onTakePhoto}>
+                  <MdPhotoCamera aria-hidden="true" /> {t.takeAnotherPhoto}
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
 
-          {content.funFacts.length > 0 && (
+      {finished && (
+        <div ref={finalRef} className="reveal">
+          {finalText && (
             <section>
-              {/* Offline templates contain activities, not facts */}
-              <h3 className="section-title">{content.offline ? t.tryThis : t.funFacts}</h3>
-              <ul className="facts">
-                {content.funFacts.map((fact, i) => (
-                  <li key={i} className="facts__item">
-                    <MdLightbulbOutline className="facts__icon" aria-hidden="true" />
-                    <span>{fact}</span>
-                  </li>
-                ))}
-              </ul>
+              <h3 className="section-title">{content.offline ? t.tryThis : t.keepThinking}</h3>
+              <p className="think">
+                <MdChatBubbleOutline className="think__icon" aria-hidden="true" />
+                <span>{finalText}</span>
+              </p>
             </section>
           )}
 
-          {content.links.length > 0 && (
+          {content.enlaces.length > 0 && (
             <section>
               <h3 className="section-title">{t.recommendedResources}</h3>
               <ul className="links">
-                {content.links.map((link, i) => (
+                {content.enlaces.map((link, i) => (
                   <li key={i}>
                     <a className="links__item" href={link.url} target="_blank" rel="noopener noreferrer">
                       <span>
@@ -152,32 +267,32 @@ export default function ContentView({ t, photo, objectName, subjectKey, subjects
             </section>
           )}
 
-          {content.relatedObjects.length > 0 && (
+          {content.objetos_relacionados.length > 0 && (
             <section>
               <h3 className="section-title">{t.relatedObjects}</h3>
               <div className="chips">
-                {content.relatedObjects.map(name => (
+                {content.objetos_relacionados.map(name => (
                   <button key={name} className="chip chip--button" onClick={() => onRelatedObject(name)}>{name}</button>
                 ))}
               </div>
             </section>
           )}
 
-          <ShareBar t={t} content={content} photo={photo} onToast={onToast} />
+          <ShareBar t={t} heading={heading} content={content} photo={photo} onToast={onToast} />
 
           {subjects.length > 1 && (
-          <section>
-            <h3 className="section-title">{t.otherSubjects}</h3>
-            <div className="chips chips--scroll">
-              {subjects.filter(s => s.key !== subjectKey).map(({ key, icon: Icon, color }) => (
-                <button key={key} className="chip chip--button chip--tinted" style={{ '--subject': color }} onClick={() => onSelectSubject(key)}>
-                  <Icon aria-hidden="true" /> {t.subjects[key]}
-                </button>
-              ))}
-            </div>
-          </section>
+            <section>
+              <h3 className="section-title">{t.otherSubjects}</h3>
+              <div className="chips chips--scroll">
+                {subjects.filter(s => s.key !== subjectKey).map(({ key, icon: Icon, color }) => (
+                  <button key={key} className="chip chip--button chip--tinted" style={{ '--subject': color }} onClick={() => onSelectSubject(key)}>
+                    <Icon aria-hidden="true" /> {t.subjects[key]}
+                  </button>
+                ))}
+              </div>
+            </section>
           )}
-        </>
+        </div>
       )}
     </article>
   );

@@ -3,10 +3,9 @@
 // These templates know nothing about the real object, so they never state facts about it
 // ("it lives and grows" would be false for a bottle). Instead they explain what the subject
 // looks at and propose questions and safe activities, so the child investigates.
-// The object name only appears in the title, which avoids grammar problems (gender, articles).
+// The object name never appears, which also avoids grammar problems (gender, articles).
 const TEMPLATES = {
   es: {
-    title: (s, o) => `${s}: ${o}`,
     intro: 'Ahora no puedo preparar tu explicación, ¡pero puedes investigar tú! Aquí tienes algunas preguntas y actividades sobre tu objeto.',
     subjects: {
       biologia: {
@@ -40,7 +39,6 @@ const TEMPLATES = {
     }
   },
   en: {
-    title: (s, o) => `${s}: ${o}`,
     intro: "I can't prepare your explanation right now, but you can investigate it yourself! Here are some questions and activities about your object.",
     subjects: {
       biologia: {
@@ -74,7 +72,6 @@ const TEMPLATES = {
     }
   },
   fr: {
-    title: (s, o) => `${s} : ${o}`,
     intro: 'Je ne peux pas préparer ton explication pour le moment, mais tu peux enquêter toi-même ! Voici des questions et des activités sur ton objet.',
     subjects: {
       biologia: {
@@ -108,7 +105,6 @@ const TEMPLATES = {
     }
   },
   de: {
-    title: (s, o) => `${s}: ${o}`,
     intro: 'Ich kann deine Erklärung gerade nicht vorbereiten, aber du kannst selbst forschen! Hier sind Fragen und Ideen zu deinem Gegenstand.',
     subjects: {
       biologia: {
@@ -143,16 +139,26 @@ const TEMPLATES = {
   }
 };
 
-export function buildFallbackContent(objectName, subjectKey, subjectLabel, lang) {
+/**
+ * Offline lesson with the same shape as the AI one, minus the quiz: without the server we know
+ * nothing true about the object, so there is no question with a "right answer" and no surprising
+ * fact. The child gets questions about what the subject looks at and two safe activities.
+ */
+export function buildFallbackContent(subjectKey, lang) {
   const tpl = TEMPLATES[lang] || TEMPLATES.en;
   const block = tpl.subjects[subjectKey] || tpl.subjects.biologia;
   return {
-    title: tpl.title(subjectLabel, objectName),
-    text: tpl.intro,
-    explanation: block.explanation,
-    funFacts: block.activities,
-    links: [],
-    relatedObjects: [],
-    offline: true // the UI titles the list "Try this" instead of "Did you know…?"
+    offline: true,
+    intro: tpl.intro,
+    pregunta_inicial: null,
+    dato_sorprendente: null,
+    por_que: block.explanation,
+    reto: block.activities[0],
+    reto_foto: false,
+    otra_idea: block.activities[1],
+    para_seguir_pensando: null,
+    conexion_debil: false,
+    objetos_relacionados: [],
+    enlaces: []
   };
 }
