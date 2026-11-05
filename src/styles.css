@@ -1145,42 +1145,6 @@ p.facts__item {
 }
 
 /* =========================================================
-   Loading skeleton
-   ========================================================= */
-.skeleton {
-  display: grid;
-  gap: 10px;
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: var(--radius-m);
-  background: var(--subject);
-}
-
-.skeleton__line {
-  height: 14px;
-  border-radius: var(--pill);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.35));
-  background-size: 200% 100%;
-  animation: shimmer 1.2s linear infinite;
-}
-
-.skeleton__line--title {
-  height: 24px;
-  width: 70%;
-  margin-bottom: 6px;
-}
-
-.skeleton__line--short {
-  width: 45%;
-}
-
-.skeleton__label {
-  margin-top: 6px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-/* =========================================================
    Toast
    ========================================================= */
 .toast-region {
@@ -1240,6 +1204,125 @@ p.facts__item {
   line-height: 1.35;
 }
 
+/* =========================================================
+   Curi (mascot): CSS-only motion. Occasional blink, pupils that wander while thinking,
+   and smooth changes between states. With reduced motion only the state changes.
+   ========================================================= */
+.curi {
+  flex: none;
+  display: block;
+  overflow: visible;
+}
+
+.curi__eye,
+.curi__open {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.curi__pupil {
+  transition: transform 0.4s var(--ease-out);
+}
+
+.curi__open,
+.curi__arc {
+  transition: opacity 0.2s ease;
+}
+
+.curi__arc {
+  opacity: 0;
+}
+
+.curi__mouth {
+  transition: d 0.35s var(--ease-out);
+}
+
+/* Blink now and then (only open eyes) */
+.curi--idle .curi__open,
+.curi--almost .curi__open,
+.curi--done .curi__eye--o .curi__open {
+  animation: curi-blink 5.5s infinite;
+}
+
+.curi--thinking .curi__pupil {
+  animation: curi-wonder 2.4s ease-in-out infinite alternate;
+}
+
+.curi--almost .curi__pupil {
+  transform: translate(-5px, 5px);
+}
+
+/* correct: both eyes become happy arcs (∩) */
+.curi--correct .curi__open {
+  opacity: 0;
+}
+
+.curi--correct .curi__arc {
+  opacity: 1;
+}
+
+/* done: the C eye winks */
+.curi--done .curi__eye--c .curi__open {
+  opacity: 0;
+}
+
+.curi--done .curi__eye--c .curi__arc {
+  opacity: 1;
+}
+
+/* Happy states: a small hop when they appear */
+.curi--correct,
+.curi--done {
+  animation: curi-hop 0.5s var(--ease-out);
+}
+
+/* Curi next to a short message (loading, answer, challenge, empty states) */
+.curi-say {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.curi-say--stack {
+  flex-direction: column;
+  text-align: center;
+  gap: 10px;
+  padding: 18px 0;
+}
+
+.curi-say__text {
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+@keyframes curi-blink {
+  0%, 92%, 100% { transform: none; }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes curi-wonder {
+  from { transform: translate(-4px, -6px); }
+  to { transform: translate(-1px, -7px); }
+}
+
+@keyframes curi-hop {
+  40% { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curi,
+  .curi * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* without the animation, thinking pupils still look up */
+  .curi--thinking .curi__pupil {
+    transform: translate(-3px, -6px);
+  }
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
@@ -1260,11 +1343,6 @@ p.facts__item {
 
 @keyframes breathe {
   50% { transform: scale(0.97); }
-}
-
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

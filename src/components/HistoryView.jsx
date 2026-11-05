@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MdLockOutline } from 'react-icons/md';
+import Curi from './Curi';
 
 function formatDate(iso, lang) {
   try {
@@ -18,7 +19,10 @@ export default function HistoryView({ t, lang, entries, onOpen, onClear }) {
       <h2 className="history__title">{t.history}</h2>
 
       {entries.length === 0 ? (
-        <p className="history__empty">{t.historyEmpty}</p>
+        <div className="curi-say curi-say--stack history__empty">
+          <Curi state="idle" size={84} />
+          <p>{t.historyEmpty}</p>
+        </div>
       ) : (
         <ul className="history__list">
           {entries.map(entry => (

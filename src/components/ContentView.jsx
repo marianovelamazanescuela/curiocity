@@ -8,6 +8,7 @@ import { getSubject } from '../subjects';
 import { buildShareText, downloadDataUrl, mailtoUrl, nativeShare, whatsappUrl } from '../share';
 import ObjectHeader from './ObjectHeader';
 import { useSpeech } from '../useSpeech';
+import Curi, { CuriThinking } from './Curi';
 
 function hostnameOf(url) {
   try {
@@ -15,18 +16,6 @@ function hostnameOf(url) {
   } catch {
     return '';
   }
-}
-
-function LoadingContent({ label }) {
-  return (
-    <div className="skeleton" role="status" aria-label={label}>
-      <div className="skeleton__line skeleton__line--title" />
-      <div className="skeleton__line" />
-      <div className="skeleton__line" />
-      <div className="skeleton__line skeleton__line--short" />
-      <p className="skeleton__label">{label}</p>
-    </div>
-  );
 }
 
 function ShareBar({ t, heading, content, photo, onToast }) {
@@ -95,9 +84,10 @@ function Quiz({ t, question, answer, onAnswer, feedbackRef }) {
         })}
       </ul>
       {answered && (
-        <p ref={feedbackRef} className="quiz__feedback reveal" role="status">
-          {answer === question.correcta ? t.correct : `${t.almost} ${right}`}
-        </p>
+        <div ref={feedbackRef} className="curi-say quiz__feedback reveal">
+          <Curi state={answer === question.correcta ? 'correct' : 'almost'} size={64} />
+          <p role="status">{answer === question.correcta ? t.correct : `${t.almost} ${right}`}</p>
+        </div>
       )}
     </>
   );
@@ -135,7 +125,7 @@ export default function ContentView({
         <ObjectHeader photo={photo} objectName={objectName} photoAlt={t.capturedPhoto}>
           <span className="chip chip--subject"><subject.icon aria-hidden="true" /> {t.subjects[subjectKey]}</span>
         </ObjectHeader>
-        <LoadingContent label={t.loading} />
+        <CuriThinking label={t.curiThinking} />
       </article>
     );
   }
@@ -221,9 +211,10 @@ export default function ContentView({
                 </div>
               ) : (
                 challenge === 'done' && (
-                  <p className="challenge__done" role="status">
-                    <MdCheckCircle aria-hidden="true" /> {t.challengeCheer}
-                  </p>
+                  <div className="curi-say challenge__done">
+                    <Curi state="done" size={64} />
+                    <p role="status">{t.challengeCheer}</p>
+                  </div>
                 )
               )}
               {challenge === 'done' && content.reto_foto && (

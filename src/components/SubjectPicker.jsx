@@ -1,6 +1,7 @@
 import { AGE_GROUPS } from '../i18n';
 import { SUBJECTS, getSubject } from '../subjects';
 import ObjectHeader from './ObjectHeader';
+import { CuriThinking } from './Curi';
 
 const AGE_LABEL_KEYS = { '6-8': 'age68', '9-12': 'age912' };
 
@@ -34,7 +35,7 @@ function SubjectGrid({ t, subjects, onSelect }) {
 export default function SubjectPicker({ t, photo, objectName, ranking, ageGroup, onAgeChange, onSelect, onWrongObject }) {
   let subjects;
   if (ranking === undefined) {
-    subjects = <p className="skeleton__label center" role="status">{t.loading}</p>;
+    subjects = <CuriThinking label={t.curiThinking} />;
   } else if (ranking === null) {
     subjects = <SubjectGrid t={t} subjects={SUBJECTS} onSelect={onSelect} />;
   } else {
