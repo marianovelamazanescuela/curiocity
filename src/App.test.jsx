@@ -205,6 +205,7 @@ describe('App', () => {
 
   it("reads aloud the current card, with the device voice, in the child's language", async () => {
     mockServer();
+    localStorage.setItem('curiocity_voice', 'off'); // only what the child asks for
     const spoken = [];
     const synth = { speak: vi.fn(u => spoken.push(u)), cancel: vi.fn(), getVoices: () => [] };
     vi.stubGlobal('speechSynthesis', synth);
@@ -226,6 +227,40 @@ describe('App', () => {
     spoken.length = 0;
     await user.click(screen.getByRole('button', { name: 'Escuchar' }));
     expect(spoken.map(u => u.text)).toEqual(['Dato sorprendente', lesson.dato_sorprendente]);
+  });
+
+  it('reads each card aloud as it appears for 6-8, and not by default for 9-12', async () => {
+    mockServer();
+    const spoken = [];
+    const synth = { speak: vi.fn(u => spoken.push(u.text)), cancel: vi.fn(), getVoices: () => [] };
+    vi.stubGlobal('speechSynthesis', synth);
+    vi.stubGlobal('SpeechSynthesisUtterance', function (text) { this.text = text; });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta });
+    // 6-8 (default): the question and its options are read without pressing anything
+    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'true');
+    expect(spoken).toEqual([lesson.pregunta_inicial.pregunta, ...lesson.pregunta_inicial.opciones]);
+
+    // the kind message after answering, then the next card when it appears
+    spoken.length = 0;
+    await user.click(screen.getByRole('button', { name: 'En la piel' }));
+    expect(spoken).toEqual(['¡Casi! La respuesta es: En el centro']);
+    spoken.length = 0;
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    expect(spoken).toEqual(['Dato sorprendente', lesson.dato_sorprendente]);
+
+    // 9-12: off by default
+    await user.click(screen.getByRole('button', { name: 'Asignaturas' }));
+    await user.click(await screen.findByRole('radio', { name: '9–12 años' }));
+    spoken.length = 0;
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta });
+    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'false');
+    expect(spoken).toEqual([]);
   });
 
   it('keeps discoveries in a local history that can be reopened and cleared', async () => {
