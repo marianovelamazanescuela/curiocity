@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  MdArrowBack, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline, MdVolumeUp, MdStop,
-  MdCheckCircle, MdTimer, MdPhotoCamera, MdChatBubbleOutline
+  MdArrowBack, MdArrowForward, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline, MdVolumeUp, MdStop,
+  MdCheckCircle, MdTimer, MdPhotoCamera, MdChatBubbleOutline, MdHelpOutline, MdSearch
 } from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
 import { getSubject } from '../subjects';
@@ -9,6 +9,8 @@ import { buildShareText, downloadDataUrl, mailtoUrl, nativeShare, whatsappUrl } 
 import ObjectHeader from './ObjectHeader';
 import { useSpeech } from '../useSpeech';
 import Curi, { CuriThinking } from './Curi';
+
+const SWIPE_MIN_PX = 60; // a deliberate horizontal swipe, not a wobble while scrolling
 
 function hostnameOf(url) {
   try {
@@ -63,7 +65,7 @@ function ShareBar({ t, heading, content, photo, onToast }) {
 }
 
 /** Curiosity question with 3 options. The child answers before seeing any explanation. */
-function Quiz({ t, question, answer, onAnswer, feedbackRef }) {
+function Quiz({ t, question, answer, onAnswer }) {
   const answered = answer !== null;
   const right = question.opciones[question.correcta];
   return (
@@ -84,7 +86,7 @@ function Quiz({ t, question, answer, onAnswer, feedbackRef }) {
         })}
       </ul>
       {answered && (
-        <div ref={feedbackRef} className="curi-say quiz__feedback reveal">
+        <div className="curi-say quiz__feedback reveal">
           <Curi state={answer === question.correcta ? 'correct' : 'almost'} size={64} />
           <p role="status">{answer === question.correcta ? t.correct : `${t.almost} ${right}`}</p>
         </div>
@@ -93,152 +95,229 @@ function Quiz({ t, question, answer, onAnswer, feedbackRef }) {
   );
 }
 
-// Interactive lesson: question → surprising fact + why → one-minute challenge → open question,
-// then links, related objects and sharing. Offline content has no question, so it starts revealed.
+/**
+ * The lesson as a sequence of cards, one idea each:
+ * question → surprising fact → why → challenge → final (open question, links, related objects, sharing).
+ * Offline content knows nothing true about the object, so it has no question or fact: 3 cards.
+ */
+function lessonCards(content) {
+  if (content.offline) return ['why', 'challenge', 'final'];
+  return [
+    content.pregunta_inicial && 'question',
+    content.dato_sorprendente && 'fact',
+    'why',
+    'challenge',
+    'final'
+  ].filter(Boolean);
+}
+
 export default function ContentView({
   t, photo, objectName, subjectKey, subjects, lang, ageGroup = '6-8', content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
 }) {
   const subject = getSubject(subjectKey);
   const heading = `${t.subjects[subjectKey]}: ${objectName}`;
+  const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
-  const [challenge, setChallenge] = useState('pending'); // pending | done | skipped
+  const [challengeDone, setChallengeDone] = useState(false);
   const speech = useSpeech(lang);
   const { stop } = speech;
-  const feedbackRef = useRef(null);
-  const finalRef = useRef(null);
+  const cardRef = useRef(null);
+  const movedRef = useRef(false); // focus moves only after the child changes card, not on first render
+  const swipeRef = useRef(null);
 
-  // Stop reading when the content changes (another subject or object).
-  useEffect(() => () => stop(), [content, stop]);
+  // Stop reading when the card or the content changes (another subject or object), or on leaving.
+  useEffect(() => () => stop(), [content, index, stop]);
 
-  // Bring each newly revealed step into view (the sheet is small on phones).
+  // The new card takes the keyboard and screen-reader focus, and comes into view.
   useEffect(() => {
-    if (answer !== null) feedbackRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-  }, [answer]);
-  useEffect(() => {
-    if (challenge !== 'pending') finalRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-  }, [challenge]);
+    if (!movedRef.current) return;
+    const card = cardRef.current;
+    if (!card) return;
+    card.focus({ preventScroll: true });
+    card.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [index]);
 
-  if (!content) {
-    return (
-      <article className="content" style={{ '--subject': subject.color }}>
-        <button className="link-btn" onClick={onBack}><MdArrowBack aria-hidden="true" /> {t.back}</button>
-        <ObjectHeader photo={photo} objectName={objectName} photoAlt={t.capturedPhoto}>
-          <span className="chip chip--subject"><subject.icon aria-hidden="true" /> {t.subjects[subjectKey]}</span>
-        </ObjectHeader>
-        <CuriThinking label={t.curiThinking} />
-      </article>
-    );
-  }
-
-  const question = content.pregunta_inicial;
-  const revealed = !question || answer !== null;
-  const finished = revealed && challenge !== 'pending';
-  const finalText = content.offline ? content.otra_idea : content.para_seguir_pensando;
-
-  const readAloud = () => {
-    if (speech.speaking) return speech.stop();
-    const parts = [];
-    if (content.offline) parts.push(content.intro);
-    if (question) parts.push(question.pregunta, ...question.opciones);
-    if (revealed) {
-      if (question) parts.push(answer === question.correcta ? t.correct : `${t.almost} ${question.opciones[question.correcta]}`);
-      parts.push(content.dato_sorprendente, content.por_que, `${t.challenge}. ${content.reto}`);
-    }
-    if (finished && finalText) parts.push(finalText);
-    speech.speak(parts.filter(Boolean));
-  };
-
-  return (
-    <article className={`content lesson lesson--${ageGroup}`} style={{ '--subject': subject.color }}>
+  const header = (
+    <>
       <button className="link-btn" onClick={onBack}>
         <MdArrowBack aria-hidden="true" /> {t.back}
       </button>
-
       <ObjectHeader photo={photo} objectName={objectName} photoAlt={t.capturedPhoto}>
         <span className="chip chip--subject">
           <subject.icon aria-hidden="true" /> {t.subjects[subjectKey]}
         </span>
       </ObjectHeader>
+    </>
+  );
+
+  if (!content) {
+    return (
+      <article className={`content lesson lesson--${ageGroup}`} style={{ '--subject': subject.color }}>
+        {header}
+        <CuriThinking label={t.curiThinking} />
+      </article>
+    );
+  }
+
+  const cards = lessonCards(content);
+  const current = cards[Math.min(index, cards.length - 1)];
+  const question = content.pregunta_inicial;
+  const isLast = index === cards.length - 1;
+  const canAdvance = !isLast && !(current === 'question' && answer === null);
+  const finalText = content.offline ? content.otra_idea : content.para_seguir_pensando;
+  const feedback = question && answer !== null ? (answer === question.correcta ? t.correct : `${t.almost} ${question.opciones[question.correcta]}`) : null;
+
+  const progress = t.cardProgress.replace('{n}', index + 1).replace('{total}', cards.length);
+
+  const goTo = next => {
+    if (next < 0 || next >= cards.length) return;
+    movedRef.current = true;
+    setIndex(next);
+  };
+  const goNext = () => canAdvance && goTo(index + 1);
+  const goPrevious = () => goTo(index - 1);
+
+  // Optional swipe (the buttons are always there). Only clear horizontal swipes count,
+  // so scrolling the sheet up and down never changes card by accident.
+  const onTouchStart = e => {
+    const touch = e.touches[0];
+    swipeRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  };
+  const onTouchEnd = e => {
+    const start = swipeRef.current;
+    const touch = e.changedTouches[0];
+    swipeRef.current = null;
+    if (!start || !touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0) goNext();
+    else goPrevious();
+  };
+
+  // What the "Listen" button reads: what is on the current card (never what comes next).
+  const cardSpeech = () => {
+    switch (current) {
+      case 'question':
+        return [question.pregunta, ...question.opciones, feedback];
+      case 'fact':
+        return [t.surprisingFact, content.dato_sorprendente];
+      case 'why':
+        return content.offline ? [content.intro, content.por_que] : [t.why, content.por_que];
+      case 'challenge':
+        return [`${t.challenge}. ${content.reto}`, challengeDone && t.challengeCheer];
+      default:
+        return [finalText];
+    }
+  };
+  const readAloud = () => (speech.speaking ? speech.stop() : speech.speak(cardSpeech()));
+
+  const titleId = `card-title-${current}`;
+  const listen = speech.supported && (
+    <button className="btn btn--outline btn--small card__listen" onClick={readAloud} aria-pressed={speech.speaking}>
+      {speech.speaking ? <MdStop aria-hidden="true" /> : <MdVolumeUp aria-hidden="true" />}
+      {speech.speaking ? t.stopListening : t.listen}
+    </button>
+  );
+
+  let body;
+  if (current === 'question') {
+    body = (
+      <>
+        <p className="card__kicker"><MdHelpOutline aria-hidden="true" /> {t.guessFirst}</p>
+        <h3 id={titleId} className="card__title lesson-text lesson-text--title">{question.pregunta}</h3>
+        {listen}
+        <Quiz t={t} question={question} answer={answer} onAnswer={setAnswer} />
+      </>
+    );
+  } else if (current === 'fact') {
+    body = (
+      <>
+        <h3 id={titleId} className="card__kicker"><MdLightbulbOutline aria-hidden="true" /> {t.surprisingFact}</h3>
+        <p className="lesson-text lesson-text--big">{content.dato_sorprendente}</p>
+        {listen}
+      </>
+    );
+  } else if (current === 'why') {
+    body = (
+      <>
+        <h3 id={titleId} className="card__kicker">
+          {content.offline ? <MdSearch aria-hidden="true" /> : <MdHelpOutline aria-hidden="true" />}
+          {content.offline ? t.investigate : t.why}
+        </h3>
+        {content.offline && <p className="lesson-text card__intro">{content.intro}</p>}
+        <div className="prose lesson-text">
+          {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
+        </div>
+        {listen}
+      </>
+    );
+  } else if (current === 'challenge') {
+    body = (
+      <>
+        <h3 id={titleId} className="card__kicker"><MdTimer aria-hidden="true" /> {t.challenge}</h3>
+        <p className="lesson-text challenge__text">{content.reto}</p>
+        {listen}
+        <div className="challenge__actions">
+          {challengeDone ? (
+            <div className="curi-say challenge__done reveal">
+              <Curi state="done" size={64} />
+              <p role="status">{t.challengeCheer}</p>
+            </div>
+          ) : (
+            <button className="btn btn--primary" onClick={() => setChallengeDone(true)}>
+              <MdCheckCircle aria-hidden="true" /> {t.challengeDone}
+            </button>
+          )}
+          {challengeDone && content.reto_foto && (
+            <button className="btn btn--outline" onClick={onTakePhoto}>
+              <MdPhotoCamera aria-hidden="true" /> {t.takeAnotherPhoto}
+            </button>
+          )}
+        </div>
+      </>
+    );
+  } else {
+    body = (
+      <>
+        <h3 id={titleId} className="card__kicker">
+          <MdChatBubbleOutline aria-hidden="true" /> {content.offline ? t.tryThis : t.keepThinking}
+        </h3>
+        {finalText && <p className="lesson-text lesson-text--big">{finalText}</p>}
+        {finalText && listen}
+      </>
+    );
+  }
+
+  return (
+    <article className={`content lesson lesson--${ageGroup}`} style={{ '--subject': subject.color }}>
+      {header}
 
       {content.conexion_debil && <p className="note">{t.weakLink}</p>}
 
-      <section className="card card--subject">
-        {question ? (
-          <>
-            <p className="card__kicker">{t.guessFirst}</p>
-            <h3 className="card__title lesson-text lesson-text--title">{question.pregunta}</h3>
-          </>
-        ) : (
-          <p className="card__lead lesson-text">{content.intro}</p>
-        )}
-        {speech.supported && (
-          <button className="btn btn--outline btn--small card__listen" onClick={readAloud} aria-pressed={speech.speaking}>
-            {speech.speaking ? <MdStop aria-hidden="true" /> : <MdVolumeUp aria-hidden="true" />}
-            {speech.speaking ? t.stopListening : t.listen}
-          </button>
-        )}
-        {question && <Quiz t={t} question={question} answer={answer} onAnswer={setAnswer} feedbackRef={feedbackRef} />}
+      <div className="lesson__bar">
+        <ol className="dots" aria-hidden="true">
+          {cards.map((card, i) => (
+            <li key={card} className={i === index ? 'dots__dot dots__dot--on' : i < index ? 'dots__dot dots__dot--done' : 'dots__dot'} />
+          ))}
+        </ol>
+        <p id="lesson-progress" className="visually-hidden">{progress}</p>
+      </div>
+
+      <section
+        key={current}
+        ref={cardRef}
+        className={`lesson-card lesson-card--${current}`}
+        tabIndex={-1}
+        aria-labelledby={`lesson-progress ${titleId}`}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        {body}
       </section>
 
-      {revealed && (
-        <div className="reveal">
-          {content.dato_sorprendente && (
-            <section>
-              <h3 className="section-title">{t.surprisingFact}</h3>
-              <p className="facts__item">
-                <MdLightbulbOutline className="facts__icon" aria-hidden="true" />
-                <span className="lesson-text">{content.dato_sorprendente}</span>
-              </p>
-            </section>
-          )}
-
-          <section>
-            {!content.offline && <h3 className="section-title">{t.why}</h3>}
-            <div className="prose lesson-text">
-              {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
-            </div>
-          </section>
-
-          <section>
-            <h3 className="section-title">{t.challenge}</h3>
-            <div className="challenge">
-              <MdTimer className="challenge__icon" aria-hidden="true" />
-              <p className="challenge__text lesson-text">{content.reto}</p>
-              {challenge === 'pending' ? (
-                <div className="challenge__actions">
-                  <button className="btn btn--primary" onClick={() => setChallenge('done')}>{t.challengeDone}</button>
-                  <button className="btn btn--ghost" onClick={() => setChallenge('skipped')}>{t.challengeSkip}</button>
-                </div>
-              ) : (
-                challenge === 'done' && (
-                  <div className="curi-say challenge__done">
-                    <Curi state="done" size={64} />
-                    <p role="status">{t.challengeCheer}</p>
-                  </div>
-                )
-              )}
-              {challenge === 'done' && content.reto_foto && (
-                <button className="btn btn--outline" onClick={onTakePhoto}>
-                  <MdPhotoCamera aria-hidden="true" /> {t.takeAnotherPhoto}
-                </button>
-              )}
-            </div>
-          </section>
-        </div>
-      )}
-
-      {finished && (
-        <div ref={finalRef} className="reveal">
-          {finalText && (
-            <section>
-              <h3 className="section-title">{content.offline ? t.tryThis : t.keepThinking}</h3>
-              <p className="think">
-                <MdChatBubbleOutline className="think__icon" aria-hidden="true" />
-                <span className="lesson-text">{finalText}</span>
-              </p>
-            </section>
-          )}
-
+      {isLast && (
+        <div className="lesson__end reveal">
           {content.enlaces.length > 0 && (
             <section>
               <h3 className="section-title">{t.recommendedResources}</h3>
@@ -285,6 +364,27 @@ export default function ContentView({
           )}
         </div>
       )}
+
+      <div className="lesson-nav">
+        {current === 'question' && answer === null && (
+          <p id="answer-hint" className="lesson-nav__hint">{t.answerToContinue}</p>
+        )}
+        <div className="lesson-nav__buttons">
+          <button className="btn btn--outline lesson-nav__btn" onClick={goPrevious} disabled={index === 0}>
+            <MdArrowBack aria-hidden="true" /> {t.previous}
+          </button>
+          {!isLast && (
+            <button
+              className="btn btn--primary lesson-nav__btn"
+              onClick={goNext}
+              disabled={!canAdvance}
+              aria-describedby={canAdvance ? undefined : 'answer-hint'}
+            >
+              {t.next} <MdArrowForward aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
     </article>
   );
 }

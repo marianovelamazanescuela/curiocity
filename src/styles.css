@@ -663,34 +663,6 @@ p {
   line-height: 1.1;
 }
 
-.card {
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: var(--radius-m);
-  animation: rise 0.4s var(--ease-out) both;
-}
-
-.card--subject {
-  background: var(--subject);
-}
-
-.card__title {
-  font-size: 25px;
-  font-weight: 700;
-  line-height: 1.1;
-  margin-bottom: 8px;
-}
-
-.card__lead {
-  font-size: 19px;
-  font-weight: 500;
-  line-height: 1.35;
-}
-
-.prose {
-  margin-top: 18px;
-}
-
 .prose p {
   font-size: inherit;
   line-height: inherit;
@@ -700,32 +672,12 @@ p {
   margin-top: 12px;
 }
 
-.facts,
 .links {
   display: grid;
   gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.facts__item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px;
-  border-radius: var(--radius-s);
-  background: var(--paper);
-  font-size: 17px;
-}
-
-.facts__icon {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  border-radius: 50%;
-  background: var(--subject);
 }
 
 .links__item {
@@ -1000,73 +952,6 @@ p {
   scroll-margin-top: 12px;
 }
 
-p.facts__item {
-  margin: 0;
-}
-
-.challenge {
-  display: grid;
-  gap: 12px;
-  padding: 18px;
-  border: 1.5px dashed var(--ink);
-  border-radius: var(--radius-m);
-  background: var(--paper);
-}
-
-.challenge__icon {
-  width: 40px;
-  height: 40px;
-  padding: 8px;
-  border-radius: 50%;
-  background: var(--subject);
-}
-
-.challenge__text {
-  font-size: 19px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.challenge__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.challenge__done {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.challenge__done svg {
-  flex: none;
-  font-size: 24px;
-}
-
-.think {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border-radius: var(--radius-m);
-  background: var(--subject);
-  font-size: 19px;
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-.think__icon {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 70%, transparent);
-}
-
 /* =========================================================
    History
    ========================================================= */
@@ -1172,6 +1057,173 @@ p.facts__item {
 /* =========================================================
    Motion
    ========================================================= */
+/* =========================================================
+   Lesson cards: one idea per card, in the subject's tint, with dots and big buttons.
+   ========================================================= */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lesson__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--tap);
+  margin-top: 12px;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dots__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--pill);
+  border: 1.5px solid var(--ink);
+  transition: width 0.25s var(--ease-out), background-color 0.25s;
+}
+
+.dots__dot--done {
+  background: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+.dots__dot--on {
+  width: 30px;
+  background: var(--ink);
+}
+
+.lesson-card {
+  margin-top: 8px;
+  padding: 20px 18px 18px;
+  border-radius: var(--radius-l);
+  background: var(--subject);
+  scroll-margin-top: 12px;
+  touch-action: pan-y; /* vertical scrolling stays native; horizontal swipes change card */
+  animation: card-in 0.35s var(--ease-out) both;
+}
+
+.lesson-card:focus {
+  outline: none;
+}
+
+.lesson-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.card__kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.card__kicker svg {
+  flex: none;
+  font-size: 22px;
+}
+
+.card__title {
+  margin-bottom: 4px;
+}
+
+.lesson .lesson-text.lesson-text--big {
+  font-size: calc(var(--lesson-size) * 1.12);
+}
+
+.card__intro {
+  margin-bottom: 12px;
+}
+
+.prose p + p {
+  margin-top: 12px;
+}
+
+.challenge__text {
+  padding: 14px 16px;
+  border: 1.5px dashed var(--ink);
+  border-radius: var(--radius-m);
+  background: var(--paper);
+}
+
+.challenge__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.challenge__done {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.lesson__end {
+  margin-top: 8px;
+}
+
+/* Previous / Next: always reachable at the bottom of the sheet */
+.lesson-nav {
+  position: sticky;
+  bottom: calc(-28px - env(safe-area-inset-bottom));
+  z-index: 1;
+  margin: 18px calc(-1 * var(--space)) 0;
+  padding: 10px var(--space) calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--cream) 14px);
+}
+
+.lesson-nav__buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.lesson-nav__btn {
+  flex: 1;
+  min-height: 52px;
+  padding: 0 14px;
+  background-color: var(--cream);
+}
+
+.lesson-nav__btn.btn--primary {
+  background-color: var(--ink);
+}
+
+.lesson-nav__btn:disabled {
+  opacity: 0.35;
+  transform: none;
+}
+
+.lesson-nav__hint {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* =========================================================
    Lesson typography: Literata for what the child reads (question, options, fact, why,
    challenge, final question); Sofia Sans for everything else. Bigger for 6–8.
