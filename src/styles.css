@@ -21,6 +21,29 @@
 }
 
 /* =========================================================
+   Font: Literata (variable: weight + optical size), only for the lesson text.
+   Self-hosted like Sofia Sans. Licence: SIL OFL 1.1 (public/fonts/OFL-Literata.txt)
+   Not preloaded: it is only needed once a lesson opens (the service worker then caches it).
+   ========================================================= */
+@font-face {
+  font-family: 'Literata';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Literata';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* =========================================================
    Curiocity — design tokens
    Brand: cream paper + ink line, Sofia Sans, "eyes" motif.
    ========================================================= */
@@ -32,7 +55,12 @@
   --ink-soft: #57524b;
   --ink-faint: rgba(29, 29, 27, 0.14);
 
-  --font: 'Sofia Sans', system-ui, sans-serif;
+  --font: 'Sofia Sans', system-ui, sans-serif; /* interface: buttons, labels, navigation */
+  --font-content: 'Literata', Georgia, serif; /* lesson text: change this line to change it everywhere */
+
+  /* Lesson text size: larger for 6–8 (learning to read), set per age on .lesson */
+  --lesson-size: 20px;
+  --lesson-leading: 1.55;
 
   --radius-s: 14px;
   --radius-m: 20px;
@@ -664,8 +692,8 @@ p {
 }
 
 .prose p {
-  font-size: 18px;
-  line-height: 1.55;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .prose p + p {
@@ -1180,6 +1208,38 @@ p.facts__item {
 /* =========================================================
    Motion
    ========================================================= */
+/* =========================================================
+   Lesson typography: Literata for what the child reads (question, options, fact, why,
+   challenge, final question); Sofia Sans for everything else. Bigger for 6–8.
+   ========================================================= */
+.lesson--9-12 {
+  --lesson-size: 17.5px;
+  --lesson-leading: 1.5;
+}
+
+.lesson .lesson-text {
+  font-family: var(--font-content);
+  font-size: var(--lesson-size);
+  line-height: var(--lesson-leading);
+  font-weight: 400;
+  font-optical-sizing: auto;
+  letter-spacing: 0;
+  hyphens: manual;
+  overflow-wrap: break-word;
+}
+
+.lesson .lesson-text--title {
+  font-size: calc(var(--lesson-size) * 1.25);
+  line-height: 1.25;
+  font-weight: 500;
+}
+
+.lesson .quiz__option .lesson-text,
+.lesson .challenge__text {
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }

@@ -219,6 +219,7 @@ export default function App() {
         subjectKey={subjectKey}
         subjects={orderedSubjects(currentRanking || null)}
         lang={lang}
+        ageGroup={ageGroup}
         content={content}
         onBack={backToSubjects}
         onSelectSubject={key => loadSubject(key)}

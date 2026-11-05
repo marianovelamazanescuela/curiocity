@@ -87,7 +87,7 @@ function Quiz({ t, question, answer, onAnswer, feedbackRef }) {
           return (
             <li key={i}>
               <button className={cls} onClick={() => onAnswer(i)} disabled={answered} aria-pressed={answered ? i === answer : undefined}>
-                <span>{option}</span>
+                <span className="lesson-text">{option}</span>
                 {answered && i === question.correcta && <MdCheckCircle className="quiz__mark" aria-hidden="true" />}
               </button>
             </li>
@@ -106,7 +106,7 @@ function Quiz({ t, question, answer, onAnswer, feedbackRef }) {
 // Interactive lesson: question → surprising fact + why → one-minute challenge → open question,
 // then links, related objects and sharing. Offline content has no question, so it starts revealed.
 export default function ContentView({
-  t, photo, objectName, subjectKey, subjects, lang, content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
+  t, photo, objectName, subjectKey, subjects, lang, ageGroup = '6-8', content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
 }) {
   const subject = getSubject(subjectKey);
   const heading = `${t.subjects[subjectKey]}: ${objectName}`;
@@ -159,7 +159,7 @@ export default function ContentView({
   };
 
   return (
-    <article className="content" style={{ '--subject': subject.color }}>
+    <article className={`content lesson lesson--${ageGroup}`} style={{ '--subject': subject.color }}>
       <button className="link-btn" onClick={onBack}>
         <MdArrowBack aria-hidden="true" /> {t.back}
       </button>
@@ -176,10 +176,10 @@ export default function ContentView({
         {question ? (
           <>
             <p className="card__kicker">{t.guessFirst}</p>
-            <h3 className="card__title">{question.pregunta}</h3>
+            <h3 className="card__title lesson-text lesson-text--title">{question.pregunta}</h3>
           </>
         ) : (
-          <p className="card__lead">{content.intro}</p>
+          <p className="card__lead lesson-text">{content.intro}</p>
         )}
         {speech.supported && (
           <button className="btn btn--outline btn--small card__listen" onClick={readAloud} aria-pressed={speech.speaking}>
@@ -197,14 +197,14 @@ export default function ContentView({
               <h3 className="section-title">{t.surprisingFact}</h3>
               <p className="facts__item">
                 <MdLightbulbOutline className="facts__icon" aria-hidden="true" />
-                <span>{content.dato_sorprendente}</span>
+                <span className="lesson-text">{content.dato_sorprendente}</span>
               </p>
             </section>
           )}
 
           <section>
             {!content.offline && <h3 className="section-title">{t.why}</h3>}
-            <div className="prose">
+            <div className="prose lesson-text">
               {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
             </div>
           </section>
@@ -213,7 +213,7 @@ export default function ContentView({
             <h3 className="section-title">{t.challenge}</h3>
             <div className="challenge">
               <MdTimer className="challenge__icon" aria-hidden="true" />
-              <p className="challenge__text">{content.reto}</p>
+              <p className="challenge__text lesson-text">{content.reto}</p>
               {challenge === 'pending' ? (
                 <div className="challenge__actions">
                   <button className="btn btn--primary" onClick={() => setChallenge('done')}>{t.challengeDone}</button>
@@ -243,7 +243,7 @@ export default function ContentView({
               <h3 className="section-title">{content.offline ? t.tryThis : t.keepThinking}</h3>
               <p className="think">
                 <MdChatBubbleOutline className="think__icon" aria-hidden="true" />
-                <span>{finalText}</span>
+                <span className="lesson-text">{finalText}</span>
               </p>
             </section>
           )}
