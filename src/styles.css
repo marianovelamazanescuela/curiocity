@@ -21,6 +21,29 @@
 }
 
 /* =========================================================
+   Font: Literata (variable: weight + optical size), only for the lesson text.
+   Self-hosted like Sofia Sans. Licence: SIL OFL 1.1 (public/fonts/OFL-Literata.txt)
+   Not preloaded: it is only needed once a lesson opens (the service worker then caches it).
+   ========================================================= */
+@font-face {
+  font-family: 'Literata';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Literata';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* =========================================================
    Curiocity — design tokens
    Brand: cream paper + ink line, Sofia Sans, "eyes" motif.
    ========================================================= */
@@ -32,7 +55,12 @@
   --ink-soft: #57524b;
   --ink-faint: rgba(29, 29, 27, 0.14);
 
-  --font: 'Sofia Sans', system-ui, sans-serif;
+  --font: 'Sofia Sans', system-ui, sans-serif; /* interface: buttons, labels, navigation */
+  --font-content: 'Literata', Georgia, serif; /* lesson text: change this line to change it everywhere */
+
+  /* Lesson text size: larger for 6–8 (learning to read), set per age on .lesson */
+  --lesson-size: 20px;
+  --lesson-leading: 1.55;
 
   --radius-s: 14px;
   --radius-m: 20px;
@@ -635,69 +663,21 @@ p {
   line-height: 1.1;
 }
 
-.card {
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: var(--radius-m);
-  animation: rise 0.4s var(--ease-out) both;
-}
-
-.card--subject {
-  background: var(--subject);
-}
-
-.card__title {
-  font-size: 25px;
-  font-weight: 700;
-  line-height: 1.1;
-  margin-bottom: 8px;
-}
-
-.card__lead {
-  font-size: 19px;
-  font-weight: 500;
-  line-height: 1.35;
-}
-
-.prose {
-  margin-top: 18px;
-}
-
 .prose p {
-  font-size: 18px;
-  line-height: 1.55;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .prose p + p {
   margin-top: 12px;
 }
 
-.facts,
 .links {
   display: grid;
   gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.facts__item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px;
-  border-radius: var(--radius-s);
-  background: var(--paper);
-  font-size: 17px;
-}
-
-.facts__icon {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  border-radius: 50%;
-  background: var(--subject);
 }
 
 .links__item {
@@ -899,15 +879,6 @@ p {
   text-transform: uppercase;
 }
 
-.note {
-  margin-top: 14px;
-  padding: 12px 16px;
-  border-radius: var(--radius-s);
-  background: var(--paper);
-  font-size: 16px;
-  color: var(--ink-soft);
-}
-
 .quiz {
   display: grid;
   gap: 8px;
@@ -970,73 +941,6 @@ p {
 .reveal {
   animation: rise 0.4s var(--ease-out) both;
   scroll-margin-top: 12px;
-}
-
-p.facts__item {
-  margin: 0;
-}
-
-.challenge {
-  display: grid;
-  gap: 12px;
-  padding: 18px;
-  border: 1.5px dashed var(--ink);
-  border-radius: var(--radius-m);
-  background: var(--paper);
-}
-
-.challenge__icon {
-  width: 40px;
-  height: 40px;
-  padding: 8px;
-  border-radius: 50%;
-  background: var(--subject);
-}
-
-.challenge__text {
-  font-size: 19px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.challenge__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.challenge__done {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.challenge__done svg {
-  flex: none;
-  font-size: 24px;
-}
-
-.think {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border-radius: var(--radius-m);
-  background: var(--subject);
-  font-size: 19px;
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-.think__icon {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  padding: 6px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 70%, transparent);
 }
 
 /* =========================================================
@@ -1117,42 +1021,6 @@ p.facts__item {
 }
 
 /* =========================================================
-   Loading skeleton
-   ========================================================= */
-.skeleton {
-  display: grid;
-  gap: 10px;
-  margin-top: 16px;
-  padding: 18px;
-  border-radius: var(--radius-m);
-  background: var(--subject);
-}
-
-.skeleton__line {
-  height: 14px;
-  border-radius: var(--pill);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.35));
-  background-size: 200% 100%;
-  animation: shimmer 1.2s linear infinite;
-}
-
-.skeleton__line--title {
-  height: 24px;
-  width: 70%;
-  margin-bottom: 6px;
-}
-
-.skeleton__line--short {
-  width: 45%;
-}
-
-.skeleton__label {
-  margin-top: 6px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-/* =========================================================
    Toast
    ========================================================= */
 .toast-region {
@@ -1180,6 +1048,347 @@ p.facts__item {
 /* =========================================================
    Motion
    ========================================================= */
+/* =========================================================
+   Lesson cards: one idea per card, in the subject's tint, with dots and big buttons.
+   ========================================================= */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lesson__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--tap);
+  margin-top: 12px;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dots__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--pill);
+  border: 1.5px solid var(--ink);
+  transition: width 0.25s var(--ease-out), background-color 0.25s;
+}
+
+.dots__dot--done {
+  background: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+.dots__dot--on {
+  width: 30px;
+  background: var(--ink);
+}
+
+.lesson-card {
+  margin-top: 8px;
+  padding: 20px 18px 18px;
+  border-radius: var(--radius-l);
+  background: var(--subject);
+  scroll-margin-top: 12px;
+  touch-action: pan-y; /* vertical scrolling stays native; horizontal swipes change card */
+  animation: card-in 0.35s var(--ease-out) both;
+}
+
+.lesson-card:focus {
+  outline: none;
+}
+
+.lesson-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.card__kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.card__kicker svg {
+  flex: none;
+  font-size: 22px;
+}
+
+.card__title {
+  margin-bottom: 4px;
+}
+
+.lesson .lesson-text.lesson-text--big {
+  font-size: calc(var(--lesson-size) * 1.12);
+}
+
+.card__intro {
+  margin-bottom: 12px;
+}
+
+.prose p + p {
+  margin-top: 12px;
+}
+
+.challenge__text {
+  padding: 14px 16px;
+  border: 1.5px dashed var(--ink);
+  border-radius: var(--radius-m);
+  background: var(--paper);
+}
+
+.challenge__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.challenge__done {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.lesson__end {
+  margin-top: 8px;
+}
+
+/* Previous / Next: always reachable at the bottom of the sheet */
+.lesson-nav {
+  position: sticky;
+  bottom: calc(-28px - env(safe-area-inset-bottom));
+  z-index: 1;
+  margin: 18px calc(-1 * var(--space)) 0;
+  padding: 10px var(--space) calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--cream) 14px);
+}
+
+.lesson-nav__buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.lesson-nav__btn {
+  flex: 1;
+  min-height: 52px;
+  padding: 0 14px;
+  background-color: var(--cream);
+}
+
+.lesson-nav__btn.btn--primary {
+  background-color: var(--ink);
+}
+
+.lesson-nav__btn:disabled {
+  opacity: 0.35;
+  transform: none;
+}
+
+.lesson-nav__hint {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+/* Voice on/off: reads each card aloud as it appears */
+.voice-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 0 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--pill);
+  background: transparent;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.voice-toggle svg {
+  font-size: 22px;
+}
+
+.voice-toggle--on {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* =========================================================
+   Lesson typography: Literata for what the child reads (question, options, fact, why,
+   challenge, final question); Sofia Sans for everything else. Bigger for 6–8.
+   ========================================================= */
+.lesson--9-12 {
+  --lesson-size: 17.5px;
+  --lesson-leading: 1.5;
+}
+
+.lesson .lesson-text {
+  font-family: var(--font-content);
+  font-size: var(--lesson-size);
+  line-height: var(--lesson-leading);
+  font-weight: 400;
+  font-optical-sizing: auto;
+  letter-spacing: 0;
+  hyphens: manual;
+  overflow-wrap: break-word;
+}
+
+.lesson .lesson-text--title {
+  font-size: calc(var(--lesson-size) * 1.25);
+  line-height: 1.25;
+  font-weight: 500;
+}
+
+.lesson .quiz__option .lesson-text,
+.lesson .challenge__text {
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* =========================================================
+   Curi (mascot): CSS-only motion. Occasional blink, pupils that wander while thinking,
+   and smooth changes between states. With reduced motion only the state changes.
+   ========================================================= */
+.curi {
+  flex: none;
+  display: block;
+  overflow: visible;
+}
+
+.curi__eye,
+.curi__open {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.curi__pupil {
+  transition: transform 0.4s var(--ease-out);
+}
+
+.curi__open,
+.curi__arc {
+  transition: opacity 0.2s ease;
+}
+
+.curi__arc {
+  opacity: 0;
+}
+
+.curi__mouth {
+  transition: d 0.35s var(--ease-out);
+}
+
+/* Blink now and then (only open eyes) */
+.curi--idle .curi__open,
+.curi--almost .curi__open,
+.curi--done .curi__eye--o .curi__open {
+  animation: curi-blink 5.5s infinite;
+}
+
+.curi--thinking .curi__pupil {
+  animation: curi-wonder 2.4s ease-in-out infinite alternate;
+}
+
+.curi--almost .curi__pupil {
+  transform: translate(-5px, 5px);
+}
+
+/* correct: both eyes become happy arcs (∩) */
+.curi--correct .curi__open {
+  opacity: 0;
+}
+
+.curi--correct .curi__arc {
+  opacity: 1;
+}
+
+/* done: the C eye winks */
+.curi--done .curi__eye--c .curi__open {
+  opacity: 0;
+}
+
+.curi--done .curi__eye--c .curi__arc {
+  opacity: 1;
+}
+
+/* Happy states: a small hop when they appear */
+.curi--correct,
+.curi--done {
+  animation: curi-hop 0.5s var(--ease-out);
+}
+
+/* Curi next to a short message (loading, answer, challenge, empty states) */
+.curi-say {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.curi-say--stack {
+  flex-direction: column;
+  text-align: center;
+  gap: 10px;
+  padding: 18px 0;
+}
+
+.curi-say__text {
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+@keyframes curi-blink {
+  0%, 92%, 100% { transform: none; }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes curi-wonder {
+  from { transform: translate(-4px, -6px); }
+  to { transform: translate(-1px, -7px); }
+}
+
+@keyframes curi-hop {
+  40% { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curi,
+  .curi * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* without the animation, thinking pupils still look up */
+  .curi--thinking .curi__pupil {
+    transform: translate(-3px, -6px);
+  }
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
@@ -1200,11 +1409,6 @@ p.facts__item {
 
 @keyframes breathe {
   50% { transform: scale(0.97); }
-}
-
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

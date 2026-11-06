@@ -4,6 +4,25 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-05 — Interfaz de la lección: tarjetas, Curi, Literata y voz (fase 2)
+
+Rama `feature/fase-2-interfaz`. Objetivo: que la mini-lección sea más visual, más fácil de seguir para quien todavía lee con dificultad (6–8 años) y con más personalidad, sin perder la identidad de la marca.
+
+**Qué se cambió y por qué**
+
+- **Literata para el texto de la lección** (variable `--font-content`). Sofia Sans se queda en la interfaz. Versión variable con tamaño óptico (110 KB latin, 90 KB latin-ext), alojada en el proyecto con su licencia OFL. Se carga al abrir la primera lección y no se precarga. Texto a 20 px / 1,55 en 6–8 y a 17,5 px / 1,5 en 9–12. *Por qué:* una serifa de lectura, abierta y robusta, ayuda a quien empieza a leer y separa visualmente "lo que se lee" de "lo que se pulsa". *Descartadas:* Computer Modern / Latin Modern (demasiado fina en pantalla para quien empieza a leer) y STIX Two (demasiado seria).
+- **Curi, la mascota.** Solo los ojos del logo (O y C con sus pupilas) y una boca de una única línea continua. Tiene 5 estados: espera, pensando, acierto, ¡casi! y reto hecho. Aparece en las esperas, en la respuesta, en el reto y en el historial vacío. *Por qué:* da personalidad y feedback emocional sin añadir un personaje nuevo a la marca. El "¡casi!" anima, nunca entristece. *Descartadas:* una mascota con cuerpo ("bichito") o con forma de lupa, porque se alejaban del logo.
+- **Lección en tarjetas,** una idea por tarjeta: pregunta → dato → porqué → reto → final. Lleva puntos de progreso, botones grandes "Anterior" / "Siguiente" fijos abajo y se puede deslizar con el dedo. La pregunta no deja avanzar sin responder. Se quita "Ahora no" del reto. *Por qué:* antes la lección se desplegaba hacia abajo en una columna larga; una tarjeta cada vez es más fácil de seguir a los 6–8 años.
+- **Voz más presente.** Botón "Voz" guardado en el dispositivo. En 6–8, cada tarjeta se lee sola al aparecer; en 9–12, la voz está desactivada por defecto. *Por qué:* que quien aún no lee con soltura pueda seguir la lección sin depender de un adulto.
+- **Ajustes de la fase 1.** La edad por defecto es 6–8 también en el servidor. El aviso de relación débil queda solo en la primera frase del porqué (se quita la nota de la interfaz, que era genérica y salía antes de la pregunta).
+- **Sin cambios** en los prompts, la detección, el modelo, las enciclopedias ni la cámara.
+
+**Cómo se probó:** tests nuevos de tarjetas, Curi y voz (89 tests en verde), lint y build. Recorrido completo a 360 px con el servidor real, OpenAI real y la cámara simulada con la foto de una manzana, en las dos franjas de edad. No se sale nada de la pantalla y las peticiones de red van solo al propio servidor (ninguna a Google). Capturas guardadas fuera del repositorio, en `capturas/fase-2/`.
+
+**Pendiente:** probarlo con niños y niñas, sobre todo la lectura automática y el deslizamiento, y probar en iPhone (Safari no anima el cambio de boca de Curi, solo lo cambia). Sigue apareciendo la simplificación "la manzana se forma del ovario" (en la manzana, la parte carnosa viene sobre todo del receptáculo): conviene revisarla en el prompt en una fase de contenidos.
+
+---
+
 ## 2026-11-04 — Contenidos que despiertan curiosidad (fase 1)
 
 Rama `feature/contenidos-interesantes`. Respuesta al jurado de Ciencia en Acción: "el interés de algunos contenidos no es muy grande".

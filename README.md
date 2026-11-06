@@ -1,6 +1,6 @@
 # Curiocity
 
-Aplicación web (PWA) educativa para niños y niñas de 6 a 12 años: apuntan con la cámara a un objeto, la app lo reconoce y les propone las 3 asignaturas que más relación tienen con él, cada una con un gancho (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte). En cada asignatura, una mini-lección interactiva adaptada a su edad (6–8 o 9–12): primero adivinan una pregunta, luego un dato sorprendente y el porqué, un reto de un minuto con el objeto real y una pregunta para seguir pensando. También ofrece enlaces a enciclopedias infantiles reales, objetos relacionados y lectura en voz alta. Guarda un historial de descubrimientos solo en el dispositivo.
+Aplicación web (PWA) educativa para niños y niñas de 6 a 12 años: apuntan con la cámara a un objeto, la app lo reconoce y les propone las 3 asignaturas que más relación tienen con él, cada una con un gancho (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte). En cada asignatura, una mini-lección interactiva en tarjetas, adaptada a su edad (6–8 o 9–12): primero adivinan una pregunta, luego un dato sorprendente, el porqué, un reto de un minuto con el objeto real y una pregunta para seguir pensando. Les acompaña Curi, la mascota hecha con los ojos del logo. También ofrece enlaces a enciclopedias infantiles reales, objetos relacionados y lectura en voz alta (automática para 6–8). Guarda un historial de descubrimientos solo en el dispositivo.
 
 Idiomas: español, inglés, francés y alemán (se detecta automáticamente del navegador).
 
@@ -96,9 +96,9 @@ server/
   app.test.js, content.test.js
 src/
   App.jsx           flujo: cámara → análisis → asignaturas → contenido; historial
-  components/       CameraView, Sheet (<dialog>), SubjectPicker, ContentView, HistoryView, ObjectHeader, Toast, Splash
+  components/       CameraView, Sheet (<dialog>), SubjectPicker, ContentView (lección en tarjetas), Curi (mascota), HistoryView, ObjectHeader, Toast, Splash
   useCamera.js      gestión de la cámara
-  useSpeech.js      lectura en voz alta (voz del dispositivo)
+  useSpeech.js      lectura en voz alta (voz del dispositivo) y preferencia de voz
   api.js            llamadas al servidor + reconocimiento local de respaldo
   history.js        historial guardado solo en el dispositivo
   i18n.js           textos de la interfaz, idioma y grupo de edad
@@ -108,7 +108,7 @@ src/
   styles.css        diseño: tipografía, tokens de color y componentes
 public/
   sw.js             service worker (abrir sin conexión)
-  fonts/            Sofia Sans alojada en el proyecto (licencia OFL)
+  fonts/            Sofia Sans (interfaz) y Literata (texto de la lección), alojadas en el proyecto (licencia OFL)
   …                 logo, iconos, manifest
 ```
 
@@ -120,4 +120,4 @@ public/
 
 ### Diseño
 
-Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color cálido por asignatura (ocre, piedra, terracota, caramelo, coral, arcilla y naranja; en [src/subjects.js](src/subjects.js)). Tipografía: Sofia Sans, alojada en `public/fonts/`. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).
+Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color cálido por asignatura (ocre, piedra, terracota, caramelo, coral, arcilla y naranja; en [src/subjects.js](src/subjects.js)). Tipografía: Sofia Sans para la interfaz (`--font`) y Literata para el texto de la lección (`--font-content`), las dos alojadas en `public/fonts/`. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).

@@ -8,6 +8,33 @@ const VOICE_LOCALES = { es: 'es-ES', en: 'en-GB', fr: 'fr-FR', de: 'de-DE' };
 export const speechSupported = () =>
   typeof window !== 'undefined' && 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function';
 
+// "Voice on" reads every lesson card aloud as it appears. Saved only on this device.
+// Never chosen: on for 6–8 (many are still learning to read), off for 9–12.
+const VOICE_KEY = 'curiocity_voice';
+
+export function loadVoicePreference(ageGroup) {
+  try {
+    const saved = localStorage.getItem(VOICE_KEY);
+    if (saved === 'on' || saved === 'off') return saved === 'on';
+  } catch {
+    // localStorage may be blocked (private mode); use the default
+  }
+  return ageGroup === '6-8';
+}
+
+export function saveVoicePreference(on) {
+  try {
+    localStorage.setItem(VOICE_KEY, on ? 'on' : 'off');
+  } catch {
+    // ignore: the choice just won't be remembered
+  }
+}
+
+// Browsers only let a page speak after the person has interacted with it (autoplay policy).
+// The lesson always opens after a tap (photo, subject), but we check anyway when the browser can tell.
+export const hasUserInteracted = () =>
+  typeof navigator === 'undefined' || !navigator.userActivation || navigator.userActivation.hasBeenActive;
+
 function pickVoice(lang) {
   const voices = window.speechSynthesis.getVoices();
   const locale = VOICE_LOCALES[lang] || lang;

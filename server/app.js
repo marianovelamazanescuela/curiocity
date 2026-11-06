@@ -78,7 +78,8 @@ function cacheSet(key, data) {
 
 const MAX_TEXT_FIELD = 100;
 const isShortString = v => typeof v === 'string' && v.trim().length > 0 && v.length <= MAX_TEXT_FIELD;
-const ageGroupOf = body => (body && AGE_GROUPS.includes(body.ageGroup) ? body.ageGroup : '9-12');
+// Same default as the app (src/i18n.js): the youngest group, the safest choice if the age is unknown.
+const ageGroupOf = body => (body && AGE_GROUPS.includes(body.ageGroup) ? body.ageGroup : '6-8');
 
 // Low temperature: the content must be accurate, not creative.
 const CONTENT_TEMPERATURE = 0.35;
