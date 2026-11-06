@@ -1,13 +1,12 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  MdArrowBack, MdArrowForward, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline, MdVolumeUp, MdStop,
-  MdCheckCircle, MdTimer, MdPhotoCamera, MdChatBubbleOutline, MdHelpOutline, MdSearch, MdVolumeOff
+  MdArrowBack, MdArrowForward, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline,
+  MdCheckCircle, MdTimer, MdPhotoCamera, MdChatBubbleOutline, MdHelpOutline, MdSearch
 } from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
 import { getSubject } from '../subjects';
 import { buildShareText, downloadDataUrl, mailtoUrl, nativeShare, whatsappUrl } from '../share';
 import ObjectHeader from './ObjectHeader';
-import { hasUserInteracted, loadVoicePreference, saveVoicePreference, useSpeech } from '../useSpeech';
 import Curi, { CuriThinking } from './Curi';
 
 const SWIPE_MIN_PX = 60; // a deliberate horizontal swipe, not a wobble while scrolling
@@ -113,51 +112,17 @@ function lessonCards(content) {
   ].filter(Boolean);
 }
 
-/** What is read aloud for a card: what is on it, never what comes next (no spoilers). */
-function cardSpeech(card, { t, content, answer, challengeDone }) {
-  const question = content.pregunta_inicial;
-  switch (card) {
-    case 'question':
-      return [question.pregunta, ...question.opciones, answer !== null && answerFeedback(t, question, answer)];
-    case 'fact':
-      return [t.surprisingFact, content.dato_sorprendente];
-    case 'why':
-      return content.offline ? [content.intro, content.por_que] : [t.why, content.por_que];
-    case 'challenge':
-      return [`${t.challenge}. ${content.reto}`, challengeDone && t.challengeCheer];
-    default:
-      return [content.offline ? content.otra_idea : content.para_seguir_pensando];
-  }
-}
-
 export default function ContentView({
-  t, photo, objectName, subjectKey, subjects, lang, ageGroup = '6-8', content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
+  t, photo, objectName, subjectKey, subjects, ageGroup = '6-8', content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
 }) {
   const subject = getSubject(subjectKey);
   const heading = `${t.subjects[subjectKey]}: ${objectName}`;
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [challengeDone, setChallengeDone] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(() => loadVoicePreference(ageGroup));
-  const speech = useSpeech(lang);
-  const { stop } = speech;
   const cardRef = useRef(null);
   const movedRef = useRef(false); // focus moves only after the child changes card, not on first render
   const swipeRef = useRef(null);
-
-  // Stop reading when the card or the content changes (another subject or object), or on leaving.
-  useEffect(() => () => stop(), [content, index, stop]);
-
-  // Voice on: each card is read aloud as it appears (and the first one when the lesson arrives).
-  // The stop effect above runs first, so the previous card never overlaps the new one.
-  const readCurrentCard = useEffectEvent(() => {
-    if (!content || !speech.supported || !hasUserInteracted()) return;
-    const cards = lessonCards(content);
-    speech.speak(cardSpeech(cards[Math.min(index, cards.length - 1)], { t, content, answer, challengeDone }));
-  });
-  useEffect(() => {
-    if (voiceOn) readCurrentCard();
-  }, [content, index, voiceOn]);
 
   // The new card takes the keyboard and screen-reader focus, and comes into view.
   useEffect(() => {
@@ -225,33 +190,7 @@ export default function ContentView({
     else goPrevious();
   };
 
-  const readAloud = () =>
-    speech.speaking ? speech.stop() : speech.speak(cardSpeech(current, { t, content, answer, challengeDone }));
-
-  const toggleVoice = () => {
-    const on = !voiceOn;
-    setVoiceOn(on);
-    saveVoicePreference(on);
-    if (!on) speech.stop();
-  };
-
-  // With the voice on, the kind message after answering (or doing the challenge) is read too.
-  const handleAnswer = i => {
-    setAnswer(i);
-    if (voiceOn) speech.speak([answerFeedback(t, question, i)]);
-  };
-  const handleChallengeDone = () => {
-    setChallengeDone(true);
-    if (voiceOn) speech.speak([t.challengeCheer]);
-  };
-
   const titleId = `card-title-${current}`;
-  const listen = speech.supported && (
-    <button className="btn btn--outline btn--small card__listen" onClick={readAloud} aria-pressed={speech.speaking}>
-      {speech.speaking ? <MdStop aria-hidden="true" /> : <MdVolumeUp aria-hidden="true" />}
-      {speech.speaking ? t.stopListening : t.listen}
-    </button>
-  );
 
   let body;
   if (current === 'question') {
@@ -259,8 +198,7 @@ export default function ContentView({
       <>
         <p className="card__kicker"><MdHelpOutline aria-hidden="true" /> {t.guessFirst}</p>
         <h3 id={titleId} className="card__title lesson-text lesson-text--title">{question.pregunta}</h3>
-        {listen}
-        <Quiz t={t} question={question} answer={answer} onAnswer={handleAnswer} />
+        <Quiz t={t} question={question} answer={answer} onAnswer={setAnswer} />
       </>
     );
   } else if (current === 'fact') {
@@ -268,7 +206,6 @@ export default function ContentView({
       <>
         <h3 id={titleId} className="card__kicker"><MdLightbulbOutline aria-hidden="true" /> {t.surprisingFact}</h3>
         <p className="lesson-text lesson-text--big">{content.dato_sorprendente}</p>
-        {listen}
       </>
     );
   } else if (current === 'why') {
@@ -282,7 +219,6 @@ export default function ContentView({
         <div className="prose lesson-text">
           {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
         </div>
-        {listen}
       </>
     );
   } else if (current === 'challenge') {
@@ -290,7 +226,6 @@ export default function ContentView({
       <>
         <h3 id={titleId} className="card__kicker"><MdTimer aria-hidden="true" /> {t.challenge}</h3>
         <p className="lesson-text challenge__text">{content.reto}</p>
-        {listen}
         <div className="challenge__actions">
           {challengeDone ? (
             <div className="curi-say challenge__done reveal">
@@ -298,7 +233,7 @@ export default function ContentView({
               <p role="status">{t.challengeCheer}</p>
             </div>
           ) : (
-            <button className="btn btn--primary" onClick={handleChallengeDone}>
+            <button className="btn btn--primary" onClick={() => setChallengeDone(true)}>
               <MdCheckCircle aria-hidden="true" /> {t.challengeDone}
             </button>
           )}
@@ -317,7 +252,6 @@ export default function ContentView({
           <MdChatBubbleOutline aria-hidden="true" /> {content.offline ? t.tryThis : t.keepThinking}
         </h3>
         {finalText && <p className="lesson-text lesson-text--big">{finalText}</p>}
-        {finalText && listen}
       </>
     );
   }
@@ -333,11 +267,6 @@ export default function ContentView({
           ))}
         </ol>
         <p id="lesson-progress" className="visually-hidden">{progress}</p>
-        {speech.supported && (
-          <button className={voiceOn ? 'voice-toggle voice-toggle--on' : 'voice-toggle'} onClick={toggleVoice} aria-pressed={voiceOn}>
-            {voiceOn ? <MdVolumeUp aria-hidden="true" /> : <MdVolumeOff aria-hidden="true" />} {t.voice}
-          </button>
-        )}
       </div>
 
       <section

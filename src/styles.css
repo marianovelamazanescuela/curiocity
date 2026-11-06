@@ -781,11 +781,6 @@ p {
   font-size: 16px;
 }
 
-.card__listen {
-  margin-top: 14px;
-  background: color-mix(in srgb, var(--paper) 60%, transparent);
-}
-
 /* =========================================================
    Featured subjects (with hook) and "More subjects"
    ========================================================= */
@@ -1066,10 +1061,8 @@ p {
 .lesson__bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: var(--tap);
-  margin-top: 12px;
+  justify-content: center;
+  margin-top: 14px;
 }
 
 .dots {
@@ -1208,29 +1201,6 @@ p {
   font-size: 15px;
   font-weight: 600;
   color: var(--ink-soft);
-}
-
-/* Voice on/off: reads each card aloud as it appears */
-.voice-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: var(--tap);
-  padding: 0 16px;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--pill);
-  background: transparent;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.voice-toggle svg {
-  font-size: 22px;
-}
-
-.voice-toggle--on {
-  background: var(--ink);
-  color: var(--cream);
 }
 
 @keyframes card-in {

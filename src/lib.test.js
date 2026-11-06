@@ -3,6 +3,7 @@ import { translations, detectUserLanguage } from './i18n';
 import { SUBJECTS, orderedSubjects } from './subjects';
 import { buildFallbackContent } from './fallbackContent';
 import { buildShareText } from './share';
+import { removeOldSettings } from './oldSettings';
 
 describe('translations', () => {
   const keysOf = obj => Object.keys(obj).sort();
@@ -79,5 +80,18 @@ describe('buildShareText', () => {
     expect(text).toContain('Reto de un minuto: Cuenta');
     expect(text).toContain(translations.es.shareAttachHint);
     expect(text).not.toContain('base64');
+  });
+});
+
+describe('removeOldSettings', () => {
+  it('deletes the voice and age settings of earlier versions, and keeps the rest', () => {
+    localStorage.setItem('curiocity_voice', 'on');
+    localStorage.setItem('curiocity_age', '9-12');
+    localStorage.setItem('curiocity_history', '[]');
+    removeOldSettings();
+    expect(localStorage.getItem('curiocity_voice')).toBeNull();
+    expect(localStorage.getItem('curiocity_age')).toBeNull();
+    expect(localStorage.getItem('curiocity_history')).toBe('[]');
+    localStorage.clear();
   });
 });

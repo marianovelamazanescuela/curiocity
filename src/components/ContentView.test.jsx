@@ -43,13 +43,6 @@ function renderLesson(props = {}) {
 const currentCard = () => screen.getByRole('region', { name: /Tarjeta/ });
 const next = () => screen.getByRole('button', { name: /Siguiente/ });
 
-function mockSpeech() {
-  const synth = { speak: vi.fn(), cancel: vi.fn(), getVoices: () => [] };
-  vi.stubGlobal('speechSynthesis', synth);
-  vi.stubGlobal('SpeechSynthesisUtterance', function (text) { this.text = text; });
-  return synth;
-}
-
 function swipe(element, { dx, dy = 0 }) {
   fireEvent.touchStart(element, { touches: [{ clientX: 200, clientY: 300 }] });
   fireEvent.touchEnd(element, { changedTouches: [{ clientX: 200 + dx, clientY: 300 + dy }] });
@@ -140,71 +133,15 @@ describe('Lesson cards', () => {
     renderLesson({ content: { offline: true, intro: 'Investiga', por_que: 'Explicación', reto: 'Dibuja', otra_idea: 'Mide', enlaces: [], objetos_relacionados: [] } });
     expect(currentCard()).toHaveAccessibleName('Tarjeta 1 de 3 Investiga tú');
   });
-
-  it('stops reading aloud when the child changes card or leaves the lesson', async () => {
-    const synth = mockSpeech();
-    localStorage.setItem('curiocity_voice', 'off');
-    const user = userEvent.setup();
-    const { unmount } = renderLesson();
-    await user.click(screen.getByRole('button', { name: 'En el centro' }));
-    await user.click(screen.getByRole('button', { name: 'Escuchar' }));
-    synth.cancel.mockClear();
-    await user.click(next());
-    expect(synth.cancel).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Escuchar' })).toBeInTheDocument(); // not "Parar" any more
-
-    await user.click(screen.getByRole('button', { name: 'Escuchar' }));
-    synth.cancel.mockClear();
-    unmount();
-    expect(synth.cancel).toHaveBeenCalled();
-  });
 });
 
-describe('Voice', () => {
-  it('is on by default for 6-8 and off for 9-12', () => {
-    mockSpeech();
-    const { unmount } = renderLesson({ ageGroup: '6-8' });
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'true');
-    unmount();
-    renderLesson({ ageGroup: '9-12' });
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('remembers the choice on this device, over the age default', async () => {
-    const synth = mockSpeech();
+describe('Without voice', () => {
+  it('has no voice toggle and no read-aloud buttons', async () => {
     const user = userEvent.setup();
-    const { unmount } = renderLesson({ ageGroup: '6-8' });
-    synth.cancel.mockClear();
-    await user.click(screen.getByRole('button', { name: 'Voz' }));
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'false');
-    expect(localStorage.getItem('curiocity_voice')).toBe('off');
-    expect(synth.cancel).toHaveBeenCalled(); // silenced right away
-    unmount();
-
-    synth.speak.mockClear();
-    renderLesson({ ageGroup: '6-8' });
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'false');
-    expect(synth.speak).not.toHaveBeenCalled();
-  });
-
-  it('turning it on reads the current card, and every new card after that', async () => {
-    const synth = mockSpeech();
-    const user = userEvent.setup();
-    renderLesson({ ageGroup: '9-12' });
-    expect(synth.speak).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Voz' }));
-    expect(localStorage.getItem('curiocity_voice')).toBe('on');
-    expect(synth.speak.mock.calls.map(([u]) => u.text)).toEqual([lesson.pregunta_inicial.pregunta, ...lesson.pregunta_inicial.opciones]);
+    renderLesson();
+    expect(screen.queryByRole('button', { name: /Voz|Escuchar/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
-    synth.speak.mockClear();
     await user.click(next());
-    expect(synth.speak.mock.calls.map(([u]) => u.text)).toEqual(['Dato sorprendente', lesson.dato_sorprendente]);
-  });
-
-  it('waits for the first interaction with the page (autoplay rules)', () => {
-    const synth = mockSpeech();
-    vi.stubGlobal('navigator', { ...window.navigator, userActivation: { hasBeenActive: false } });
-    renderLesson({ ageGroup: '6-8' });
-    expect(synth.speak).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Voz|Escuchar/ })).not.toBeInTheDocument();
   });
 });
