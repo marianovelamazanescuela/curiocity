@@ -82,11 +82,9 @@ describe('cleanRanking', () => {
 });
 
 describe('prompts', () => {
-  it('adapt to the age group and the language, and ask for safe, honest content', () => {
-    const young = lessonPrompts({ objectName: 'Farola', subject: 'History', language: 'Spanish', ageGroup: '6-8' }).system;
-    const older = lessonPrompts({ objectName: 'Farola', subject: 'History', language: 'Spanish', ageGroup: '9-12' }).system;
-    expect(young).toMatch(/6-8 years old/);
-    expect(older).toMatch(/9-12 years old/);
+  it('write for 8-10 year-olds in the child language, and ask for safe, honest content', () => {
+    const young = lessonPrompts({ objectName: 'Farola', subject: 'History', language: 'Spanish' }).system;
+    expect(young).toMatch(/8-10 years old/);
     expect(young).toMatch(/Write every field in Spanish/);
     expect(young).toMatch(/never taste, eat/);
     expect(young).toMatch(/never go near traffic/);
@@ -94,7 +92,7 @@ describe('prompts', () => {
     expect(young).toMatch(/Never invent a connection/);
     expect(young).toMatch(/Seville.*only when it fits naturally/s);
     expect(young).toMatch(/Never include URLs/);
-    expect(rankingPrompts({ objectName: 'Farola', language: 'French', ageGroup: '6-8' }).system).toMatch(/hook in French/);
+    expect(rankingPrompts({ objectName: 'Farola', language: 'French' }).system).toMatch(/hook in French/);
   });
 
   it('use strict JSON schemas that list every field as required', () => {

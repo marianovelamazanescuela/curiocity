@@ -58,9 +58,9 @@
   --font: 'Sofia Sans', system-ui, sans-serif; /* interface: buttons, labels, navigation */
   --font-content: 'Literata', Georgia, serif; /* lesson text: change this line to change it everywhere */
 
-  /* Lesson text size: larger for 6–8 (learning to read), set per age on .lesson */
-  --lesson-size: 20px;
-  --lesson-leading: 1.55;
+  /* Lesson text size (one size for the whole 8–10 audience) */
+  --lesson-size: 18.5px;
+  --lesson-leading: 1.5;
 
   --radius-s: 14px;
   --radius-m: 20px;
@@ -744,37 +744,6 @@ p {
   margin-bottom: 14px;
 }
 
-/* Age selector (segmented control) */
-.age {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 18px 0 -6px;
-}
-
-.age__label {
-  margin-right: 4px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-.age__option {
-  min-height: 40px;
-  padding: 0 14px;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--pill);
-  background: transparent;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.age__option--on {
-  background: var(--ink);
-  color: var(--cream);
-}
-
 .btn--small {
   min-height: 40px;
   padding: 0 16px;
@@ -1210,13 +1179,8 @@ p {
 
 /* =========================================================
    Lesson typography: Literata for what the child reads (question, options, fact, why,
-   challenge, final question); Sofia Sans for everything else. Bigger for 6–8.
+   challenge, final question); Sofia Sans for everything else.
    ========================================================= */
-.lesson--9-12 {
-  --lesson-size: 17.5px;
-  --lesson-leading: 1.5;
-}
-
 .lesson .lesson-text {
   font-family: var(--font-content);
   font-size: var(--lesson-size);

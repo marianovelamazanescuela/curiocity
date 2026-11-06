@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { translations, detectUserLanguage, loadAgeGroup, saveAgeGroup } from './i18n';
+import { translations, detectUserLanguage } from './i18n';
 import { getSubject, orderedSubjects } from './subjects';
 import { detectObject, fetchContent, fetchRanking } from './api';
 import { addToHistory, clearHistory, loadHistory } from './history';
@@ -57,11 +57,10 @@ export default function App() {
   // { status: 'found'|'none'|'person'|'error', object, fromPhoto }
   const [detection, setDetection] = useState(null);
   const [history, setHistory] = useState(loadHistory);
-  const [ageGroup, setAgeGroup] = useState(loadAgeGroup);
   const [subjectKey, setSubjectKey] = useState(null);
   const [content, setContent] = useState(null);
   const [toast, setToast] = useState(null);
-  // Subject ranking for the current object and age: { forKey, value } (value null = unknown)
+  // Subject ranking for the current object: { forKey, value } (value null = unknown)
   const [ranking, setRanking] = useState({ forKey: null, value: null });
 
   const videoRef = useRef(null);
@@ -69,20 +68,19 @@ export default function App() {
 
   const camera = useCamera(phase === 'camera');
 
-  // Which subjects connect best with the object (with a hook each). Asked whenever the object or the
-  // age group changes: after a photo, a related object or a history entry. Hooks depend on the age.
+  // Which subjects connect best with the object (with a hook each). Asked whenever the object
+  // changes: after a photo, a related object or a history entry.
   const foundObject = detection && detection.status === 'found' ? detection.object : null;
-  const rankingKey = foundObject ? `${foundObject}|${ageGroup}` : null;
   useEffect(() => {
     if (!foundObject) return undefined;
     const controller = new AbortController();
-    fetchRanking(foundObject, lang, ageGroup, controller.signal)
-      .then(value => setRanking({ forKey: rankingKey, value }))
-      .catch(() => {}); // aborted: a newer object or age replaced this one
+    fetchRanking(foundObject, lang, controller.signal)
+      .then(value => setRanking({ forKey: foundObject, value }))
+      .catch(() => {}); // aborted: a newer object replaced this one
     return () => controller.abort();
-  }, [foundObject, ageGroup, lang, rankingKey]);
+  }, [foundObject, lang]);
   // undefined while loading, null if unknown (show every subject), else { featured, others }
-  const currentRanking = ranking.forKey === rankingKey ? ranking.value : undefined;
+  const currentRanking = foundObject && ranking.forKey === foundObject ? ranking.value : undefined;
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -142,7 +140,7 @@ export default function App() {
     setContent(null); // show the loading state instead of the previous subject's content
     const signal = newRequest();
     try {
-      const result = await fetchContent({ objectName, subject, lang, ageGroup, signal });
+      const result = await fetchContent({ objectName, subject, lang, signal });
       setContent(result);
     } catch (err) {
       if (err.name !== 'AbortError') console.error(err);
@@ -200,11 +198,6 @@ export default function App() {
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
         ranking={currentRanking}
-        ageGroup={ageGroup}
-        onAgeChange={age => {
-          setAgeGroup(age);
-          saveAgeGroup(age);
-        }}
         onSelect={key => loadSubject(key)}
         onWrongObject={handleClose}
       />
@@ -218,8 +211,6 @@ export default function App() {
         objectName={detection.object}
         subjectKey={subjectKey}
         subjects={orderedSubjects(currentRanking || null)}
-        lang={lang}
-        ageGroup={ageGroup}
         content={content}
         onBack={backToSubjects}
         onSelectSubject={key => loadSubject(key)}

@@ -76,7 +76,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Manzana' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Biología.*Dentro hay una estrella escondida/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Historia.*Hace miles de años/ })).toBeInTheDocument();
-    expect(bodyOf(fetchMock, '/api/subjects')).toEqual({ objectName: 'Manzana', language: 'Spanish', ageGroup: '6-8' });
+    expect(bodyOf(fetchMock, '/api/subjects')).toEqual({ objectName: 'Manzana', language: 'Spanish' });
 
     const more = screen.getByText('Más asignaturas');
     expect(more.closest('details')).not.toHaveAttribute('open');
@@ -104,7 +104,7 @@ describe('App', () => {
     await takePhoto(user);
     await user.click(await screen.findByRole('button', { name: /Biología/ }));
     expect(await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta })).toBeInTheDocument();
-    expect(bodyOf(fetchMock, '/api/ai')).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish', ageGroup: '6-8' });
+    expect(bodyOf(fetchMock, '/api/ai')).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish' });
     expect(screen.getByRole('region', { name: /Tarjeta 1 de 5/ })).toBeInTheDocument();
 
     // Nothing is explained before the child answers, and "Siguiente" waits for an answer
@@ -185,22 +185,15 @@ describe('App', () => {
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Manzana' })).not.toBeInTheDocument());
   });
 
-  it('sends the chosen age group, asks the subjects again for it, and remembers it', async () => {
-    const fetchMock = mockServer();
+  it('has no age selector: a single audience (8-10)', async () => {
+    mockServer();
     const user = userEvent.setup();
     render(<App />);
-
     await takePhoto(user);
-    const older = await screen.findByRole('radio', { name: '9–12 años' });
-    expect(screen.getByRole('radio', { name: '6–8 años' })).toBeChecked(); // default
-    await user.click(older);
-    expect(older).toBeChecked();
-    expect(localStorage.getItem('curiocity_age')).toBe('9-12');
-    await waitFor(() => expect(bodyOf(fetchMock, '/api/subjects').ageGroup).toBe('9-12'));
-
-    await user.click(await screen.findByRole('button', { name: /Biología/ }));
-    await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta });
-    expect(bodyOf(fetchMock, '/api/ai').ageGroup).toBe('9-12');
+    await screen.findByRole('button', { name: /Biología/ });
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tengo|6–8|9–12/)).not.toBeInTheDocument();
   });
 
   it('keeps discoveries in a local history that can be reopened and cleared', async () => {

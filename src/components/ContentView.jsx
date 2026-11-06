@@ -113,7 +113,7 @@ function lessonCards(content) {
 }
 
 export default function ContentView({
-  t, photo, objectName, subjectKey, subjects, ageGroup = '6-8', content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
+  t, photo, objectName, subjectKey, subjects, content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
 }) {
   const subject = getSubject(subjectKey);
   const heading = `${t.subjects[subjectKey]}: ${objectName}`;
@@ -148,7 +148,7 @@ export default function ContentView({
 
   if (!content) {
     return (
-      <article className={`content lesson lesson--${ageGroup}`} style={{ '--subject': subject.color }}>
+      <article className="content lesson" style={{ '--subject': subject.color }}>
         {header}
         <CuriThinking label={t.curiThinking} />
       </article>
@@ -257,7 +257,7 @@ export default function ContentView({
   }
 
   return (
-    <article className={`content lesson lesson--${ageGroup}`} style={{ '--subject': subject.color }}>
+    <article className="content lesson" style={{ '--subject': subject.color }}>
       {header}
 
       <div className="lesson__bar">

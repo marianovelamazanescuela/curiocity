@@ -180,23 +180,14 @@ describe('POST /api/ai', () => {
     expect(new Set(wikiCalls)).toEqual(new Set(['klexikon.zum.de', 'de.wikipedia.org']));
   });
 
-  it('adapts the lesson to the age group and caches each age separately', async () => {
+  it('writes for 8-10 year-olds and ignores any age group sent by old versions of the app', async () => {
     openaiReply = modelLesson();
     await post('/api/ai', { ...valid, ageGroup: '6-8' });
-    expect(openaiCalls[0].messages[0].content).toMatch(/6-8 years old/);
-    await post('/api/ai', { ...valid, ageGroup: '9-12' });
-    expect(openaiCalls[1].messages[0].content).toMatch(/9-12 years old/);
-    expect(openaiCalls).toHaveLength(2);
-    await post('/api/ai', { ...valid, ageGroup: 'hack' }); // invalid -> default 6-8, served from cache
-    expect(openaiCalls).toHaveLength(2);
-  });
-
-  it('uses 6-8 when no age group is sent, the same default as the app', async () => {
-    openaiReply = modelLesson();
-    await post('/api/ai', valid); // no ageGroup
-    expect(openaiCalls[0].messages[0].content).toMatch(/6-8 years old/);
-    await post('/api/subjects', { objectName: 'Farola', language: 'Spanish' });
-    expect(openaiCalls[1].messages[0].content).toMatch(/6-8 years old/);
+    expect(openaiCalls[0].messages[0].content).toMatch(/8-10 years old/);
+    expect(openaiCalls[0].messages[0].content).not.toMatch(/6-8|9-12/);
+    await post('/api/ai', { ...valid, ageGroup: '9-12' }); // same cache entry: the age is not part of the key
+    await post('/api/ai', valid);
+    expect(openaiCalls).toHaveLength(1);
   });
 
   it('retries once when the output is invalid', async () => {
@@ -259,19 +250,17 @@ describe('POST /api/subjects', () => {
     expect((await post('/api/subjects', { objectName: 'x'.repeat(101) })).status).toBe(400);
   });
 
-  it('returns the 3 best subjects with a hook, the rest in order, and caches per age', async () => {
+  it('returns the 3 best subjects with a hook, the rest in order, and caches them', async () => {
     openaiReply = modelRanking();
-    const body = await (await post('/api/subjects', { objectName: 'Farola', language: 'Spanish', ageGroup: '6-8' })).json();
+    const body = await (await post('/api/subjects', { objectName: 'Farola', language: 'Spanish' })).json();
     expect(body.ranking.featured.map(f => f.key)).toEqual(['historia', 'matematicas', 'artes']);
     expect(body.ranking.featured[0].hook).toBe('Gancho de historia');
     expect(body.ranking.others).toEqual(['biologia', 'lengua', 'geologia', 'musica']);
     expect(openaiCalls[0].response_format.type).toBe('json_schema');
-    expect(openaiCalls[0].messages[0].content).toMatch(/6-8 years old/);
+    expect(openaiCalls[0].messages[0].content).toMatch(/children \(8-10\)/);
 
-    await post('/api/subjects', { objectName: 'farola', language: 'Spanish', ageGroup: '6-8' });
-    expect(openaiCalls).toHaveLength(1);
     await post('/api/subjects', { objectName: 'farola', language: 'Spanish', ageGroup: '9-12' });
-    expect(openaiCalls).toHaveLength(2);
+    expect(openaiCalls).toHaveLength(1);
   });
 
   it('returns ranking: null (show every subject) when the output is unusable', async () => {

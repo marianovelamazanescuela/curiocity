@@ -17,11 +17,8 @@ const SUBJECT_KEYS = {
 const KEYS = Object.keys(SUBJECT_KEYS);
 const FEATURED_COUNT = 3;
 
-const AGE_GROUPS = ['6-8', '9-12'];
-const AGE_GUIDANCE = {
-  '6-8': 'The child is 6-8 years old and may be learning to read: very short sentences (about 10 words at most), the most common everyday words, no technical terms, one idea per sentence.',
-  '9-12': 'The child is 9-12 years old: short sentences, give the reason behind things (the "why"), you may include one number or one subject word if you explain it simply.'
-};
+// A single audience: the second cycle of primary school (3rd and 4th year, 8-10 years old).
+const AUDIENCE = 'The child is 8-10 years old (3rd or 4th year of primary school) and reads with some fluency: short sentences, everyday words, and explain the reason behind things (the "why"). Use at most one number or one technical word, and only if it is certain, safe and explained simply.';
 
 const COMMON_RULES = `- Scientific accuracy first: only state facts that are well established and that a teacher could check in an encyclopedia. Never make up facts, numbers, dates, records or anecdotes. If you are not sure, choose a different, simpler fact.
 - Avoid explanations that scientists still debate (for example, exactly why insects fly around lights). Prefer what is observed and certain.
@@ -69,8 +66,8 @@ const RANKING_SCHEMA = {
   }
 };
 
-function rankingPrompts({ objectName, language, ageGroup }) {
-  const system = `You help children (6-12) explore everyday objects through school subjects in a learning app. ${AGE_GUIDANCE[ageGroup]}
+function rankingPrompts({ objectName, language }) {
+  const system = `You help children (8-10) explore everyday objects through school subjects in a learning app. ${AUDIENCE}
 Score how strongly each of these 7 subjects connects with the object, for a child holding or looking at it:
 ${KEYS.map(k => `"${k}" (${SUBJECT_KEYS[k]})`).join(', ')}.
 Scores (be strict, most objects have only 2-4 subjects scoring 2 or more):
@@ -152,19 +149,14 @@ const LESSON_SCHEMA = {
   }
 };
 
-const LESSON_AGE = {
-  '6-8': 'por_que: 2 or 3 very short sentences. Question and options: very short and concrete.',
-  '9-12': 'por_que: 3 or 4 short sentences that explain the reason, with one concrete detail or number if it is certain.'
-};
-
-function lessonPrompts({ objectName, subject, language, ageGroup }) {
-  const system = `You create short, interactive mini-lessons for children in a learning app: the child has just photographed a real object and has it in front of them. The goal is curiosity and doing things with the real object, not reading an encyclopedia entry. ${AGE_GUIDANCE[ageGroup]}
+function lessonPrompts({ objectName, subject, language }) {
+  const system = `You create short, interactive mini-lessons for children in a learning app: the child has just photographed a real object and has it in front of them. The goal is curiosity and doing things with the real object, not reading an encyclopedia entry. ${AUDIENCE}
 Look at the object only through the lens of the subject "${subject}".
 You do not see the photo: do not state details of this particular object (its exact colour, marks, size or material) as facts; when they matter, ask the child to check them.
 Fields:
 - pregunta_inicial: a curiosity question the child answers BEFORE any explanation. It must make them guess something they probably don't know yet about this object (how it works, where it comes from, why it is like that, how it was in the past). Never ask something obvious or that they can simply see or count. "opciones": exactly 3 short answers; each one must answer the question grammatically and sound possible to a child (no joke options); exactly one is true and the other two are clearly false. If an expert could argue for two options, write a different question. "correcta": index (0, 1 or 2) of the true one. No trick questions.
 - dato_sorprendente: ONE sentence with a fact that would make a child say "wow!" and want to tell someone: true, specific, about this object from this subject. Not the answer to the question and not something obvious.
-- por_que: explains the answer to the question in concrete terms, about this object. Never start with a definition ("X is a…"). ${LESSON_AGE[ageGroup]}
+- por_que: explains the answer to the question in concrete terms, about this object. Never start with a definition ("X is a…"). 3 short sentences; the question and its options are short and concrete.
 - reto: ONE activity of one minute at most, done with the object the child has in front of them: observe, count, measure with hands or fingers, compare, listen, describe, or find a similar object and photograph it. Address the child directly. It must be completely safe: never touch, chase or feed animals, never taste, eat, drink or smell unknown things, never go near traffic or roads, never use tools, knives, scissors, fire, electricity or hot things, never climb, never touch street furniture that could be dirty or electrical (lamps, bins), never go away from the adult. It must be possible without opening, cutting or breaking the object (do not ask to count what is inside if it cannot be seen). If the object itself is not safe to touch, the challenge is to look, count or compare from where the child is.
 - reto_foto: true only if the challenge asks the child to find and photograph another object.
 - para_seguir_pensando: one open question with no single right answer, to keep thinking or talk about with someone.
@@ -221,7 +213,6 @@ function validateLesson(parsed, shuffle = defaultShuffle) {
 
 module.exports = {
   SUBJECT_KEYS,
-  AGE_GROUPS,
   RANKING_SCHEMA,
   LESSON_SCHEMA,
   rankingPrompts,

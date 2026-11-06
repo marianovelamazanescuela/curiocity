@@ -27,8 +27,6 @@ function renderLesson(props = {}) {
       objectName="Manzana"
       subjectKey="biologia"
       subjects={orderedSubjects(null)}
-      lang="es"
-      ageGroup="6-8"
       content={lesson}
       onBack={() => {}}
       onSelectSubject={() => {}}
