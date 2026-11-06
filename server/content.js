@@ -23,6 +23,7 @@ const AUDIENCE = 'The child is 8-10 years old (3rd or 4th year of primary school
 
 const COMMON_RULES = `- Scientific accuracy first: only state facts that are well established and that a teacher could check in an encyclopedia. Never make up facts, numbers, dates, records or anecdotes. If you are not sure, choose a different, simpler fact.
 - Avoid explanations that scientists still debate (for example, exactly why insects fly around lights). Prefer what is observed and certain.
+- Be careful with botanical simplifications about which part of the flower becomes each fruit: in some fruits the flesh does not come from the ovary (in an apple or a pear it comes mostly from the receptacle, the base of the flower; a strawberry's "seeds" are its real fruits). If you are not sure for this fruit, do not go into that detail.
 - Never invent a connection between the object and a subject. If the connection is weak, say so honestly.
 - Never talk about the app, the task or the subject list itself.
 - The app is used mainly in Seville (Andalusia, Spain). Mention Seville, Andalusia or Spain only when it fits naturally and is true for this object; never force it.

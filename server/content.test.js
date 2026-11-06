@@ -126,6 +126,8 @@ describe('prompts', () => {
     expect(young).toMatch(/Never invent a connection/);
     expect(young).toMatch(/Seville.*only when it fits naturally/s);
     expect(young).toMatch(/Never include URLs/);
+    expect(young).toMatch(/which part of the flower becomes each fruit/);
+    expect(rankingPrompts({ objectName: 'Manzana', language: 'Spanish' }).system).toMatch(/receptacle/);
     // observation after the challenge: no right answer, conditional conclusions, nothing about this object
     expect(young).toMatch(/reto_observacion/);
     expect(young).toMatch(/no right or wrong answer/);
