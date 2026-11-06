@@ -85,13 +85,15 @@ describe('buildShareText', () => {
     dato_sorprendente: 'Dato', por_que: 'Porque', reto: 'Cuenta', para_seguir_pensando: '¿Y si…?'
   };
 
-  it('includes the answer, the challenge and never a base64 image', () => {
-    const text = buildShareText('Historia: Farola', content, translations.es, { withAttachHint: true });
-    expect(text).toContain(translations.es.shareIntro);
-    expect(text).toContain('¿Pregunta?\n→ b');
-    expect(text).toContain('Reto de un minuto: Cuenta');
-    expect(text).toContain(translations.es.shareAttachHint);
-    expect(text).not.toContain('base64');
+  it('has the object, the subject, the question with its right answer, the fact and the brand', () => {
+    const text = buildShareText({ objectName: 'Farola', subjectName: 'Historia', content, t: translations.es });
+    expect(text.split('\n\n')).toEqual(['Farola · Historia', '¿Pregunta?\n→ b', 'Dato', expect.stringContaining('Curiocity')]);
+    expect(text).not.toMatch(/Porque|Cuenta|¿Y si…\?|base64|foto/);
+  });
+
+  it('offline content (no question, no fact) shares just the heading and the brand', () => {
+    const text = buildShareText({ objectName: 'Farola', subjectName: 'Historia', content: { offline: true, reto: 'Dibuja' }, t: translations.es });
+    expect(text.split('\n\n')).toEqual(['Farola · Historia', expect.stringContaining('Curiocity')]);
   });
 });
 

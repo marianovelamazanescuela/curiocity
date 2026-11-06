@@ -141,3 +141,51 @@ describe('Without voice', () => {
     expect(screen.queryByRole('button', { name: /Voz|Escuchar/ })).not.toBeInTheDocument();
   });
 });
+
+describe('Sharing', () => {
+  async function goToEnd(user, props) {
+    renderLesson(props);
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    for (let i = 0; i < 4; i++) await user.click(next());
+  }
+
+  it('always shows WhatsApp and Correo; "Más…" only when the browser has a share sheet', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('navigator', { ...window.navigator, share: undefined });
+    await goToEnd(user);
+    expect(screen.getByRole('button', { name: 'WhatsApp' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Correo' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Más…' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Guardar foto/ })).not.toBeInTheDocument();
+  });
+
+  it('WhatsApp opens wa.me with the text, and never promises the photo', async () => {
+    const user = userEvent.setup();
+    const open = vi.fn();
+    vi.stubGlobal('open', open);
+    await goToEnd(user, { photo: 'data:image/jpeg;base64,AAAA' });
+    await user.click(screen.getByRole('button', { name: 'WhatsApp' }));
+    const url = new URL(open.mock.calls[0][0]);
+    expect(url.host).toBe('wa.me');
+    const text = url.searchParams.get('text');
+    expect(text).toMatch(/^Manzana · Biología/);
+    expect(text).toContain('¿Dónde están las semillas?\n→ En el centro');
+    expect(text).toContain(lesson.dato_sorprendente);
+    expect(text).toContain('Curiocity');
+    expect(text).not.toMatch(/foto|base64/i);
+  });
+
+  it('"Más…" opens the system share sheet with the photo attached', async () => {
+    const user = userEvent.setup();
+    const share = vi.fn(async () => {});
+    vi.stubGlobal('navigator', { ...window.navigator, share, canShare: () => true });
+    const onToast = vi.fn();
+    await goToEnd(user, { photo: 'data:image/jpeg;base64,AAAA', onToast });
+    await user.click(screen.getByRole('button', { name: 'Más…' }));
+    expect(share).toHaveBeenCalledTimes(1);
+    const data = share.mock.calls[0][0];
+    expect(data.files[0].name).toBe('curiocity.jpg');
+    expect(data.text).toMatch(/^Manzana · Biología/);
+    expect(onToast).toHaveBeenCalledWith('¡Compartido!');
+  });
+});

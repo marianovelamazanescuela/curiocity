@@ -676,9 +676,12 @@ p {
 .share__options {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 8px;
-  margin-top: 10px;
+}
+
+.share__options .btn {
+  flex: 1 1 auto;
+  padding: 0 14px;
 }
 
 .message {

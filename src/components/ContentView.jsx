@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  MdArrowBack, MdArrowForward, MdShare, MdEmail, MdDownload, MdOpenInNew, MdLightbulbOutline,
+  MdArrowBack, MdArrowForward, MdEmail, MdIosShare, MdOpenInNew, MdLightbulbOutline,
   MdCheckCircle, MdTimer, MdPhotoCamera, MdChatBubbleOutline, MdHelpOutline, MdSearch
 } from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
 import { getSubject } from '../subjects';
-import { buildShareText, downloadDataUrl, mailtoUrl, nativeShare, whatsappUrl } from '../share';
+import { buildShareText, canShareNatively, mailtoUrl, nativeShare, whatsappUrl } from '../share';
 import ObjectHeader from './ObjectHeader';
 import SubjectCard from './SubjectCard';
 import Curi, { CuriThinking } from './Curi';
@@ -20,47 +20,40 @@ function hostnameOf(url) {
   }
 }
 
-function ShareBar({ t, heading, content, photo, onToast }) {
-  const [showOptions, setShowOptions] = useState(false);
-
-  const savePhoto = () => {
-    if (!photo) return;
-    downloadDataUrl(photo, 'curiocity.jpg');
-    onToast(t.imageDownloaded);
-  };
-
-  const share = async () => {
-    const result = await nativeShare({ title: heading, text: buildShareText(heading, content, t), imageDataUrl: photo });
-    if (result === 'shared') onToast(t.shared);
-    else if (result === 'shared-text') {
-      if (photo) downloadDataUrl(photo, 'curiocity.jpg');
-      onToast(photo ? t.sharedTextOnly : t.shared);
-    } else if (result === 'unsupported') setShowOptions(true);
-  };
-
-  const viaEmail = () => {
-    window.open(mailtoUrl(`${heading} — Curiocity`, buildShareText(heading, content, t, { withAttachHint: Boolean(photo) })));
-    onToast(t.openedMail, 'info');
-  };
+/**
+ * Sharing: WhatsApp and email are always visible (text only: a link cannot carry the photo).
+ * "Más…" opens the system share sheet, which can attach the photo; only shown when the browser has it.
+ */
+function ShareBar({ t, objectName, subjectName, content, photo, onToast }) {
+  const text = buildShareText({ objectName, subjectName, content, t });
+  const title = `${objectName} · ${subjectName}`;
 
   const viaWhatsApp = () => {
-    window.open(whatsappUrl(buildShareText(heading, content, t, { withAttachHint: Boolean(photo) })), '_blank', 'noopener');
+    window.open(whatsappUrl(text), '_blank', 'noopener');
     onToast(t.openedWhatsApp, 'info');
   };
 
+  const viaEmail = () => {
+    window.open(mailtoUrl(`${title} — Curiocity`, text));
+    onToast(t.openedMail, 'info');
+  };
+
+  const viaSystem = async () => {
+    const result = await nativeShare({ title, text, imageDataUrl: photo });
+    if (result === 'shared' || result === 'shared-text') onToast(t.shared);
+  };
+
   return (
-    <div className="share">
-      <button className="btn btn--primary btn--wide" onClick={share} aria-expanded={showOptions}>
-        <MdShare aria-hidden="true" /> {t.share}
-      </button>
-      {showOptions && (
-        <div className="share__options">
-          <button className="btn btn--outline" onClick={viaEmail}><MdEmail aria-hidden="true" /> {t.shareViaEmail}</button>
-          <button className="btn btn--outline" onClick={viaWhatsApp}><FaWhatsapp aria-hidden="true" /> {t.shareViaWhatsApp}</button>
-          {photo && <button className="btn btn--outline" onClick={savePhoto}><MdDownload aria-hidden="true" /> {t.downloadImage}</button>}
-        </div>
-      )}
-    </div>
+    <section className="share">
+      <h3 className="section-title">{t.share}</h3>
+      <div className="share__options">
+        <button className="btn btn--outline" onClick={viaWhatsApp}><FaWhatsapp aria-hidden="true" /> {t.shareViaWhatsApp}</button>
+        <button className="btn btn--outline" onClick={viaEmail}><MdEmail aria-hidden="true" /> {t.shareViaEmail}</button>
+        {canShareNatively() && (
+          <button className="btn btn--outline" onClick={viaSystem}><MdIosShare aria-hidden="true" /> {t.shareMore}</button>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -117,7 +110,6 @@ export default function ContentView({
   t, photo, objectName, subjectKey, nextSubjects = [], content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
 }) {
   const subject = getSubject(subjectKey);
-  const heading = `${t.subjects[subjectKey]}: ${objectName}`;
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [challengeDone, setChallengeDone] = useState(false);
@@ -324,7 +316,7 @@ export default function ContentView({
             </section>
           )}
 
-          <ShareBar t={t} heading={heading} content={content} photo={photo} onToast={onToast} />
+          <ShareBar t={t} objectName={objectName} subjectName={t.subjects[subjectKey]} content={content} photo={photo} onToast={onToast} />
 
           {nextSubjects.length > 0 && (
             <section>
