@@ -397,8 +397,8 @@ p {
   border-radius: var(--pill);
   border: 1.5px solid var(--ink);
   font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-weight: 600; /* Literata is wider and darker than a sans: 600 reads as bold without weighing too much */
+  letter-spacing: 0;
   transition: transform 0.15s var(--ease-out), background-color 0.15s;
 }
 
@@ -545,8 +545,8 @@ p {
 .section-title {
   margin: 28px 0 12px;
   font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  font-weight: 600;
+  letter-spacing: 0.05em; /* capitals of a serif need less tracking than a sans */
   text-transform: uppercase;
   color: var(--ink-soft);
 }
@@ -679,9 +679,12 @@ p {
   gap: 8px;
 }
 
+/* At 360 px: WhatsApp and Correo side by side, "Más…" below at full width (large buttons) */
 .share__options .btn {
   flex: 1 1 auto;
-  padding: 0 14px;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: 16px;
 }
 
 .message {
@@ -764,7 +767,7 @@ p {
   border-radius: var(--pill);
   border: 1.5px solid var(--ink);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   list-style: none;
 }
@@ -799,8 +802,8 @@ p {
 .card__kicker {
   margin-bottom: 6px;
   font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
