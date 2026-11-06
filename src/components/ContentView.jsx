@@ -91,6 +91,39 @@ function Quiz({ t, question, answer, onAnswer }) {
 }
 
 /**
+ * After the challenge: what did the child observe? Every option is possible (no right answer), and
+ * each one has a general, conditional explanation ("If…, it may be because…"). The child may change
+ * their choice to read the others.
+ */
+function Observation({ t, observation, choice, onChoose, focusRef }) {
+  return (
+    <div className="observation reveal" ref={focusRef} tabIndex={-1}>
+      <p id="observation-question" className="lesson-text observation__question">{observation.pregunta}</p>
+      <p className="observation__hint">{t.observationHint}</p>
+      <ul className="quiz observation__options" aria-labelledby="observation-question">
+        {observation.opciones.map((option, i) => (
+          <li key={i}>
+            <button
+              className={choice === i ? 'quiz__option observation__option observation__option--on' : 'quiz__option observation__option'}
+              onClick={() => onChoose(i)}
+              aria-pressed={choice === i}
+            >
+              <span className="lesson-text">{option.texto}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {choice !== null && (
+        <div key={choice} className="curi-say challenge__done reveal">
+          <Curi state="done" size={64} />
+          <p role="status" className="lesson-text observation__conclusion">{observation.opciones[choice].conclusion}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * The lesson as a sequence of cards, one idea each:
  * question → surprising fact → why → challenge → final (open question, links, related objects, sharing).
  * Offline content knows nothing true about the object, so it has no question or fact: 3 cards.
@@ -113,7 +146,10 @@ export default function ContentView({
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
   const [challengeDone, setChallengeDone] = useState(false);
+  const [observed, setObserved] = useState(null); // option chosen in the observation question
+  const [showIdeas, setShowIdeas] = useState(false);
   const cardRef = useRef(null);
+  const revealRef = useRef(null); // what appears when its button goes away (observation, ideas) takes the focus
   const movedRef = useRef(false); // focus moves only after the child changes card, not on first render
   const swipeRef = useRef(null);
 
@@ -125,6 +161,10 @@ export default function ContentView({
     card.focus({ preventScroll: true });
     card.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }, [index]);
+
+  useEffect(() => {
+    revealRef.current?.focus({ preventScroll: true });
+  }, [challengeDone, showIdeas]);
 
   const header = (
     <>
@@ -154,6 +194,8 @@ export default function ContentView({
   const isLast = index === cards.length - 1;
   const canAdvance = !isLast && !(current === 'question' && answer === null);
   const finalText = content.offline ? content.otra_idea : content.para_seguir_pensando;
+  const observation = !content.offline && content.reto_observacion;
+  const ideas = (!content.offline && content.ideas_pregunta_final) || [];
 
   const progress = t.cardProgress.replace('{n}', index + 1).replace('{total}', cards.length);
 
@@ -219,13 +261,17 @@ export default function ContentView({
       <>
         <h3 id={titleId} className="card__kicker"><MdTimer aria-hidden="true" /> {t.challenge}</h3>
         <p className="lesson-text challenge__text">{content.reto}</p>
+        {challengeDone && observation && (
+          <Observation t={t} observation={observation} choice={observed} onChoose={setObserved} focusRef={revealRef} />
+        )}
         <div className="challenge__actions">
-          {challengeDone ? (
+          {challengeDone && !observation && (
             <div className="curi-say challenge__done reveal">
               <Curi state="done" size={64} />
               <p role="status">{t.challengeCheer}</p>
             </div>
-          ) : (
+          )}
+          {!challengeDone && (
             <button className="btn btn--primary" onClick={() => setChallengeDone(true)}>
               <MdCheckCircle aria-hidden="true" /> {t.challengeDone}
             </button>
@@ -245,6 +291,20 @@ export default function ContentView({
           <MdChatBubbleOutline aria-hidden="true" /> {content.offline ? t.tryThis : t.keepThinking}
         </h3>
         {finalText && <p className="lesson-text lesson-text--big">{finalText}</p>}
+        {!content.offline && <p className="think-pause">{t.thinkAMoment}</p>}
+        {ideas.length > 0 && !showIdeas && (
+          <button className="btn btn--outline" onClick={() => setShowIdeas(true)}>
+            <MdLightbulbOutline aria-hidden="true" /> {t.showIdeas}
+          </button>
+        )}
+        {ideas.length > 0 && showIdeas && (
+          <div className="ideas reveal" ref={revealRef} tabIndex={-1}>
+            <p className="ideas__intro">{t.ideasIntro}</p>
+            <ul className="ideas__list">
+              {ideas.map((idea, i) => <li key={i} className="lesson-text">{idea}</li>)}
+            </ul>
+          </div>
+        )}
       </>
     );
   }

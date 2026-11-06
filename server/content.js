@@ -1,6 +1,7 @@
 // Prompts, JSON schemas and validation for the two text tasks the model does:
 //  1. rankSubjects: how strongly each school subject connects with an object, plus a one-line hook.
-//  2. lesson: interactive content for one object + subject (question → fact → why → challenge → open question).
+//  2. lesson: interactive content for one object + subject (question → fact → why → challenge with an
+//     observation question → open question with some ideas).
 // The model's output is never trusted: everything is validated and normalised here, and any URL it
 // might write is dropped (links only come from encyclopedia.js).
 
@@ -114,7 +115,7 @@ function cleanRanking(parsed) {
 // 2. Interactive lesson for one object + subject
 // ---------------------------------------------------------------------------
 
-const LIMITS = { question: 200, option: 90, fact: 300, why: 800, challenge: 320, think: 220 };
+const LIMITS = { question: 200, option: 90, fact: 300, why: 800, challenge: 320, think: 220, observation: 60, conclusion: 300, idea: 160 };
 
 const LESSON_SCHEMA = {
   name: 'lesson',
@@ -123,8 +124,8 @@ const LESSON_SCHEMA = {
     type: 'object',
     additionalProperties: false,
     required: [
-      'pregunta_inicial', 'dato_sorprendente', 'por_que', 'reto', 'reto_foto',
-      'para_seguir_pensando', 'conexion_debil', 'objetos_relacionados', 'terminos_busqueda'
+      'pregunta_inicial', 'dato_sorprendente', 'por_que', 'reto', 'reto_foto', 'reto_observacion',
+      'para_seguir_pensando', 'ideas_pregunta_final', 'conexion_debil', 'objetos_relacionados', 'terminos_busqueda'
     ],
     properties: {
       pregunta_inicial: {
@@ -141,7 +142,28 @@ const LESSON_SCHEMA = {
       por_que: { type: 'string' },
       reto: { type: 'string' },
       reto_foto: { type: 'boolean' },
+      reto_observacion: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['pregunta', 'opciones'],
+        properties: {
+          pregunta: { type: 'string' },
+          opciones: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['texto', 'conclusion'],
+              properties: {
+                texto: { type: 'string' },
+                conclusion: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
       para_seguir_pensando: { type: 'string' },
+      ideas_pregunta_final: { type: 'array', items: { type: 'string' } },
       conexion_debil: { type: 'boolean' },
       objetos_relacionados: { type: 'array', items: { type: 'string' } },
       terminos_busqueda: { type: 'array', items: { type: 'string' } }
@@ -159,7 +181,9 @@ Fields:
 - por_que: explains the answer to the question in concrete terms, about this object. Never start with a definition ("X is a…"). 3 short sentences; the question and its options are short and concrete.
 - reto: ONE activity of one minute at most, done with the object the child has in front of them: observe, count, measure with hands or fingers, compare, listen, describe, or find a similar object and photograph it. Address the child directly. It must be completely safe: never touch, chase or feed animals, never taste, eat, drink or smell unknown things, never go near traffic or roads, never use tools, knives, scissors, fire, electricity or hot things, never climb, never touch street furniture that could be dirty or electrical (lamps, bins), never go away from the adult. It must be possible without opening, cutting or breaking the object (do not ask to count what is inside if it cannot be seen). If the object itself is not safe to touch, the challenge is to look, count or compare from where the child is.
 - reto_foto: true only if the challenge asks the child to find and photograph another object.
+- reto_observacion: asked AFTER the child has done the challenge, about what they observed or found. "pregunta": a short question about exactly what the challenge asked them to look at, count, compare or find (for example, for "Compare it with your hand": "Was it bigger than your hand?"). "opciones": 2 or 3 short answers that cover what the child may have found (for example "Yes" / "No" / "About the same"). Every option is possible: there is no right or wrong answer and the child is never judged. For each option, "conclusion": 1 or 2 short sentences with a general explanation that is true for anyone who observed that, written as a condition ("If it is bigger, it may be because…", "If you counted more than five, …"). You do not see the object: never state anything about this child's object, never confirm or correct what they saw, and never ask for anything the challenge did not include. The same safety rules as the challenge apply, and the conclusion never asks for a new action.
 - para_seguir_pensando: one open question with no single right answer, to keep thinking or talk about with someone.
+- ideas_pregunta_final: 2 or 3 short ideas (one sentence each), different from each other, that could answer para_seguir_pensando. They are possibilities to inspire the child, not the right answer; anything they state as a fact must be true.
 - conexion_debil: true if the connection between this object and this subject is weak. Then say it honestly in the first sentence of por_que, in a friendly way (for example "A banana has little to do with music, but…"). Do not stretch: the question and the fact may be about the subject in general (well-known, certain facts, e.g. about rhythm), linked to what the child will do with the object; never an invented link between this object and the subject.
 - objetos_relacionados: 1-3 related everyday objects (simple nouns) to explore next.
 - terminos_busqueda: 1-2 encyclopedia article titles about this object, most specific first (e.g. "Banco (asiento)" rather than "Banco" for a park bench).
@@ -194,6 +218,11 @@ function validateLesson(parsed, shuffle = defaultShuffle) {
   if (!ok(parsed.dato_sorprendente, LIMITS.fact) || !ok(parsed.por_que, LIMITS.why)) return null;
   if (!ok(parsed.reto, LIMITS.challenge) || !ok(parsed.para_seguir_pensando, LIMITS.think)) return null;
 
+  // Optional parts: when invalid the lesson still works (challenge without observation, final card
+  // without ideas), but `complete: false` lets the server ask once more.
+  const observation = validObservation(parsed.reto_observacion);
+  const ideas = validIdeas(parsed.ideas_pregunta_final);
+
   const correctText = options[q.correcta];
   const shuffled = shuffle(options);
   return {
@@ -203,12 +232,34 @@ function validateLesson(parsed, shuffle = defaultShuffle) {
       por_que: clean(parsed.por_que),
       reto: clean(parsed.reto),
       reto_foto: parsed.reto_foto === true,
+      reto_observacion: observation,
       para_seguir_pensando: clean(parsed.para_seguir_pensando),
+      ideas_pregunta_final: ideas || [],
       conexion_debil: parsed.conexion_debil === true,
       objetos_relacionados: stringList(parsed.objetos_relacionados, 3, 40)
     },
-    searchTerms: stringList(parsed.terminos_busqueda, 3, 100)
+    searchTerms: stringList(parsed.terminos_busqueda, 3, 100),
+    complete: Boolean(observation && ideas)
   };
+}
+
+const distinct = list => new Set(list.map(s => s.toLowerCase())).size === list.length;
+
+/** { pregunta, opciones: [{ texto, conclusion }] } with 2 or 3 different options, or null. Order is kept. */
+function validObservation(o) {
+  if (!o || !ok(o.pregunta, LIMITS.question) || !Array.isArray(o.opciones)) return null;
+  if (o.opciones.length < 2 || o.opciones.length > 3) return null;
+  if (!o.opciones.every(op => op && ok(op.texto, LIMITS.observation) && ok(op.conclusion, LIMITS.conclusion))) return null;
+  const opciones = o.opciones.map(op => ({ texto: clean(op.texto), conclusion: clean(op.conclusion) }));
+  if (!distinct(opciones.map(op => op.texto))) return null;
+  return { pregunta: clean(o.pregunta), opciones };
+}
+
+/** 2 or 3 different short ideas, or null. */
+function validIdeas(list) {
+  if (!Array.isArray(list) || list.length < 2 || list.length > 3 || !list.every(s => ok(s, LIMITS.idea))) return null;
+  const ideas = list.map(clean);
+  return distinct(ideas) ? ideas : null;
 }
 
 module.exports = {

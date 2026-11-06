@@ -88,17 +88,21 @@ const jsonSchema = schema => ({ type: 'json_schema', json_schema: schema });
 /**
  * Asks the model and validates its JSON. One retry if the answer is unusable (it happens rarely,
  * e.g. two identical options), because a second attempt is cheaper than losing the content.
+ * A usable answer with an optional part missing (`complete: false`) is also retried once; if the
+ * retry is not better, the usable answer is kept (e.g. a challenge without its observation question).
  * Returns the validated value, null if the output stayed invalid, or undefined if the API failed.
  */
 async function askValidated(request, validate, attempts = 2) {
+  let usable = null;
   for (let i = 0; i < attempts; i++) {
     const raw = await callOpenAI(request);
-    if (raw === null) return undefined;
+    if (raw === null) return usable || undefined;
     const result = validate(parseModelJson(raw));
-    if (result) return result;
-    console.warn('Invalid model output, attempt', i + 1);
+    if (result && result.complete !== false) return result;
+    if (result) usable = result;
+    console.warn(result ? 'Incomplete model output, attempt' : 'Invalid model output, attempt', i + 1);
   }
-  return null;
+  return usable;
 }
 
 // ---- API routes ----
@@ -133,7 +137,7 @@ app.post('/api/ai', async (req, res) => {
           { role: 'user', content: user }
         ],
         response_format: jsonSchema(LESSON_SCHEMA),
-        max_tokens: 900,
+        max_tokens: 1500,
         temperature: CONTENT_TEMPERATURE
       },
       parsed => validateLesson(parsed)

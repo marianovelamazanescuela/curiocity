@@ -1328,3 +1328,64 @@ p {
   margin: 0;
   font-weight: 600;
 }
+
+/* After the challenge: what did the child observe? No right answer, so the chosen option is just
+   marked (thick border and ink tint), never "correct" or "wrong". */
+.observation {
+  margin-top: 18px;
+  outline: none;
+}
+
+.observation__question {
+  margin: 0;
+  font-weight: 600;
+}
+
+.observation__hint {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.observation__option--on {
+  border-width: 3px;
+  background: color-mix(in srgb, var(--subject) 45%, var(--paper));
+}
+
+.observation .challenge__done {
+  margin-top: 14px;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* Final card: a pause to think, then some possible ideas (never "the" answer) */
+.think-pause {
+  margin: 14px 0;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.ideas {
+  outline: none;
+}
+
+.ideas__intro {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.ideas__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ideas__list li {
+  padding: 10px 14px;
+  border-left: 3px solid var(--ink);
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  background: color-mix(in srgb, var(--paper) 70%, transparent);
+}
+
