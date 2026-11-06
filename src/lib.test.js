@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { translations, detectUserLanguage } from './i18n';
-import { SUBJECTS, orderedSubjects } from './subjects';
+import { SUBJECTS, nextSubjects } from './subjects';
 import { buildFallbackContent } from './fallbackContent';
 import { buildShareText } from './share';
 import { removeOldSettings } from './oldSettings';
@@ -58,12 +58,24 @@ describe('buildFallbackContent', () => {
   });
 });
 
-describe('orderedSubjects', () => {
-  it('puts the featured subjects first and keeps every subject', () => {
-    const keys = orderedSubjects({ featured: [{ key: 'historia', hook: 'x' }], others: ['artes', 'biologia'] }).map(s => s.key);
-    expect(keys.slice(0, 3)).toEqual(['historia', 'artes', 'biologia']);
-    expect(keys).toHaveLength(SUBJECTS.length);
-    expect(orderedSubjects(null)).toBe(SUBJECTS);
+describe('nextSubjects', () => {
+  const ranking = {
+    featured: [{ key: 'biologia', hook: 'b' }, { key: 'historia', hook: 'h' }, { key: 'artes', hook: 'a' }],
+    others: ['matematicas', 'lengua', 'geologia', 'musica']
+  };
+
+  it('offers only the other featured subjects, with their hook, never the weaker ones', () => {
+    expect(nextSubjects(ranking, 'biologia')).toEqual([{ key: 'historia', hook: 'h' }, { key: 'artes', hook: 'a' }]);
+    expect(nextSubjects(ranking, 'musica').map(s => s.key)).toEqual(['biologia', 'historia', 'artes']);
+  });
+
+  it('leaves out the subjects already seen for this object', () => {
+    expect(nextSubjects(ranking, 'biologia', ['historia', 'biologia'])).toEqual([{ key: 'artes', hook: 'a' }]);
+    expect(nextSubjects(ranking, 'artes', ['biologia', 'historia', 'artes'])).toEqual([]);
+  });
+
+  it('offers none when there is no ranking (server unavailable)', () => {
+    expect(nextSubjects(null, 'biologia')).toEqual([]);
   });
 });
 

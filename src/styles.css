@@ -466,18 +466,6 @@ p {
   gap: 8px;
 }
 
-.chips--scroll {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  margin: 0 calc(-1 * var(--space));
-  padding: 2px var(--space) 6px;
-  scrollbar-width: none;
-}
-
-.chips--scroll::-webkit-scrollbar {
-  display: none;
-}
-
 .chip {
   display: inline-flex;
   align-items: center;
@@ -502,16 +490,6 @@ p {
 
 .chip--button:hover {
   background: var(--paper);
-}
-
-.chip--tinted {
-  border-color: transparent;
-  background: var(--subject);
-}
-
-.chip--tinted:hover {
-  background: var(--subject);
-  border-color: var(--ink);
 }
 
 .chip--subject {
@@ -1332,4 +1310,18 @@ p {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* End of the lesson with no other featured subject left: invitation to photograph another object */
+.another-photo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 14px;
+}
+
+.another-photo p {
+  margin: 0;
+  font-weight: 600;
 }

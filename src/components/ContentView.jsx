@@ -7,6 +7,7 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { getSubject } from '../subjects';
 import { buildShareText, downloadDataUrl, mailtoUrl, nativeShare, whatsappUrl } from '../share';
 import ObjectHeader from './ObjectHeader';
+import SubjectCard from './SubjectCard';
 import Curi, { CuriThinking } from './Curi';
 
 const SWIPE_MIN_PX = 60; // a deliberate horizontal swipe, not a wobble while scrolling
@@ -113,7 +114,7 @@ function lessonCards(content) {
 }
 
 export default function ContentView({
-  t, photo, objectName, subjectKey, subjects, content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
+  t, photo, objectName, subjectKey, nextSubjects = [], content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
 }) {
   const subject = getSubject(subjectKey);
   const heading = `${t.subjects[subjectKey]}: ${objectName}`;
@@ -302,29 +303,39 @@ export default function ContentView({
             </section>
           )}
 
-          {content.objetos_relacionados.length > 0 && (
+          {(content.objetos_relacionados.length > 0 || nextSubjects.length === 0) && (
             <section>
               <h3 className="section-title">{t.relatedObjects}</h3>
-              <div className="chips">
-                {content.objetos_relacionados.map(name => (
-                  <button key={name} className="chip chip--button" onClick={() => onRelatedObject(name)}>{name}</button>
-                ))}
-              </div>
+              {content.objetos_relacionados.length > 0 && (
+                <div className="chips">
+                  {content.objetos_relacionados.map(name => (
+                    <button key={name} className="chip chip--button" onClick={() => onRelatedObject(name)}>{name}</button>
+                  ))}
+                </div>
+              )}
+              {nextSubjects.length === 0 && (
+                <div className="another-photo">
+                  <p>{t.exploreAnotherObject}</p>
+                  <button className="btn btn--outline" onClick={onTakePhoto}>
+                    <MdPhotoCamera aria-hidden="true" /> {t.takeAnotherPhoto}
+                  </button>
+                </div>
+              )}
             </section>
           )}
 
           <ShareBar t={t} heading={heading} content={content} photo={photo} onToast={onToast} />
 
-          {subjects.length > 1 && (
+          {nextSubjects.length > 0 && (
             <section>
               <h3 className="section-title">{t.otherSubjects}</h3>
-              <div className="chips chips--scroll">
-                {subjects.filter(s => s.key !== subjectKey).map(({ key, icon: Icon, color }) => (
-                  <button key={key} className="chip chip--button chip--tinted" style={{ '--subject': color }} onClick={() => onSelectSubject(key)}>
-                    <Icon aria-hidden="true" /> {t.subjects[key]}
-                  </button>
+              <ul className="subject-list">
+                {nextSubjects.map(({ key, hook }) => (
+                  <li key={key}>
+                    <SubjectCard t={t} subject={getSubject(key)} hook={hook} onSelect={onSelectSubject} />
+                  </li>
                 ))}
-              </div>
+              </ul>
             </section>
           )}
         </div>

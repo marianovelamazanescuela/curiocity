@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ContentView from './ContentView';
 import { translations } from '../i18n';
-import { orderedSubjects } from '../subjects';
 
 const t = translations.es;
 
@@ -26,7 +25,6 @@ function renderLesson(props = {}) {
       photo={null}
       objectName="Manzana"
       subjectKey="biologia"
-      subjects={orderedSubjects(null)}
       content={lesson}
       onBack={() => {}}
       onSelectSubject={() => {}}

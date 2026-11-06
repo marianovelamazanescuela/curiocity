@@ -138,9 +138,11 @@ describe('App', () => {
     expect(screen.getByText(lesson.para_seguir_pensando)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Siguiente/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Manzana.*Vikidia/ })).toHaveAttribute('href', lesson.enlaces[0].url);
-    // other subjects, best connected first
-    const others = screen.getAllByRole('button', { name: /Historia|Arte|Matemáticas/ }).map(b => b.textContent.trim());
-    expect(others.slice(0, 2)).toEqual(['Historia', 'Arte']);
+    // only the other featured subjects, with their hook; no invitation to take another photo yet
+    expect(screen.getByRole('button', { name: /^Historia\s*Hace miles de años/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Arte\s*Muchos pintores/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Matemáticas|Música/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('¿Exploramos otro objeto?')).not.toBeInTheDocument();
 
     // "Anterior" goes back, and what the child did is kept
     await user.click(screen.getByRole('button', { name: /Anterior/ }));
@@ -152,6 +154,49 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'pera' }));
     expect(await screen.findByRole('heading', { name: 'Pera' })).toBeInTheDocument();
     await waitFor(() => expect(bodyOf(fetchMock, '/api/subjects').objectName).toBe('Pera'));
+  });
+
+  it('at the end, leaves out the subjects already seen and then invites to take another photo', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+
+    const goToEnd = async () => {
+      await user.click(await screen.findByRole('button', { name: lesson.pregunta_inicial.opciones[1] }));
+      for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    };
+    const endSubjects = () =>
+      screen.queryAllByRole('button', { name: /^(Biología|Historia|Arte)\s*\S/ }).map(b => b.querySelector('.subject-card__label').textContent);
+
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await goToEnd();
+    expect(endSubjects()).toEqual(['Historia', 'Arte']);
+
+    await user.click(screen.getByRole('button', { name: /^Historia\s*Hace/ }));
+    await goToEnd();
+    expect(endSubjects()).toEqual(['Arte']); // Biología was already seen
+
+    await user.click(screen.getByRole('button', { name: /^Arte\s*Muchos/ }));
+    await goToEnd();
+    expect(endSubjects()).toEqual([]);
+    expect(screen.queryByText('Míralo desde otra asignatura')).not.toBeInTheDocument();
+    expect(screen.getByText('¿Exploramos otro objeto?')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Hacer otra foto' }));
+    expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+  });
+
+  it('without a ranking (server unavailable), the end of the lesson invites to take another photo', async () => {
+    mockServer({ subjects: { ranking: null } });
+    const user = userEvent.setup();
+    render(<App />);
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: 'Biología' }));
+    await user.click(await screen.findByRole('button', { name: lesson.pregunta_inicial.opciones[1] }));
+    for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    expect(screen.queryByText('Míralo desde otra asignatura')).not.toBeInTheDocument();
+    expect(screen.getByText('¿Exploramos otro objeto?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'pera' })).toBeInTheDocument(); // next to the related objects
   });
 
   it('celebrates a right answer, and "Siguiente" moves on without doing the challenge', async () => {

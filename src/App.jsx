@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { translations, detectUserLanguage } from './i18n';
-import { getSubject, orderedSubjects } from './subjects';
+import { getSubject, nextSubjects } from './subjects';
 import { detectObject, fetchContent, fetchRanking } from './api';
 import { addToHistory, clearHistory, loadHistory } from './history';
 import { useCamera } from './useCamera';
@@ -60,6 +60,8 @@ export default function App() {
   const [subjectKey, setSubjectKey] = useState(null);
   const [content, setContent] = useState(null);
   const [toast, setToast] = useState(null);
+  // Subjects the child has already seen for each object, only while the app is open: { [object]: [keys] }
+  const [seenSubjects, setSeenSubjects] = useState({});
   // Subject ranking for the current object: { forKey, value } (value null = unknown)
   const [ranking, setRanking] = useState({ forKey: null, value: null });
 
@@ -137,6 +139,7 @@ export default function App() {
   const loadSubject = async (key, objectName = detection.object) => {
     const subject = getSubject(key);
     setSubjectKey(key);
+    setSeenSubjects(seen => ({ ...seen, [objectName]: [...new Set([...(seen[objectName] || []), key])] }));
     setContent(null); // show the loading state instead of the previous subject's content
     const signal = newRequest();
     try {
@@ -210,7 +213,7 @@ export default function App() {
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
         subjectKey={subjectKey}
-        subjects={orderedSubjects(currentRanking || null)}
+        nextSubjects={nextSubjects(currentRanking || null, subjectKey, seenSubjects[detection.object])}
         content={content}
         onBack={backToSubjects}
         onSelectSubject={key => loadSubject(key)}
