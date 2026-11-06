@@ -132,6 +132,10 @@ describe('prompts', () => {
     expect(young).toMatch(/reto_observacion/);
     expect(young).toMatch(/no right or wrong answer/);
     expect(young).toMatch(/written as a condition/);
+    expect(young).toMatch(/Never write a catch-all option/);
+    expect(young).toMatch(/still looks at the object through this subject/);
+    expect(young).toMatch(/explain something NEW and true/);
+    expect(young).toMatch(/Never just repeat the option/);
     expect(young).toMatch(/never state anything about this child's object/);
     expect(young).toMatch(/ideas_pregunta_final: 2 or 3/);
     expect(rankingPrompts({ objectName: 'Farola', language: 'French' }).system).toMatch(/hook in French/);

@@ -21,7 +21,14 @@ Rama `feature/fase-3-ajustes`. Ajustes tras probar la fase 2 con la app real.
 
 **Cómo se probó:** 107 tests en verde, lint y build. Recorrido completo a 360 px con el servidor real y OpenAI real con manzana, botella y farola, en las 3 asignaturas destacadas de cada una (9 lecciones). Las 9 trajeron pregunta de observación e ideas. No se sale nada de la pantalla, no hay peticiones a Google y no aparece el selector de edad. Capturas y JSON en `capturas/fase-3/` (fuera del repositorio).
 
-**Pendiente:** valorar si los retos con observación aportan algo. En la primera prueba, varias opciones son genéricas ("Otro detalle", "No estoy seguro") y algunas conclusiones se limitan a repetir la opción.
+**Ajuste del prompt del reto con observación.** En la primera prueba, varias opciones eran comodines ("Otro detalle", "No estoy seguro") y algunas conclusiones solo repetían la opción. El prompt ahora:
+- prohíbe las opciones comodín;
+- pide que cada conclusión explique algo nuevo y cierto (la causa o el porqué de lo observado);
+- pide retos con un resultado concreto, sin salir de la asignatura. Un primer intento solo con "resultado concreto" convertía retos de Historia y Biología en "compara su altura con tu mano", y por eso se añadió esta condición.
+
+Se volvieron a generar las 9 lecciones: las opciones son concretas y las conclusiones explican el porqué (`capturas/fase-3/retos-e-ideas-v3.json`; la primera versión está en `retos-e-ideas.json`).
+
+**Pendiente:** decidir si el reto con observación se queda.
 
 ---
 
