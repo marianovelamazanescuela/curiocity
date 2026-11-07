@@ -1332,33 +1332,30 @@ p {
   font-weight: 600;
 }
 
-/* After the challenge: what did the child observe? No right answer, so the chosen option is just
-   marked (thick border and ink tint), never "correct" or "wrong". */
-.observation {
-  margin-top: 18px;
+/* After the challenge (found it or not): "what you could discover", with Curi */
+.discovery {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 16px;
   outline: none;
 }
 
-.observation__question {
-  margin: 0;
+.discovery__title {
+  margin: 4px 0 4px;
+  font-size: 14px;
   font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.observation__hint {
-  margin: 4px 0 0;
-  font-size: 15px;
-  color: var(--ink-soft);
+.discovery__text {
+  margin: 0;
 }
 
-.observation__option--on {
-  border-width: 3px;
-  background: color-mix(in srgb, var(--subject) 45%, var(--paper));
-}
-
-.observation .challenge__done {
-  margin-top: 14px;
-  font-size: inherit;
-  font-weight: inherit;
+/* "¡Reto hecho!" and "No lo he encontrado": same width, one under the other at 360 px */
+.challenge__actions .btn {
+  flex: 1 1 auto;
 }
 
 /* Final card: a pause to think, then some possible ideas (never "the" answer) */
