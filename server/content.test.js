@@ -10,13 +10,7 @@ const lesson = (extra = {}) => ({
   por_que: 'Antes no había luz eléctrica en las calles.',
   reto: 'Cuenta cuántas farolas ves desde donde estás.',
   reto_foto: false,
-  reto_observacion: {
-    pregunta: '¿Has contado más de cinco farolas?',
-    opciones: [
-      { texto: 'Sí', conclusion: 'Si hay muchas, puede ser porque la calle es larga o muy transitada.' },
-      { texto: 'No', conclusion: 'Si hay pocas, puede ser porque la calle es corta o tranquila.' }
-    ]
-  },
+  reto_descubrimiento: 'Las primeras farolas se encendían a mano, una a una; hoy muchas se encienden solas con un sensor que nota cuándo oscurece.',
   para_seguir_pensando: '¿Cómo sería tu calle sin farolas?',
   ideas_pregunta_final: ['Estaría muy oscura de noche.', 'Usaríamos linternas.'],
   conexion_debil: false,
@@ -54,21 +48,19 @@ describe('validateLesson', () => {
     expect(validateLesson(lesson(extra))).toBeNull();
   });
 
-  it('keeps the observation question (options in order) and the final ideas, and marks the lesson complete', () => {
-    const result = validateLesson(lesson(), reverse);
+  it('keeps what the challenge could reveal and the final ideas, and marks the lesson complete', () => {
+    const result = validateLesson(lesson({ reto_descubrimiento: '  Las primeras farolas se encendían a mano, una a una; hoy muchas se encienden solas con un sensor que nota cuándo oscurece.  ' }), reverse);
     expect(result.complete).toBe(true);
-    expect(result.lesson.reto_observacion.pregunta).toBe('¿Has contado más de cinco farolas?');
-    expect(result.lesson.reto_observacion.opciones.map(o => o.texto)).toEqual(['Sí', 'No']);
-    expect(result.lesson.reto_observacion.opciones[0].conclusion).toMatch(/^Si hay muchas/);
+    expect(result.lesson.reto_descubrimiento).toBe('Las primeras farolas se encendían a mano, una a una; hoy muchas se encienden solas con un sensor que nota cuándo oscurece.');
+    expect(result.lesson).not.toHaveProperty('reto_observacion');
     expect(result.lesson.ideas_pregunta_final).toEqual(['Estaría muy oscura de noche.', 'Usaríamos linternas.']);
   });
 
   it.each([
-    ['no observation', { reto_observacion: undefined }],
-    ['one option', { reto_observacion: { pregunta: '¿?', opciones: [{ texto: 'Sí', conclusion: 'Si…' }] } }],
-    ['four options', { reto_observacion: { pregunta: '¿?', opciones: ['a', 'b', 'c', 'd'].map(t => ({ texto: t, conclusion: 'Si…' })) } }],
-    ['an option without conclusion', { reto_observacion: { pregunta: '¿?', opciones: [{ texto: 'Sí', conclusion: '' }, { texto: 'No', conclusion: 'Si…' }] } }],
-    ['repeated options', { reto_observacion: { pregunta: '¿?', opciones: [{ texto: 'Sí', conclusion: 'a' }, { texto: 'sí', conclusion: 'b' }] } }],
+    ['no discovery', { reto_descubrimiento: undefined }],
+    ['an empty discovery', { reto_descubrimiento: '   ' }],
+    ['a discovery that is far too long', { reto_descubrimiento: 'x'.repeat(400) }],
+    ['a discovery that is not text', { reto_descubrimiento: { texto: 'a' } }],
     ['one idea', { ideas_pregunta_final: ['Una'] }],
     ['repeated ideas', { ideas_pregunta_final: ['Una idea', 'una idea'] }],
     ['no ideas', { ideas_pregunta_final: undefined }]
@@ -76,7 +68,7 @@ describe('validateLesson', () => {
     const result = validateLesson(lesson(extra));
     expect(result.complete).toBe(false);
     expect(result.lesson.reto).toBeTruthy();
-    if ('reto_observacion' in extra) expect(result.lesson.reto_observacion).toBeNull();
+    if ('reto_descubrimiento' in extra) expect(result.lesson.reto_descubrimiento).toBeNull();
     if ('ideas_pregunta_final' in extra) expect(result.lesson.ideas_pregunta_final).toEqual([]);
   });
 
@@ -128,15 +120,17 @@ describe('prompts', () => {
     expect(young).toMatch(/Never include URLs/);
     expect(young).toMatch(/which part of the flower becomes each fruit/);
     expect(rankingPrompts({ objectName: 'Manzana', language: 'Spanish' }).system).toMatch(/receptacle/);
-    // observation after the challenge: no right answer, conditional conclusions, nothing about this object
-    expect(young).toMatch(/reto_observacion/);
-    expect(young).toMatch(/no right or wrong answer/);
-    expect(young).toMatch(/written as a condition/);
-    expect(young).toMatch(/Never write a catch-all option/);
-    expect(young).toMatch(/still looks at the object through this subject/);
-    expect(young).toMatch(/explain something NEW and true/);
-    expect(young).toMatch(/Never just repeat the option/);
-    expect(young).toMatch(/never state anything about this child's object/);
+    // what the challenge could reveal: one text, valid whether the child found it or not
+    expect(young).toMatch(/reto_descubrimiento/);
+    expect(young).toMatch(/teach something NEW and true/);
+    expect(young).toMatch(/valid whether the child found it or not/);
+    expect(young).toMatch(/never write "if you saw it…"/);
+    expect(young).toMatch(/never just repeat the challenge/);
+    expect(young).not.toMatch(/reto_observacion/);
+    // the challenge looks at something that makes sense from the subject
+    expect(young).toMatch(/makes sense FROM this subject/);
+    expect(young).toMatch(/never just a label, a price tag or some cables/);
+    expect(young).toMatch(/never state what this child's object has/);
     expect(young).toMatch(/ideas_pregunta_final: 2 or 3/);
     expect(rankingPrompts({ objectName: 'Farola', language: 'French' }).system).toMatch(/hook in French/);
   });

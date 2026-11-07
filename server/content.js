@@ -1,7 +1,7 @@
 // Prompts, JSON schemas and validation for the two text tasks the model does:
 //  1. rankSubjects: how strongly each school subject connects with an object, plus a one-line hook.
-//  2. lesson: interactive content for one object + subject (question → fact → why → challenge with an
-//     observation question → open question with some ideas).
+//  2. lesson: interactive content for one object + subject (question → fact → why → challenge and what
+//     it could reveal → open question with some ideas).
 // The model's output is never trusted: everything is validated and normalised here, and any URL it
 // might write is dropped (links only come from encyclopedia.js).
 
@@ -116,7 +116,7 @@ function cleanRanking(parsed) {
 // 2. Interactive lesson for one object + subject
 // ---------------------------------------------------------------------------
 
-const LIMITS = { question: 200, option: 90, fact: 300, why: 800, challenge: 320, think: 220, observation: 60, conclusion: 300, idea: 160 };
+const LIMITS = { question: 200, option: 90, fact: 300, why: 800, challenge: 320, think: 220, discovery: 320, idea: 160 };
 
 const LESSON_SCHEMA = {
   name: 'lesson',
@@ -125,7 +125,7 @@ const LESSON_SCHEMA = {
     type: 'object',
     additionalProperties: false,
     required: [
-      'pregunta_inicial', 'dato_sorprendente', 'por_que', 'reto', 'reto_foto', 'reto_observacion',
+      'pregunta_inicial', 'dato_sorprendente', 'por_que', 'reto', 'reto_foto', 'reto_descubrimiento',
       'para_seguir_pensando', 'ideas_pregunta_final', 'conexion_debil', 'objetos_relacionados', 'terminos_busqueda'
     ],
     properties: {
@@ -143,26 +143,7 @@ const LESSON_SCHEMA = {
       por_que: { type: 'string' },
       reto: { type: 'string' },
       reto_foto: { type: 'boolean' },
-      reto_observacion: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['pregunta', 'opciones'],
-        properties: {
-          pregunta: { type: 'string' },
-          opciones: {
-            type: 'array',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              required: ['texto', 'conclusion'],
-              properties: {
-                texto: { type: 'string' },
-                conclusion: { type: 'string' }
-              }
-            }
-          }
-        }
-      },
+      reto_descubrimiento: { type: 'string' },
       para_seguir_pensando: { type: 'string' },
       ideas_pregunta_final: { type: 'array', items: { type: 'string' } },
       conexion_debil: { type: 'boolean' },
@@ -180,9 +161,9 @@ Fields:
 - pregunta_inicial: a curiosity question the child answers BEFORE any explanation. It must make them guess something they probably don't know yet about this object (how it works, where it comes from, why it is like that, how it was in the past). Never ask something obvious or that they can simply see or count. "opciones": exactly 3 short answers; each one must answer the question grammatically and sound possible to a child (no joke options); exactly one is true and the other two are clearly false. If an expert could argue for two options, write a different question. "correcta": index (0, 1 or 2) of the true one. No trick questions.
 - dato_sorprendente: ONE sentence with a fact that would make a child say "wow!" and want to tell someone: true, specific, about this object from this subject. Not the answer to the question and not something obvious.
 - por_que: explains the answer to the question in concrete terms, about this object. Never start with a definition ("X is a…"). 3 short sentences; the question and its options are short and concrete.
-- reto: ONE activity of one minute at most, done with the object the child has in front of them: observe, count, measure with hands or fingers, compare, listen, describe, or find a similar object and photograph it. Address the child directly. It must be completely safe: never touch, chase or feed animals, never taste, eat, drink or smell unknown things, never go near traffic or roads, never use tools, knives, scissors, fire, electricity or hot things, never climb, never touch street furniture that could be dirty or electrical (lamps, bins), never go away from the adult. It must be possible without opening, cutting or breaking the object (do not ask to count what is inside if it cannot be seen). If the object itself is not safe to touch, the challenge is to look, count or compare from where the child is. Prefer a challenge with a concrete result that the child can then tell in a few words (bigger or smaller than their hand, how many, which shape, whether something is there), not an open "describe a detail" or "imagine". The challenge still looks at the object through this subject: a concrete result does not mean comparing the size with your hand in every subject; choose what this subject would observe (in Biology, signs of living things; in History, signs of how it was made or used before; in Art, shapes, colours and lines…).
+- reto: ONE activity of one minute at most, done with the object the child has in front of them: observe, count, measure with hands or fingers, compare, listen, describe, or find a similar object and photograph it. Address the child directly. It must be completely safe: never touch, chase or feed animals, never taste, eat, drink or smell unknown things, never go near traffic or roads, never use tools, knives, scissors, fire, electricity or hot things, never climb, never touch street furniture that could be dirty or electrical (lamps, bins), never go away from the adult. It must be possible without opening, cutting or breaking the object (do not ask to count what is inside if it cannot be seen). If the object itself is not safe to touch, the challenge is to look, count or compare from where the child is. The challenge must look at something that makes sense FROM this subject: in History, a clue about the past or about how this kind of object has changed over time (never just a label, a price tag or some cables); in Biology, living things or what in nature the object comes from; in Geology, rocks, minerals and materials from the ground; in Mathematics, shapes, counting, measuring or symmetry; in Language, words, names and how they sound; in Music, sounds and rhythms; in Art, shapes, colours, lines and textures. Prefer something concrete to look for or check, not an open "describe a detail" or "imagine".
 - reto_foto: true only if the challenge asks the child to find and photograph another object.
-- reto_observacion: asked AFTER the child has done the challenge, about what they observed or found. "pregunta": a short question about exactly what the challenge asked them to look at, count, compare or find (for example, for "Compare it with your hand": "Was it bigger than your hand?"). "opciones": 2 or 3 short, concrete answers that cover what the child may have found and do not overlap (for example "Yes" / "No" / "About the same", or "Fewer than 5" / "5 to 10" / "More than 10"). Never write a catch-all option such as "Another detail", "Another shape", "Something else" or "I'm not sure". Every option is possible: there is no right or wrong answer and the child is never judged. For each option, "conclusion": 1 or 2 short sentences, written as a condition, that explain something NEW and true about objects of this kind: the reason, cause or use behind that observation ("If it was bigger than your hand, it may be because…", "If you counted more than five, that is because…"). Never just repeat the option in other words, describe what the child saw, or praise their choice (bad: "If you saw a curve, you saw a curved shape"). The conclusions of the options must be different from each other and from the surprising fact. You do not see the object: never state anything about this child's object, never confirm or correct what they saw, and never ask for anything the challenge did not include. The same safety rules as the challenge apply, and the conclusion never asks for a new action.
+- reto_descubrimiento: what the child could discover with this challenge, shown after it, whether they found what they were looking for or not. 1 or 2 short sentences that teach something NEW and true, linked to what the challenge asks them to look at and to this subject: the reason, cause or origin of it (good example, for "look for a seam line on the bottle": "Many bottles are made by blowing hot plastic inside a two-part mould; the line shows where the two parts meet."). It must be valid whether the child found it or not: never write "if you saw it…" or "if you did not…", and never state what this child's object has or looks like (you do not see it). No obvious statements, never just repeat the challenge in other words, and do not repeat the surprising fact or por_que. The same safety and accuracy rules apply, and it never asks for a new action.
 - para_seguir_pensando: one open question with no single right answer, to keep thinking or talk about with someone.
 - ideas_pregunta_final: 2 or 3 short ideas (one sentence each), different from each other, that could answer para_seguir_pensando. They are possibilities to inspire the child, not the right answer; anything they state as a fact must be true.
 - conexion_debil: true if the connection between this object and this subject is weak. Then say it honestly in the first sentence of por_que, in a friendly way (for example "A banana has little to do with music, but…"). Do not stretch: the question and the fact may be about the subject in general (well-known, certain facts, e.g. about rhythm), linked to what the child will do with the object; never an invented link between this object and the subject.
@@ -219,9 +200,9 @@ function validateLesson(parsed, shuffle = defaultShuffle) {
   if (!ok(parsed.dato_sorprendente, LIMITS.fact) || !ok(parsed.por_que, LIMITS.why)) return null;
   if (!ok(parsed.reto, LIMITS.challenge) || !ok(parsed.para_seguir_pensando, LIMITS.think)) return null;
 
-  // Optional parts: when invalid the lesson still works (challenge without observation, final card
+  // Optional parts: when invalid the lesson still works (challenge without its discovery, final card
   // without ideas), but `complete: false` lets the server ask once more.
-  const observation = validObservation(parsed.reto_observacion);
+  const discovery = ok(parsed.reto_descubrimiento, LIMITS.discovery) ? clean(parsed.reto_descubrimiento) : null;
   const ideas = validIdeas(parsed.ideas_pregunta_final);
 
   const correctText = options[q.correcta];
@@ -233,28 +214,18 @@ function validateLesson(parsed, shuffle = defaultShuffle) {
       por_que: clean(parsed.por_que),
       reto: clean(parsed.reto),
       reto_foto: parsed.reto_foto === true,
-      reto_observacion: observation,
+      reto_descubrimiento: discovery,
       para_seguir_pensando: clean(parsed.para_seguir_pensando),
       ideas_pregunta_final: ideas || [],
       conexion_debil: parsed.conexion_debil === true,
       objetos_relacionados: stringList(parsed.objetos_relacionados, 3, 40)
     },
     searchTerms: stringList(parsed.terminos_busqueda, 3, 100),
-    complete: Boolean(observation && ideas)
+    complete: Boolean(discovery && ideas)
   };
 }
 
 const distinct = list => new Set(list.map(s => s.toLowerCase())).size === list.length;
-
-/** { pregunta, opciones: [{ texto, conclusion }] } with 2 or 3 different options, or null. Order is kept. */
-function validObservation(o) {
-  if (!o || !ok(o.pregunta, LIMITS.question) || !Array.isArray(o.opciones)) return null;
-  if (o.opciones.length < 2 || o.opciones.length > 3) return null;
-  if (!o.opciones.every(op => op && ok(op.texto, LIMITS.observation) && ok(op.conclusion, LIMITS.conclusion))) return null;
-  const opciones = o.opciones.map(op => ({ texto: clean(op.texto), conclusion: clean(op.conclusion) }));
-  if (!distinct(opciones.map(op => op.texto))) return null;
-  return { pregunta: clean(o.pregunta), opciones };
-}
 
 /** 2 or 3 different short ideas, or null. */
 function validIdeas(list) {

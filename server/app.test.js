@@ -99,13 +99,7 @@ describe('POST /api/ai', () => {
       por_que: 'Antes no había luz eléctrica en las calles.',
       reto: 'Cuenta cuántas farolas ves desde donde estás.',
       reto_foto: false,
-      reto_observacion: {
-        pregunta: '¿Has contado más de cinco farolas?',
-        opciones: [
-          { texto: 'Sí', conclusion: 'Si hay muchas, puede ser porque la calle es larga.' },
-          { texto: 'No', conclusion: 'Si hay pocas, puede ser porque la calle es corta.' }
-        ]
-      },
+      reto_descubrimiento: 'Las primeras farolas se encendían a mano, una a una; hoy muchas se encienden solas con un sensor que nota cuándo oscurece.',
       para_seguir_pensando: '¿Cómo sería tu calle sin farolas?',
       ideas_pregunta_final: ['Estaría muy oscura.', 'Usaríamos linternas.'],
       conexion_debil: false,
@@ -139,26 +133,34 @@ describe('POST /api/ai', () => {
     });
     expect(body).not.toHaveProperty('terminos_busqueda');
     expect(body).not.toHaveProperty('complete');
-    expect(body.reto_observacion.opciones).toHaveLength(2);
+    expect(body.reto_descubrimiento).toBe('Las primeras farolas se encendían a mano, una a una; hoy muchas se encienden solas con un sensor que nota cuándo oscurece.');
     expect(body.ideas_pregunta_final).toEqual(['Estaría muy oscura.', 'Usaríamos linternas.']);
   });
 
-  it('asks once more when the observation or the ideas are missing, and uses the complete answer', async () => {
-    openaiReply = [modelLesson({ reto_observacion: null }), modelLesson()];
+  it('asks once more when the discovery or the ideas are missing, and uses the complete answer', async () => {
+    openaiReply = [modelLesson({ reto_descubrimiento: '' }), modelLesson()];
     const body = await (await post('/api/ai', valid)).json();
     expect(openaiCalls).toHaveLength(2);
-    expect(body.reto_observacion.pregunta).toBe('¿Has contado más de cinco farolas?');
+    expect(body.reto_descubrimiento).toBe('Las primeras farolas se encendían a mano, una a una; hoy muchas se encienden solas con un sensor que nota cuándo oscurece.');
   });
 
   it('if they are still missing after the retry, serves the lesson without them', async () => {
-    openaiReply = [modelLesson({ reto_observacion: null }), modelLesson({ ideas_pregunta_final: [] })];
+    openaiReply = [modelLesson({ reto_descubrimiento: null }), modelLesson({ ideas_pregunta_final: [] })];
     const r = await post('/api/ai', valid);
     expect(r.status).toBe(200);
     const body = await r.json();
     expect(openaiCalls).toHaveLength(2);
     expect(body.reto).toBe('Cuenta cuántas farolas ves desde donde estás.');
     expect(body.ideas_pregunta_final).toEqual([]); // the last usable answer is kept
-    expect(body.reto_observacion.opciones).toHaveLength(2);
+    expect(body.reto_descubrimiento).toBe('Las primeras farolas se encendían a mano, una a una; hoy muchas se encienden solas con un sensor que nota cuándo oscurece.');
+  });
+
+  it('if the discovery is still missing after the retry, serves the lesson without it', async () => {
+    openaiReply = [modelLesson({ reto_descubrimiento: '' }), modelLesson({ reto_descubrimiento: 'x'.repeat(400) })];
+    const r = await post('/api/ai', valid);
+    expect(r.status).toBe(200);
+    expect(openaiCalls).toHaveLength(2);
+    expect((await r.json()).reto_descubrimiento).toBeNull();
   });
 
   it('keeps an incomplete lesson if the retry fails at the API', async () => {
