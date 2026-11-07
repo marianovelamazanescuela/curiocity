@@ -129,7 +129,7 @@ describe('prompts', () => {
     expect(young).not.toMatch(/reto_observacion/);
     // the challenge looks at something that makes sense from the subject
     expect(young).toMatch(/makes sense FROM this subject/);
-    expect(young).toMatch(/never just a label, a price tag or some cables/);
+    expect(young).toMatch(/never labels, stickers, price tags, packaging or cables/);
     expect(young).toMatch(/never state what this child's object has/);
     expect(young).toMatch(/ideas_pregunta_final: 2 or 3/);
     expect(rankingPrompts({ objectName: 'Farola', language: 'French' }).system).toMatch(/hook in French/);
