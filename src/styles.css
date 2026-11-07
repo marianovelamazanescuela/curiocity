@@ -802,7 +802,7 @@ p {
 .card__kicker {
   margin-bottom: 6px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400; /* headings inside the cards: not bold, there is little room */
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -1158,7 +1158,7 @@ p {
 .lesson .lesson-text--title {
   font-size: calc(var(--lesson-size) * 1.25);
   line-height: 1.25;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .lesson .quiz__option .lesson-text,
@@ -1344,7 +1344,7 @@ p {
 .discovery__title {
   margin: 4px 0 4px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -1371,7 +1371,7 @@ p {
 
 .ideas__intro {
   margin: 0 0 8px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .ideas__list {
