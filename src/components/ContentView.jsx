@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   MdArrowBack, MdArrowForward, MdEmail, MdIosShare, MdOpenInNew, MdLightbulbOutline,
-  MdCheckCircle, MdTimer, MdPhotoCamera, MdChatBubbleOutline, MdHelpOutline, MdSearch
+  MdCheckCircle, MdSearchOff, MdTimer, MdPhotoCamera, MdChatBubbleOutline, MdHelpOutline, MdSearch
 } from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
 import { getSubject } from '../subjects';
@@ -91,34 +91,27 @@ function Quiz({ t, question, answer, onAnswer }) {
 }
 
 /**
- * After the challenge: what did the child observe? Every option is possible (no right answer), and
- * each one has a general, conditional explanation ("If…, it may be because…"). The child may change
- * their choice to read the others.
+ * After the challenge, whether the child found it or not: "what you could discover", a general and
+ * true explanation (the AI does not see the object). Without it, a short kind message.
+ * Nothing here sounds like failing: "No lo he encontrado" gets the same explanation, with Curi calm.
  */
-function Observation({ t, observation, choice, onChoose, focusRef }) {
+function ChallengeResult({ t, result, discovery, focusRef }) {
+  const found = result === 'done';
+  if (!discovery) {
+    return (
+      <div className="curi-say challenge__done reveal">
+        <Curi state={found ? 'done' : 'idle'} size={64} />
+        <p role="status">{found ? t.challengeCheer : t.notFoundCheer}</p>
+      </div>
+    );
+  }
   return (
-    <div className="observation reveal" ref={focusRef} tabIndex={-1}>
-      <p id="observation-question" className="lesson-text observation__question">{observation.pregunta}</p>
-      <p className="observation__hint">{t.observationHint}</p>
-      <ul className="quiz observation__options" aria-labelledby="observation-question">
-        {observation.opciones.map((option, i) => (
-          <li key={i}>
-            <button
-              className={choice === i ? 'quiz__option observation__option observation__option--on' : 'quiz__option observation__option'}
-              onClick={() => onChoose(i)}
-              aria-pressed={choice === i}
-            >
-              <span className="lesson-text">{option.texto}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      {choice !== null && (
-        <div key={choice} className="curi-say challenge__done reveal">
-          <Curi state="done" size={64} />
-          <p role="status" className="lesson-text observation__conclusion">{observation.opciones[choice].conclusion}</p>
-        </div>
-      )}
+    <div className="discovery reveal" ref={focusRef} tabIndex={-1} role="status">
+      <Curi state={found ? 'done' : 'idle'} size={64} />
+      <div>
+        <p className="discovery__title">{t.whatYouCouldDiscover}</p>
+        <p className="lesson-text discovery__text">{discovery}</p>
+      </div>
     </div>
   );
 }
@@ -145,11 +138,10 @@ export default function ContentView({
   const subject = getSubject(subjectKey);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState(null);
-  const [challengeDone, setChallengeDone] = useState(false);
-  const [observed, setObserved] = useState(null); // option chosen in the observation question
+  const [challengeResult, setChallengeResult] = useState(null); // null | 'done' | 'notFound'
   const [showIdeas, setShowIdeas] = useState(false);
   const cardRef = useRef(null);
-  const revealRef = useRef(null); // what appears when its button goes away (observation, ideas) takes the focus
+  const revealRef = useRef(null); // what appears when its button goes away (discovery, ideas) takes the focus
   const movedRef = useRef(false); // focus moves only after the child changes card, not on first render
   const swipeRef = useRef(null);
 
@@ -164,7 +156,7 @@ export default function ContentView({
 
   useEffect(() => {
     revealRef.current?.focus({ preventScroll: true });
-  }, [challengeDone, showIdeas]);
+  }, [challengeResult, showIdeas]);
 
   const header = (
     <>
@@ -194,7 +186,8 @@ export default function ContentView({
   const isLast = index === cards.length - 1;
   const canAdvance = !isLast && !(current === 'question' && answer === null);
   const finalText = content.offline ? content.otra_idea : content.para_seguir_pensando;
-  const observation = !content.offline && content.reto_observacion;
+  // Old lessons may still carry reto_observacion (phase 3): it is simply ignored.
+  const discovery = (!content.offline && typeof content.reto_descubrimiento === 'string' && content.reto_descubrimiento.trim()) || null;
   const ideas = (!content.offline && content.ideas_pregunta_final) || [];
 
   const progress = t.cardProgress.replace('{n}', index + 1).replace('{total}', cards.length);
@@ -261,22 +254,21 @@ export default function ContentView({
       <>
         <h3 id={titleId} className="card__kicker"><MdTimer aria-hidden="true" /> {t.challenge}</h3>
         <p className="lesson-text challenge__text">{content.reto}</p>
-        {challengeDone && observation && (
-          <Observation t={t} observation={observation} choice={observed} onChoose={setObserved} focusRef={revealRef} />
+        {challengeResult && (
+          <ChallengeResult t={t} result={challengeResult} discovery={discovery} focusRef={revealRef} />
         )}
         <div className="challenge__actions">
-          {challengeDone && !observation && (
-            <div className="curi-say challenge__done reveal">
-              <Curi state="done" size={64} />
-              <p role="status">{t.challengeCheer}</p>
-            </div>
+          {!challengeResult && (
+            <>
+              <button className="btn btn--primary" onClick={() => setChallengeResult('done')}>
+                <MdCheckCircle aria-hidden="true" /> {t.challengeDone}
+              </button>
+              <button className="btn btn--outline" onClick={() => setChallengeResult('notFound')}>
+                <MdSearchOff aria-hidden="true" /> {t.notFound}
+              </button>
+            </>
           )}
-          {!challengeDone && (
-            <button className="btn btn--primary" onClick={() => setChallengeDone(true)}>
-              <MdCheckCircle aria-hidden="true" /> {t.challengeDone}
-            </button>
-          )}
-          {challengeDone && content.reto_foto && (
+          {challengeResult && content.reto_foto && (
             <button className="btn btn--outline" onClick={onTakePhoto}>
               <MdPhotoCamera aria-hidden="true" /> {t.takeAnotherPhoto}
             </button>
