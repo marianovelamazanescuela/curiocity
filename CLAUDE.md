@@ -48,7 +48,7 @@ Variables de entorno y despliegue: ver `README.md`.
 - **Contexto local:** Sevilla, Andalucía o España solo cuando encaje de forma natural, nunca forzado.
 
 ## Diseño visual (mantener coherencia)
-- **Tipografía:** Literata en toda la app (interfaz y lección), con una sola variable (`--font`) para cambiarla en una línea. El logotipo (SVG) no cambia. Botones y etiquetas de sección a peso 600; los encabezados dentro de las tarjetas de la lección (etiquetas en mayúsculas, "Lo que podías descubrir", la pregunta inicial) a peso normal (400), porque hay poco espacio. Mayúsculas con poco espaciado (0,05em). Texto de la lección a 18,5 px / 1,5.
+- **Tipografía:** Literata en toda la app (interfaz y lección), con una sola variable (`--font`) para cambiarla en una línea. El logotipo (SVG) no cambia. Botones, etiquetas de sección y el nombre del objeto a peso 600 (semibold); los encabezados dentro de las tarjetas de la lección (etiquetas en mayúsculas, "Lo que podías descubrir", la pregunta inicial) a peso normal (400), porque hay poco espacio. Mayúsculas con poco espaciado (0,05em). Texto de la lección a 18,5 px / 1,5.
 - **Paleta cálida:** base crema y tinta, con tintes cálidos por asignatura. Usa siempre las variables de `src/styles.css` y los colores de `src/subjects.js`; no metas colores sueltos. Cualquier color nuevo de fondo debe tener contraste AA con el texto `--ink`.
 - Formas redondeadas, botones grandes y fáciles de pulsar. Las asignaturas usan iconos de Material Design (decidido mantenerlos) y un color cálido cada una (`src/subjects.js`).
 - La tipografía se sirve desde el propio proyecto (`public/fonts/`, con su licencia OFL), no desde Google Fonts, para no enviar la IP de los niños a terceros.

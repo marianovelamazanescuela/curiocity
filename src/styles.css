@@ -536,7 +536,7 @@ p {
 
 .object-header__name {
   font-size: clamp(30px, 9vw, 40px);
-  font-weight: 700;
+  font-weight: 600; /* semibold: the name leads without weighing too much */
   line-height: 1;
   letter-spacing: -0.01em;
   overflow-wrap: anywhere;
