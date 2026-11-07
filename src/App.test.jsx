@@ -76,7 +76,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Manzana' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Biología.*Dentro hay una estrella escondida/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Historia.*Hace miles de años/ })).toBeInTheDocument();
-    expect(bodyOf(fetchMock, '/api/subjects')).toEqual({ objectName: 'Manzana', language: 'Spanish', ageGroup: '6-8' });
+    expect(bodyOf(fetchMock, '/api/subjects')).toEqual({ objectName: 'Manzana', language: 'Spanish' });
 
     const more = screen.getByText('Más asignaturas');
     expect(more.closest('details')).not.toHaveAttribute('open');
@@ -104,7 +104,7 @@ describe('App', () => {
     await takePhoto(user);
     await user.click(await screen.findByRole('button', { name: /Biología/ }));
     expect(await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta })).toBeInTheDocument();
-    expect(bodyOf(fetchMock, '/api/ai')).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish', ageGroup: '6-8' });
+    expect(bodyOf(fetchMock, '/api/ai')).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish' });
     expect(screen.getByRole('region', { name: /Tarjeta 1 de 5/ })).toBeInTheDocument();
 
     // Nothing is explained before the child answers, and "Siguiente" waits for an answer
@@ -138,9 +138,11 @@ describe('App', () => {
     expect(screen.getByText(lesson.para_seguir_pensando)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Siguiente/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Manzana.*Vikidia/ })).toHaveAttribute('href', lesson.enlaces[0].url);
-    // other subjects, best connected first
-    const others = screen.getAllByRole('button', { name: /Historia|Arte|Matemáticas/ }).map(b => b.textContent.trim());
-    expect(others.slice(0, 2)).toEqual(['Historia', 'Arte']);
+    // only the other featured subjects, with their hook; no invitation to take another photo yet
+    expect(screen.getByRole('button', { name: /^Historia\s*Hace miles de años/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Arte\s*Muchos pintores/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Matemáticas|Música/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('¿Exploramos otro objeto?')).not.toBeInTheDocument();
 
     // "Anterior" goes back, and what the child did is kept
     await user.click(screen.getByRole('button', { name: /Anterior/ }));
@@ -152,6 +154,49 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'pera' }));
     expect(await screen.findByRole('heading', { name: 'Pera' })).toBeInTheDocument();
     await waitFor(() => expect(bodyOf(fetchMock, '/api/subjects').objectName).toBe('Pera'));
+  });
+
+  it('at the end, leaves out the subjects already seen and then invites to take another photo', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+
+    const goToEnd = async () => {
+      await user.click(await screen.findByRole('button', { name: lesson.pregunta_inicial.opciones[1] }));
+      for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    };
+    const endSubjects = () =>
+      screen.queryAllByRole('button', { name: /^(Biología|Historia|Arte)\s*\S/ }).map(b => b.querySelector('.subject-card__label').textContent);
+
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await goToEnd();
+    expect(endSubjects()).toEqual(['Historia', 'Arte']);
+
+    await user.click(screen.getByRole('button', { name: /^Historia\s*Hace/ }));
+    await goToEnd();
+    expect(endSubjects()).toEqual(['Arte']); // Biología was already seen
+
+    await user.click(screen.getByRole('button', { name: /^Arte\s*Muchos/ }));
+    await goToEnd();
+    expect(endSubjects()).toEqual([]);
+    expect(screen.queryByText('Míralo desde otra asignatura')).not.toBeInTheDocument();
+    expect(screen.getByText('¿Exploramos otro objeto?')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Hacer otra foto' }));
+    expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+  });
+
+  it('without a ranking (server unavailable), the end of the lesson invites to take another photo', async () => {
+    mockServer({ subjects: { ranking: null } });
+    const user = userEvent.setup();
+    render(<App />);
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: 'Biología' }));
+    await user.click(await screen.findByRole('button', { name: lesson.pregunta_inicial.opciones[1] }));
+    for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    expect(screen.queryByText('Míralo desde otra asignatura')).not.toBeInTheDocument();
+    expect(screen.getByText('¿Exploramos otro objeto?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'pera' })).toBeInTheDocument(); // next to the related objects
   });
 
   it('celebrates a right answer, and "Siguiente" moves on without doing the challenge', async () => {
@@ -185,82 +230,15 @@ describe('App', () => {
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Manzana' })).not.toBeInTheDocument());
   });
 
-  it('sends the chosen age group, asks the subjects again for it, and remembers it', async () => {
-    const fetchMock = mockServer();
-    const user = userEvent.setup();
-    render(<App />);
-
-    await takePhoto(user);
-    const older = await screen.findByRole('radio', { name: '9–12 años' });
-    expect(screen.getByRole('radio', { name: '6–8 años' })).toBeChecked(); // default
-    await user.click(older);
-    expect(older).toBeChecked();
-    expect(localStorage.getItem('curiocity_age')).toBe('9-12');
-    await waitFor(() => expect(bodyOf(fetchMock, '/api/subjects').ageGroup).toBe('9-12'));
-
-    await user.click(await screen.findByRole('button', { name: /Biología/ }));
-    await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta });
-    expect(bodyOf(fetchMock, '/api/ai').ageGroup).toBe('9-12');
-  });
-
-  it("reads aloud the current card, with the device voice, in the child's language", async () => {
+  it('has no age selector: a single audience (8-10)', async () => {
     mockServer();
-    localStorage.setItem('curiocity_voice', 'off'); // only what the child asks for
-    const spoken = [];
-    const synth = { speak: vi.fn(u => spoken.push(u)), cancel: vi.fn(), getVoices: () => [] };
-    vi.stubGlobal('speechSynthesis', synth);
-    vi.stubGlobal('SpeechSynthesisUtterance', function (text) { this.text = text; });
     const user = userEvent.setup();
     render(<App />);
-
     await takePhoto(user);
-    await user.click(await screen.findByRole('button', { name: /Biología/ }));
-    await user.click(await screen.findByRole('button', { name: 'Escuchar' }));
-    // Before answering: only the question and the options (no spoilers)
-    expect(spoken.map(u => u.text)).toEqual([lesson.pregunta_inicial.pregunta, ...lesson.pregunta_inicial.opciones]);
-    expect(spoken[0].lang).toBe('es-ES');
-
-    await user.click(screen.getByRole('button', { name: 'Parar' }));
-    expect(synth.cancel).toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'En el centro' }));
-    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
-    spoken.length = 0;
-    await user.click(screen.getByRole('button', { name: 'Escuchar' }));
-    expect(spoken.map(u => u.text)).toEqual(['Dato sorprendente', lesson.dato_sorprendente]);
-  });
-
-  it('reads each card aloud as it appears for 6-8, and not by default for 9-12', async () => {
-    mockServer();
-    const spoken = [];
-    const synth = { speak: vi.fn(u => spoken.push(u.text)), cancel: vi.fn(), getVoices: () => [] };
-    vi.stubGlobal('speechSynthesis', synth);
-    vi.stubGlobal('SpeechSynthesisUtterance', function (text) { this.text = text; });
-    const user = userEvent.setup();
-    render(<App />);
-
-    await takePhoto(user);
-    await user.click(await screen.findByRole('button', { name: /Biología/ }));
-    await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta });
-    // 6-8 (default): the question and its options are read without pressing anything
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'true');
-    expect(spoken).toEqual([lesson.pregunta_inicial.pregunta, ...lesson.pregunta_inicial.opciones]);
-
-    // the kind message after answering, then the next card when it appears
-    spoken.length = 0;
-    await user.click(screen.getByRole('button', { name: 'En la piel' }));
-    expect(spoken).toEqual(['¡Casi! La respuesta es: En el centro']);
-    spoken.length = 0;
-    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
-    expect(spoken).toEqual(['Dato sorprendente', lesson.dato_sorprendente]);
-
-    // 9-12: off by default
-    await user.click(screen.getByRole('button', { name: 'Asignaturas' }));
-    await user.click(await screen.findByRole('radio', { name: '9–12 años' }));
-    spoken.length = 0;
-    await user.click(await screen.findByRole('button', { name: /Biología/ }));
-    await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta });
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'false');
-    expect(spoken).toEqual([]);
+    await screen.findByRole('button', { name: /Biología/ });
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tengo|6–8|9–12/)).not.toBeInTheDocument();
   });
 
   it('keeps discoveries in a local history that can be reopened and cleared', async () => {

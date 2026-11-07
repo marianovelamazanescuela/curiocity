@@ -3,7 +3,7 @@ const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const { callOpenAI, parseModelJson } = require('./openai');
 const { findArticles } = require('./encyclopedia');
-const { AGE_GROUPS, RANKING_SCHEMA, LESSON_SCHEMA, rankingPrompts, lessonPrompts, cleanRanking, validateLesson } = require('./content');
+const { RANKING_SCHEMA, LESSON_SCHEMA, rankingPrompts, lessonPrompts, cleanRanking, validateLesson } = require('./content');
 
 const app = express();
 
@@ -78,8 +78,6 @@ function cacheSet(key, data) {
 
 const MAX_TEXT_FIELD = 100;
 const isShortString = v => typeof v === 'string' && v.trim().length > 0 && v.length <= MAX_TEXT_FIELD;
-// Same default as the app (src/i18n.js): the youngest group, the safest choice if the age is unknown.
-const ageGroupOf = body => (body && AGE_GROUPS.includes(body.ageGroup) ? body.ageGroup : '6-8');
 
 // Low temperature: the content must be accurate, not creative.
 const CONTENT_TEMPERATURE = 0.35;
@@ -90,17 +88,21 @@ const jsonSchema = schema => ({ type: 'json_schema', json_schema: schema });
 /**
  * Asks the model and validates its JSON. One retry if the answer is unusable (it happens rarely,
  * e.g. two identical options), because a second attempt is cheaper than losing the content.
+ * A usable answer with an optional part missing (`complete: false`) is also retried once; if the
+ * retry is not better, the usable answer is kept (e.g. a challenge without its observation question).
  * Returns the validated value, null if the output stayed invalid, or undefined if the API failed.
  */
 async function askValidated(request, validate, attempts = 2) {
+  let usable = null;
   for (let i = 0; i < attempts; i++) {
     const raw = await callOpenAI(request);
-    if (raw === null) return undefined;
+    if (raw === null) return usable || undefined;
     const result = validate(parseModelJson(raw));
-    if (result) return result;
-    console.warn('Invalid model output, attempt', i + 1);
+    if (result && result.complete !== false) return result;
+    if (result) usable = result;
+    console.warn(result ? 'Incomplete model output, attempt' : 'Invalid model output, attempt', i + 1);
   }
-  return null;
+  return usable;
 }
 
 // ---- API routes ----
@@ -110,7 +112,6 @@ app.get('/api/health', (req, res) => res.json({ ok: true, time: Date.now() }));
 // Interactive lesson for one object + subject: question → surprising fact → why → challenge → open question.
 app.post('/api/ai', async (req, res) => {
   const { objectName, subject, language = 'English' } = req.body || {};
-  const ageGroup = ageGroupOf(req.body);
   if (!objectName || !subject) {
     return res.status(400).json({ error: 'Missing objectName or subject' });
   }
@@ -119,7 +120,7 @@ app.post('/api/ai', async (req, res) => {
     return res.status(400).json({ error: 'Invalid input' });
   }
 
-  const cacheKey = ['lesson', objectName, subject, language, ageGroup].map(s => s.toLowerCase().trim()).join('::');
+  const cacheKey = ['lesson', objectName, subject, language].map(s => s.toLowerCase().trim()).join('::');
   const cached = cacheGet(cacheKey);
   if (cached) return res.json(cached);
 
@@ -128,7 +129,7 @@ app.post('/api/ai', async (req, res) => {
   }
 
   try {
-    const { system, user } = lessonPrompts({ objectName, subject, language, ageGroup });
+    const { system, user } = lessonPrompts({ objectName, subject, language });
     const result = await askValidated(
       {
         messages: [
@@ -136,7 +137,7 @@ app.post('/api/ai', async (req, res) => {
           { role: 'user', content: user }
         ],
         response_format: jsonSchema(LESSON_SCHEMA),
-        max_tokens: 900,
+        max_tokens: 1500,
         temperature: CONTENT_TEMPERATURE
       },
       parsed => validateLesson(parsed)
@@ -209,11 +210,10 @@ app.post('/api/detect', async (req, res) => {
 // Used after a photo, for related objects and for history entries.
 app.post('/api/subjects', async (req, res) => {
   const { objectName, language = 'English' } = req.body || {};
-  const ageGroup = ageGroupOf(req.body);
   if (![objectName, language].every(isShortString)) {
     return res.status(400).json({ error: 'Invalid input' });
   }
-  const cacheKey = ['subjects', objectName, language, ageGroup].map(s => s.toLowerCase().trim()).join('::');
+  const cacheKey = ['subjects', objectName, language].map(s => s.toLowerCase().trim()).join('::');
   const cached = cacheGet(cacheKey);
   if (cached) return res.json(cached);
   if (!process.env.OPENAI_API_KEY) {
@@ -221,7 +221,7 @@ app.post('/api/subjects', async (req, res) => {
   }
 
   try {
-    const { system, user } = rankingPrompts({ objectName, language, ageGroup });
+    const { system, user } = rankingPrompts({ objectName, language });
     const ranking = await askValidated(
       {
         messages: [

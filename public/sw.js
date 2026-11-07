@@ -2,9 +2,9 @@
 // - Page (navigation): network first, cached copy if offline, so updates arrive right away.
 // - Static files (/assets, /fonts, /icons, svg): cache first; Vite gives assets unique names per build.
 // - /api/*: never cached here (the server has its own cache; answers depend on the photo).
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `curiocity-${VERSION}`;
-const PRECACHE = ['/', '/manifest.json', '/curiocity-logo.svg', '/curiocity-icon.svg', '/fonts/sofia-sans-latin.woff2', '/icons/icon-192x192.png'];
+const PRECACHE = ['/', '/manifest.json', '/curiocity-logo.svg', '/curiocity-icon.svg', '/fonts/literata-latin.woff2', '/icons/icon-192x192.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(

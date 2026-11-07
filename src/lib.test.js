@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { translations, detectUserLanguage } from './i18n';
-import { SUBJECTS, orderedSubjects } from './subjects';
+import { SUBJECTS, nextSubjects } from './subjects';
 import { buildFallbackContent } from './fallbackContent';
 import { buildShareText } from './share';
+import { removeOldSettings } from './oldSettings';
 
 describe('translations', () => {
   const keysOf = obj => Object.keys(obj).sort();
@@ -57,12 +58,24 @@ describe('buildFallbackContent', () => {
   });
 });
 
-describe('orderedSubjects', () => {
-  it('puts the featured subjects first and keeps every subject', () => {
-    const keys = orderedSubjects({ featured: [{ key: 'historia', hook: 'x' }], others: ['artes', 'biologia'] }).map(s => s.key);
-    expect(keys.slice(0, 3)).toEqual(['historia', 'artes', 'biologia']);
-    expect(keys).toHaveLength(SUBJECTS.length);
-    expect(orderedSubjects(null)).toBe(SUBJECTS);
+describe('nextSubjects', () => {
+  const ranking = {
+    featured: [{ key: 'biologia', hook: 'b' }, { key: 'historia', hook: 'h' }, { key: 'artes', hook: 'a' }],
+    others: ['matematicas', 'lengua', 'geologia', 'musica']
+  };
+
+  it('offers only the other featured subjects, with their hook, never the weaker ones', () => {
+    expect(nextSubjects(ranking, 'biologia')).toEqual([{ key: 'historia', hook: 'h' }, { key: 'artes', hook: 'a' }]);
+    expect(nextSubjects(ranking, 'musica').map(s => s.key)).toEqual(['biologia', 'historia', 'artes']);
+  });
+
+  it('leaves out the subjects already seen for this object', () => {
+    expect(nextSubjects(ranking, 'biologia', ['historia', 'biologia'])).toEqual([{ key: 'artes', hook: 'a' }]);
+    expect(nextSubjects(ranking, 'artes', ['biologia', 'historia', 'artes'])).toEqual([]);
+  });
+
+  it('offers none when there is no ranking (server unavailable)', () => {
+    expect(nextSubjects(null, 'biologia')).toEqual([]);
   });
 });
 
@@ -72,12 +85,27 @@ describe('buildShareText', () => {
     dato_sorprendente: 'Dato', por_que: 'Porque', reto: 'Cuenta', para_seguir_pensando: '¿Y si…?'
   };
 
-  it('includes the answer, the challenge and never a base64 image', () => {
-    const text = buildShareText('Historia: Farola', content, translations.es, { withAttachHint: true });
-    expect(text).toContain(translations.es.shareIntro);
-    expect(text).toContain('¿Pregunta?\n→ b');
-    expect(text).toContain('Reto de un minuto: Cuenta');
-    expect(text).toContain(translations.es.shareAttachHint);
-    expect(text).not.toContain('base64');
+  it('has the object, the subject, the question with its right answer, the fact and the brand', () => {
+    const text = buildShareText({ objectName: 'Farola', subjectName: 'Historia', content, t: translations.es });
+    expect(text.split('\n\n')).toEqual(['Farola · Historia', '¿Pregunta?\n→ b', 'Dato', expect.stringContaining('Curiocity')]);
+    expect(text).not.toMatch(/Porque|Cuenta|¿Y si…\?|base64|foto/);
+  });
+
+  it('offline content (no question, no fact) shares just the heading and the brand', () => {
+    const text = buildShareText({ objectName: 'Farola', subjectName: 'Historia', content: { offline: true, reto: 'Dibuja' }, t: translations.es });
+    expect(text.split('\n\n')).toEqual(['Farola · Historia', expect.stringContaining('Curiocity')]);
+  });
+});
+
+describe('removeOldSettings', () => {
+  it('deletes the voice and age settings of earlier versions, and keeps the rest', () => {
+    localStorage.setItem('curiocity_voice', 'on');
+    localStorage.setItem('curiocity_age', '9-12');
+    localStorage.setItem('curiocity_history', '[]');
+    removeOldSettings();
+    expect(localStorage.getItem('curiocity_voice')).toBeNull();
+    expect(localStorage.getItem('curiocity_age')).toBeNull();
+    expect(localStorage.getItem('curiocity_history')).toBe('[]');
+    localStorage.clear();
   });
 });

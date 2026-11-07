@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ContentView from './ContentView';
 import { translations } from '../i18n';
-import { orderedSubjects } from '../subjects';
 
 const t = translations.es;
 
@@ -13,7 +12,15 @@ const lesson = {
   por_que: 'Las semillas están en el centro.',
   reto: 'Cuenta las semillas de tu manzana.',
   reto_foto: false,
+  reto_observacion: {
+    pregunta: '¿Has encontrado más de cinco semillas?',
+    opciones: [
+      { texto: 'Sí', conclusion: 'Si hay muchas, puede ser porque la flor tenía muchos óvulos.' },
+      { texto: 'No', conclusion: 'Si hay pocas, puede ser porque no todas llegaron a formarse.' }
+    ]
+  },
   para_seguir_pensando: '¿Qué pasaría si plantas una semilla?',
+  ideas_pregunta_final: ['Podría crecer un manzano.', 'Necesitaría agua y luz.'],
   conexion_debil: false,
   objetos_relacionados: [],
   enlaces: []
@@ -26,9 +33,6 @@ function renderLesson(props = {}) {
       photo={null}
       objectName="Manzana"
       subjectKey="biologia"
-      subjects={orderedSubjects(null)}
-      lang="es"
-      ageGroup="6-8"
       content={lesson}
       onBack={() => {}}
       onSelectSubject={() => {}}
@@ -42,13 +46,6 @@ function renderLesson(props = {}) {
 
 const currentCard = () => screen.getByRole('region', { name: /Tarjeta/ });
 const next = () => screen.getByRole('button', { name: /Siguiente/ });
-
-function mockSpeech() {
-  const synth = { speak: vi.fn(), cancel: vi.fn(), getVoices: () => [] };
-  vi.stubGlobal('speechSynthesis', synth);
-  vi.stubGlobal('SpeechSynthesisUtterance', function (text) { this.text = text; });
-  return synth;
-}
 
 function swipe(element, { dx, dy = 0 }) {
   fireEvent.touchStart(element, { touches: [{ clientX: 200, clientY: 300 }] });
@@ -140,71 +137,143 @@ describe('Lesson cards', () => {
     renderLesson({ content: { offline: true, intro: 'Investiga', por_que: 'Explicación', reto: 'Dibuja', otra_idea: 'Mide', enlaces: [], objetos_relacionados: [] } });
     expect(currentCard()).toHaveAccessibleName('Tarjeta 1 de 3 Investiga tú');
   });
+});
 
-  it('stops reading aloud when the child changes card or leaves the lesson', async () => {
-    const synth = mockSpeech();
-    localStorage.setItem('curiocity_voice', 'off');
+describe('Without voice', () => {
+  it('has no voice toggle and no read-aloud buttons', async () => {
     const user = userEvent.setup();
-    const { unmount } = renderLesson();
+    renderLesson();
+    expect(screen.queryByRole('button', { name: /Voz|Escuchar/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
-    await user.click(screen.getByRole('button', { name: 'Escuchar' }));
-    synth.cancel.mockClear();
     await user.click(next());
-    expect(synth.cancel).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Escuchar' })).toBeInTheDocument(); // not "Parar" any more
-
-    await user.click(screen.getByRole('button', { name: 'Escuchar' }));
-    synth.cancel.mockClear();
-    unmount();
-    expect(synth.cancel).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Voz|Escuchar/ })).not.toBeInTheDocument();
   });
 });
 
-describe('Voice', () => {
-  it('is on by default for 6-8 and off for 9-12', () => {
-    mockSpeech();
-    const { unmount } = renderLesson({ ageGroup: '6-8' });
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'true');
-    unmount();
-    renderLesson({ ageGroup: '9-12' });
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('remembers the choice on this device, over the age default', async () => {
-    const synth = mockSpeech();
-    const user = userEvent.setup();
-    const { unmount } = renderLesson({ ageGroup: '6-8' });
-    synth.cancel.mockClear();
-    await user.click(screen.getByRole('button', { name: 'Voz' }));
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'false');
-    expect(localStorage.getItem('curiocity_voice')).toBe('off');
-    expect(synth.cancel).toHaveBeenCalled(); // silenced right away
-    unmount();
-
-    synth.speak.mockClear();
-    renderLesson({ ageGroup: '6-8' });
-    expect(screen.getByRole('button', { name: 'Voz' })).toHaveAttribute('aria-pressed', 'false');
-    expect(synth.speak).not.toHaveBeenCalled();
-  });
-
-  it('turning it on reads the current card, and every new card after that', async () => {
-    const synth = mockSpeech();
-    const user = userEvent.setup();
-    renderLesson({ ageGroup: '9-12' });
-    expect(synth.speak).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Voz' }));
-    expect(localStorage.getItem('curiocity_voice')).toBe('on');
-    expect(synth.speak.mock.calls.map(([u]) => u.text)).toEqual([lesson.pregunta_inicial.pregunta, ...lesson.pregunta_inicial.opciones]);
+describe('Sharing', () => {
+  async function goToEnd(user, props) {
+    renderLesson(props);
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
-    synth.speak.mockClear();
-    await user.click(next());
-    expect(synth.speak.mock.calls.map(([u]) => u.text)).toEqual(['Dato sorprendente', lesson.dato_sorprendente]);
+    for (let i = 0; i < 4; i++) await user.click(next());
+  }
+
+  it('always shows WhatsApp and Correo; "Más…" only when the browser has a share sheet', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('navigator', { ...window.navigator, share: undefined });
+    await goToEnd(user);
+    expect(screen.getByRole('button', { name: 'WhatsApp' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Correo' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Más…' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Guardar foto/ })).not.toBeInTheDocument();
   });
 
-  it('waits for the first interaction with the page (autoplay rules)', () => {
-    const synth = mockSpeech();
-    vi.stubGlobal('navigator', { ...window.navigator, userActivation: { hasBeenActive: false } });
-    renderLesson({ ageGroup: '6-8' });
-    expect(synth.speak).not.toHaveBeenCalled();
+  it('WhatsApp opens wa.me with the text, and never promises the photo', async () => {
+    const user = userEvent.setup();
+    const open = vi.fn();
+    vi.stubGlobal('open', open);
+    await goToEnd(user, { photo: 'data:image/jpeg;base64,AAAA' });
+    await user.click(screen.getByRole('button', { name: 'WhatsApp' }));
+    const url = new URL(open.mock.calls[0][0]);
+    expect(url.host).toBe('wa.me');
+    const text = url.searchParams.get('text');
+    expect(text).toMatch(/^Manzana · Biología/);
+    expect(text).toContain('¿Dónde están las semillas?\n→ En el centro');
+    expect(text).toContain(lesson.dato_sorprendente);
+    expect(text).toContain('Curiocity');
+    expect(text).not.toMatch(/foto|base64/i);
+  });
+
+  it('"Más…" opens the system share sheet with the photo attached', async () => {
+    const user = userEvent.setup();
+    const share = vi.fn(async () => {});
+    vi.stubGlobal('navigator', { ...window.navigator, share, canShare: () => true });
+    const onToast = vi.fn();
+    await goToEnd(user, { photo: 'data:image/jpeg;base64,AAAA', onToast });
+    await user.click(screen.getByRole('button', { name: 'Más…' }));
+    expect(share).toHaveBeenCalledTimes(1);
+    const data = share.mock.calls[0][0];
+    expect(data.files[0].name).toBe('curiocity.jpg');
+    expect(data.text).toMatch(/^Manzana · Biología/);
+    expect(onToast).toHaveBeenCalledWith('¡Compartido!');
+  });
+});
+
+describe('Observation after the challenge (experimental)', () => {
+  async function goToChallenge(user, props) {
+    renderLesson(props);
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    for (let i = 0; i < 3; i++) await user.click(next());
+  }
+
+  it('asks what the child observed after "¡Reto hecho!", with no right or wrong answer', async () => {
+    const user = userEvent.setup();
+    await goToChallenge(user);
+    expect(screen.queryByText(lesson.reto_observacion.pregunta)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
+
+    expect(screen.getByText(lesson.reto_observacion.pregunta)).toBeInTheDocument();
+    expect(screen.getByText('Todas las respuestas valen: elige lo que has visto.')).toBeInTheDocument();
+    expect(screen.queryByText(/Si hay/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'No' }));
+    expect(screen.getByRole('status')).toHaveTextContent(lesson.reto_observacion.opciones[1].conclusion);
+    expect(document.querySelector('.challenge__done .curi--done')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'No' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText(/Casi|correcta/)).not.toBeInTheDocument();
+
+    // the child may choose another option to read its explanation
+    await user.click(screen.getByRole('button', { name: 'Sí' }));
+    expect(screen.getByRole('status')).toHaveTextContent(lesson.reto_observacion.opciones[0].conclusion);
+    expect(screen.getByRole('button', { name: 'No' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('without an observation question, the challenge works as before', async () => {
+    const user = userEvent.setup();
+    await goToChallenge(user, { content: { ...lesson, reto_observacion: null } });
+    await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
+    expect(screen.getByRole('status')).toHaveTextContent('¡Genial, qué buena investigación!');
+    expect(screen.queryByRole('button', { name: 'Sí' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Ideas for the final question', () => {
+  async function goToEnd(user, props) {
+    renderLesson(props);
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    for (let i = 0; i < 4; i++) await user.click(next());
+  }
+
+  it('first asks to think, then shows the ideas as possibilities when asked', async () => {
+    const user = userEvent.setup();
+    await goToEnd(user);
+    expect(screen.getByText(lesson.para_seguir_pensando)).toBeInTheDocument();
+    expect(screen.getByText('Piénsalo un momento…')).toBeInTheDocument();
+    expect(screen.queryByText(lesson.ideas_pregunta_final[0])).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ver algunas ideas' }));
+    expect(screen.getByText('Hay muchas respuestas posibles. Aquí tienes algunas:')).toBeInTheDocument();
+    for (const idea of lesson.ideas_pregunta_final) expect(screen.getByText(idea)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver algunas ideas' })).not.toBeInTheDocument();
+    expect(document.activeElement).toHaveClass('ideas'); // the focus is not lost with the button
+  });
+
+  it('without ideas there is no button, and offline content has no pause or ideas', async () => {
+    const user = userEvent.setup();
+    const { unmount } = await (async () => {
+      const r = renderLesson({ content: { ...lesson, ideas_pregunta_final: [] } });
+      await user.click(screen.getByRole('button', { name: 'En el centro' }));
+      for (let i = 0; i < 4; i++) await user.click(next());
+      return r;
+    })();
+    expect(screen.getByText('Piénsalo un momento…')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver algunas ideas' })).not.toBeInTheDocument();
+    unmount();
+
+    renderLesson({ content: { offline: true, intro: 'Investiga', por_que: 'Explicación', reto: 'Dibuja', otra_idea: 'Mide', enlaces: [], objetos_relacionados: [] } });
+    await user.click(next());
+    await user.click(next());
+    expect(screen.getByText('Mide')).toBeInTheDocument();
+    expect(screen.queryByText('Piénsalo un momento…')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver algunas ideas' })).not.toBeInTheDocument();
   });
 });

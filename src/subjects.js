@@ -18,12 +18,11 @@ export const SUBJECTS = [
 export const getSubject = key => SUBJECTS.find(s => s.key === key);
 
 /**
- * Every subject, best connected first: the ranking's featured subjects, then the others.
- * ranking null (unknown, e.g. offline) keeps the usual order.
+ * Subjects offered at the end of a lesson: only the ranking's featured ones ({ key, hook }),
+ * without the current subject and without those already seen for this object.
+ * No ranking (unknown, e.g. offline) means none: the app invites to take another photo instead.
  */
-export function orderedSubjects(ranking) {
-  if (!ranking) return SUBJECTS;
-  const keys = [...ranking.featured.map(f => f.key), ...ranking.others];
-  const ordered = keys.map(getSubject).filter(Boolean);
-  return [...ordered, ...SUBJECTS.filter(s => !keys.includes(s.key))];
+export function nextSubjects(ranking, currentKey, seenKeys = []) {
+  if (!ranking) return [];
+  return ranking.featured.filter(f => f.key !== currentKey && !seenKeys.includes(f.key) && getSubject(f.key));
 }

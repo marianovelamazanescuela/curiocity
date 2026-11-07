@@ -4,6 +4,34 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-06 — Ajustes tras probar la fase 2: sin voz, 8–10 años, Literata en toda la app (fase 3)
+
+Rama `feature/fase-3-ajustes`. Ajustes tras probar la fase 2 con la app real.
+
+**Qué se cambió y por qué**
+
+- **Se quita la voz** (lectura automática, botón "Voz" y botones "Escuchar"). *Por qué:* la voz del dispositivo suena robótica y a los niños les daba miedo. Al arrancar se borra la clave `curiocity_voice`. *Descartadas:* una voz más natural con un servicio externo (por coste y por privacidad: el texto saldría a otro proveedor) y los sonidos en las interacciones (aplazados).
+- **Público de 8 a 10 años** (3º y 4º de Primaria), sin selector ni franjas de edad. Una sola guía de edad en los prompts y un solo tamaño de texto (18,5 px / 1,5). El servidor deja de usar `ageGroup`, también en la clave de la caché. Al arrancar se borra la clave `curiocity_age`. *Por qué:* un público concreto permite afinar mejor el contenido, y el selector añadía una decisión que los niños no necesitaban. *Descartada:* mantener las dos franjas.
+- **Literata en toda la app**, con una sola variable (`--font`). Se quitan Sofia Sans y su licencia (`sofia-sans-latin.woff2`, `sofia-sans-latin-ext.woff2`, `OFL.txt`); se precarga Literata. Revisado a 360 px: botones a peso 600, mayúsculas con menos espaciado (0,05em) y cifras alineadas. *Por qué:* una sola tipografía da una voz más coherente y cálida a toda la app.
+- **"Míralo desde otra asignatura"** ofrece solo las otras asignaturas destacadas, con su gancho, sin las ya vistas de ese objeto. Si no queda ninguna o no hay ranking, invita a hacer otra foto. *Por qué:* ofrecer las 7 llevaba a asignaturas con poca relación con el objeto.
+- **Experimental: pregunta de observación tras el reto** (`reto_observacion`). Opciones sin acierto ni error, cada una con una conclusión general en condicional, porque la IA no ve el objeto. **Ideas para la pregunta final** (`ideas_pregunta_final`), presentadas como posibilidades tras "Piénsalo un momento…". Si faltan, se reintenta una vez y, si no, la lección funciona como antes. *Por qué:* que el reto y la pregunta final tengan respuesta y no se queden en el aire. Queda en prueba hasta valorar los retos que salen.
+- **Compartir:** WhatsApp, Correo y "Más…" siempre a la vista; solo "Más…" (hoja del sistema) adjunta la foto. El texto compartido sigue la nueva lección (objeto · asignatura, pregunta y respuesta, dato y Curiocity).
+- **Rigor botánico:** regla general en el prompt sobre qué parte de la flor forma cada fruto. La lección de Biología de la manzana ya dice que la pulpa viene de la base de la flor (receptáculo) y el centro con las pepitas, del ovario.
+- **Sin cambios** en la detección, el modelo, las enciclopedias, la cámara ni Curi.
+
+**Cómo se probó:** 107 tests en verde, lint y build. Recorrido completo a 360 px con el servidor real y OpenAI real con manzana, botella y farola, en las 3 asignaturas destacadas de cada una (9 lecciones). Las 9 trajeron pregunta de observación e ideas. No se sale nada de la pantalla, no hay peticiones a Google y no aparece el selector de edad. Capturas y JSON en `capturas/fase-3/` (fuera del repositorio).
+
+**Ajuste del prompt del reto con observación.** En la primera prueba, varias opciones eran comodines ("Otro detalle", "No estoy seguro") y algunas conclusiones solo repetían la opción. El prompt ahora:
+- prohíbe las opciones comodín;
+- pide que cada conclusión explique algo nuevo y cierto (la causa o el porqué de lo observado);
+- pide retos con un resultado concreto, sin salir de la asignatura. Un primer intento solo con "resultado concreto" convertía retos de Historia y Biología en "compara su altura con tu mano", y por eso se añadió esta condición.
+
+Se volvieron a generar las 9 lecciones: las opciones son concretas y las conclusiones explican el porqué (`capturas/fase-3/retos-e-ideas-v3.json`; la primera versión está en `retos-e-ideas.json`).
+
+**Pendiente:** decidir si el reto con observación se queda.
+
+---
+
 ## 2026-11-05 — Interfaz de la lección: tarjetas, Curi, Literata y voz (fase 2)
 
 Rama `feature/fase-2-interfaz`. Objetivo: que la mini-lección sea más visual, más fácil de seguir para quien todavía lee con dificultad (6–8 años) y con más personalidad, sin perder la identidad de la marca.

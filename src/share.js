@@ -1,16 +1,17 @@
 // Public URL included in shared messages. Defaults to wherever the app is running.
 export const APP_URL = import.meta.env.VITE_PUBLIC_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
-/** Plain-text summary of a lesson for WhatsApp, email or the native share sheet. */
-export function buildShareText(heading, content, t, { withAttachHint = false } = {}) {
-  const parts = [`${t.shareIntro} ${APP_URL}`, heading];
+/**
+ * Plain-text summary of a lesson for WhatsApp, email or the system share sheet:
+ * object · subject, the question with its right answer, the surprising fact and the Curiocity brand.
+ * Offline content has no question or fact (nothing true is known about the object): just the heading.
+ */
+export function buildShareText({ objectName, subjectName, content, t }) {
+  const parts = [`${objectName} · ${subjectName}`];
   const q = content.pregunta_inicial;
   if (q) parts.push(`${q.pregunta}\n→ ${q.opciones[q.correcta]}`);
   if (content.dato_sorprendente) parts.push(content.dato_sorprendente);
-  if (content.por_que) parts.push(content.por_que);
-  if (content.reto) parts.push(`${t.challenge}: ${content.reto}`);
-  if (content.para_seguir_pensando) parts.push(`${t.keepThinking}: ${content.para_seguir_pensando}`);
-  if (withAttachHint) parts.push(t.shareAttachHint);
+  parts.push(`${t.shareIntro} ${APP_URL}`.trim());
   return parts.join('\n\n');
 }
 
@@ -23,21 +24,16 @@ export function dataUrlToFile(dataUrl, filename) {
   return new File([bytes], filename, { type: mime });
 }
 
-export function downloadDataUrl(dataUrl, filename) {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
+/** The system share sheet exists (most phones; few desktop browsers). */
+export const canShareNatively = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 /**
- * Tries the native share sheet (with photo when supported).
+ * Opens the system share sheet, with the photo when the browser can attach files.
+ * It is the only way to share the photo: WhatsApp and email links can only carry text.
  * Returns 'shared' | 'shared-text' | 'cancelled' | 'unsupported'.
  */
 export async function nativeShare({ title, text, imageDataUrl }) {
-  if (!navigator.share) return 'unsupported';
+  if (!canShareNatively()) return 'unsupported';
   try {
     if (imageDataUrl && navigator.canShare) {
       const files = [dataUrlToFile(imageDataUrl, 'curiocity.jpg')];

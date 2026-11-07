@@ -99,7 +99,15 @@ describe('POST /api/ai', () => {
       por_que: 'Antes no había luz eléctrica en las calles.',
       reto: 'Cuenta cuántas farolas ves desde donde estás.',
       reto_foto: false,
+      reto_observacion: {
+        pregunta: '¿Has contado más de cinco farolas?',
+        opciones: [
+          { texto: 'Sí', conclusion: 'Si hay muchas, puede ser porque la calle es larga.' },
+          { texto: 'No', conclusion: 'Si hay pocas, puede ser porque la calle es corta.' }
+        ]
+      },
       para_seguir_pensando: '¿Cómo sería tu calle sin farolas?',
+      ideas_pregunta_final: ['Estaría muy oscura.', 'Usaríamos linternas.'],
       conexion_debil: false,
       objetos_relacionados: ['vela', 'linterna'],
       terminos_busqueda: ['Farola'],
@@ -130,6 +138,34 @@ describe('POST /api/ai', () => {
       enlaces: []
     });
     expect(body).not.toHaveProperty('terminos_busqueda');
+    expect(body).not.toHaveProperty('complete');
+    expect(body.reto_observacion.opciones).toHaveLength(2);
+    expect(body.ideas_pregunta_final).toEqual(['Estaría muy oscura.', 'Usaríamos linternas.']);
+  });
+
+  it('asks once more when the observation or the ideas are missing, and uses the complete answer', async () => {
+    openaiReply = [modelLesson({ reto_observacion: null }), modelLesson()];
+    const body = await (await post('/api/ai', valid)).json();
+    expect(openaiCalls).toHaveLength(2);
+    expect(body.reto_observacion.pregunta).toBe('¿Has contado más de cinco farolas?');
+  });
+
+  it('if they are still missing after the retry, serves the lesson without them', async () => {
+    openaiReply = [modelLesson({ reto_observacion: null }), modelLesson({ ideas_pregunta_final: [] })];
+    const r = await post('/api/ai', valid);
+    expect(r.status).toBe(200);
+    const body = await r.json();
+    expect(openaiCalls).toHaveLength(2);
+    expect(body.reto).toBe('Cuenta cuántas farolas ves desde donde estás.');
+    expect(body.ideas_pregunta_final).toEqual([]); // the last usable answer is kept
+    expect(body.reto_observacion.opciones).toHaveLength(2);
+  });
+
+  it('keeps an incomplete lesson if the retry fails at the API', async () => {
+    openaiReply = [modelLesson({ ideas_pregunta_final: ['una'] }), { status: 500 }];
+    const r = await post('/api/ai', valid);
+    expect(r.status).toBe(200);
+    expect((await r.json()).ideas_pregunta_final).toEqual([]);
   });
 
   it('asks for structured output, accuracy and a low temperature, and caches', async () => {
@@ -180,23 +216,14 @@ describe('POST /api/ai', () => {
     expect(new Set(wikiCalls)).toEqual(new Set(['klexikon.zum.de', 'de.wikipedia.org']));
   });
 
-  it('adapts the lesson to the age group and caches each age separately', async () => {
+  it('writes for 8-10 year-olds and ignores any age group sent by old versions of the app', async () => {
     openaiReply = modelLesson();
     await post('/api/ai', { ...valid, ageGroup: '6-8' });
-    expect(openaiCalls[0].messages[0].content).toMatch(/6-8 years old/);
-    await post('/api/ai', { ...valid, ageGroup: '9-12' });
-    expect(openaiCalls[1].messages[0].content).toMatch(/9-12 years old/);
-    expect(openaiCalls).toHaveLength(2);
-    await post('/api/ai', { ...valid, ageGroup: 'hack' }); // invalid -> default 6-8, served from cache
-    expect(openaiCalls).toHaveLength(2);
-  });
-
-  it('uses 6-8 when no age group is sent, the same default as the app', async () => {
-    openaiReply = modelLesson();
-    await post('/api/ai', valid); // no ageGroup
-    expect(openaiCalls[0].messages[0].content).toMatch(/6-8 years old/);
-    await post('/api/subjects', { objectName: 'Farola', language: 'Spanish' });
-    expect(openaiCalls[1].messages[0].content).toMatch(/6-8 years old/);
+    expect(openaiCalls[0].messages[0].content).toMatch(/8-10 years old/);
+    expect(openaiCalls[0].messages[0].content).not.toMatch(/6-8|9-12/);
+    await post('/api/ai', { ...valid, ageGroup: '9-12' }); // same cache entry: the age is not part of the key
+    await post('/api/ai', valid);
+    expect(openaiCalls).toHaveLength(1);
   });
 
   it('retries once when the output is invalid', async () => {
@@ -259,19 +286,17 @@ describe('POST /api/subjects', () => {
     expect((await post('/api/subjects', { objectName: 'x'.repeat(101) })).status).toBe(400);
   });
 
-  it('returns the 3 best subjects with a hook, the rest in order, and caches per age', async () => {
+  it('returns the 3 best subjects with a hook, the rest in order, and caches them', async () => {
     openaiReply = modelRanking();
-    const body = await (await post('/api/subjects', { objectName: 'Farola', language: 'Spanish', ageGroup: '6-8' })).json();
+    const body = await (await post('/api/subjects', { objectName: 'Farola', language: 'Spanish' })).json();
     expect(body.ranking.featured.map(f => f.key)).toEqual(['historia', 'matematicas', 'artes']);
     expect(body.ranking.featured[0].hook).toBe('Gancho de historia');
     expect(body.ranking.others).toEqual(['biologia', 'lengua', 'geologia', 'musica']);
     expect(openaiCalls[0].response_format.type).toBe('json_schema');
-    expect(openaiCalls[0].messages[0].content).toMatch(/6-8 years old/);
+    expect(openaiCalls[0].messages[0].content).toMatch(/children \(8-10\)/);
 
-    await post('/api/subjects', { objectName: 'farola', language: 'Spanish', ageGroup: '6-8' });
-    expect(openaiCalls).toHaveLength(1);
     await post('/api/subjects', { objectName: 'farola', language: 'Spanish', ageGroup: '9-12' });
-    expect(openaiCalls).toHaveLength(2);
+    expect(openaiCalls).toHaveLength(1);
   });
 
   it('returns ranking: null (show every subject) when the output is unusable', async () => {

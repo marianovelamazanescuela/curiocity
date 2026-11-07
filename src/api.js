@@ -59,9 +59,9 @@ export async function detectObject(canvas, lang, signal) {
  * How well each subject connects with the object: { featured: [{ key, hook }], others: [key] },
  * or null (= show every subject, no hooks) if the server can't say.
  */
-export async function fetchRanking(objectName, lang, ageGroup, signal) {
+export async function fetchRanking(objectName, lang, signal) {
   try {
-    const data = await postJson('/api/subjects', { objectName, language: LANGUAGE_NAMES[lang], ageGroup }, signal);
+    const data = await postJson('/api/subjects', { objectName, language: LANGUAGE_NAMES[lang] }, signal);
     const r = data && data.ranking;
     if (r && Array.isArray(r.featured) && r.featured.length && Array.isArray(r.others)) return r;
   } catch (err) {
@@ -75,9 +75,9 @@ const isLesson = j =>
   Number.isInteger(j.pregunta_inicial.correcta) && j.dato_sorprendente && j.por_que && j.reto && j.para_seguir_pensando;
 
 /** Interactive lesson from the AI server, or localized offline content if it is unavailable. */
-export async function fetchContent({ objectName, subject, lang, ageGroup, signal }) {
+export async function fetchContent({ objectName, subject, lang, signal }) {
   try {
-    const json = await postJson('/api/ai', { objectName, subject: subject.aiName, language: LANGUAGE_NAMES[lang], ageGroup }, signal);
+    const json = await postJson('/api/ai', { objectName, subject: subject.aiName, language: LANGUAGE_NAMES[lang] }, signal);
     if (isLesson(json)) {
       return {
         ...json,

@@ -1,22 +1,7 @@
-import { AGE_GROUPS } from '../i18n';
 import { SUBJECTS, getSubject } from '../subjects';
 import ObjectHeader from './ObjectHeader';
+import SubjectCard from './SubjectCard';
 import { CuriThinking } from './Curi';
-
-const AGE_LABEL_KEYS = { '6-8': 'age68', '9-12': 'age912' };
-
-function SubjectCard({ t, subject, hook, onSelect }) {
-  const { key, icon: Icon, color } = subject;
-  return (
-    <button className={hook ? 'subject-card subject-card--featured' : 'subject-card'} style={{ '--subject': color }} onClick={() => onSelect(key)}>
-      <span className="subject-card__icon"><Icon aria-hidden="true" /></span>
-      <span className="subject-card__text">
-        <span className="subject-card__label">{t.subjects[key]}</span>
-        {hook && <span className="subject-card__hook">{hook}</span>}
-      </span>
-    </button>
-  );
-}
 
 function SubjectGrid({ t, subjects, onSelect }) {
   return (
@@ -32,7 +17,7 @@ function SubjectGrid({ t, subjects, onSelect }) {
 
 // ranking: { featured: [{ key, hook }], others: [key] }; null = unknown (show all, no hooks);
 // undefined = still being worked out.
-export default function SubjectPicker({ t, photo, objectName, ranking, ageGroup, onAgeChange, onSelect, onWrongObject }) {
+export default function SubjectPicker({ t, photo, objectName, ranking, onSelect, onWrongObject }) {
   let subjects;
   if (ranking === undefined) {
     subjects = <CuriThinking label={t.curiThinking} />;
@@ -62,20 +47,6 @@ export default function SubjectPicker({ t, photo, objectName, ranking, ageGroup,
   return (
     <section>
       <ObjectHeader photo={photo} objectName={objectName} photoAlt={t.capturedPhoto} />
-      <div className="age" role="radiogroup" aria-label={t.age}>
-        <span className="age__label" aria-hidden="true">{t.age}</span>
-        {AGE_GROUPS.map(age => (
-          <button
-            key={age}
-            role="radio"
-            aria-checked={ageGroup === age}
-            className={ageGroup === age ? 'age__option age__option--on' : 'age__option'}
-            onClick={() => onAgeChange(age)}
-          >
-            {t[AGE_LABEL_KEYS[age]]}
-          </button>
-        ))}
-      </div>
       <h3 className="section-title section-title--center">{t.whatToDiscover}</h3>
       {subjects}
       {photo && (
