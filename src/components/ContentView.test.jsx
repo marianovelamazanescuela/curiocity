@@ -12,13 +12,7 @@ const lesson = {
   por_que: 'Las semillas están en el centro.',
   reto: 'Cuenta las semillas de tu manzana.',
   reto_foto: false,
-  reto_observacion: {
-    pregunta: '¿Has encontrado más de cinco semillas?',
-    opciones: [
-      { texto: 'Sí', conclusion: 'Si hay muchas, puede ser porque la flor tenía muchos óvulos.' },
-      { texto: 'No', conclusion: 'Si hay pocas, puede ser porque no todas llegaron a formarse.' }
-    ]
-  },
+  reto_descubrimiento: 'Las semillas de la manzana se forman en el centro, protegidas por una envoltura dura como de papel.',
   para_seguir_pensando: '¿Qué pasaría si plantas una semilla?',
   ideas_pregunta_final: ['Podría crecer un manzano.', 'Necesitaría agua y luz.'],
   conexion_debil: false,
@@ -198,41 +192,70 @@ describe('Sharing', () => {
   });
 });
 
-describe('Observation after the challenge (experimental)', () => {
+describe('After the challenge: what you could discover', () => {
   async function goToChallenge(user, props) {
-    renderLesson(props);
+    const r = renderLesson(props);
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
     for (let i = 0; i < 3; i++) await user.click(next());
+    return r;
   }
 
-  it('asks what the child observed after "¡Reto hecho!", with no right or wrong answer', async () => {
+  it('offers "¡Reto hecho!" and "No lo he encontrado", and both show the same discovery', async () => {
     const user = userEvent.setup();
-    await goToChallenge(user);
-    expect(screen.queryByText(lesson.reto_observacion.pregunta)).not.toBeInTheDocument();
+    const { unmount } = await goToChallenge(user);
+    expect(screen.queryByText(lesson.reto_descubrimiento)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'No lo he encontrado' })).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Lo que podías descubrir');
+    expect(screen.getByRole('status')).toHaveTextContent(lesson.reto_descubrimiento);
+    expect(document.querySelector('.discovery .curi--done')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Reto hecho|No lo he encontrado/ })).not.toBeInTheDocument();
+    expect(document.activeElement).toHaveClass('discovery'); // the focus is not lost with the buttons
+    unmount();
 
-    expect(screen.getByText(lesson.reto_observacion.pregunta)).toBeInTheDocument();
-    expect(screen.getByText('Todas las respuestas valen: elige lo que has visto.')).toBeInTheDocument();
-    expect(screen.queryByText(/Si hay/)).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'No' }));
-    expect(screen.getByRole('status')).toHaveTextContent(lesson.reto_observacion.opciones[1].conclusion);
-    expect(document.querySelector('.challenge__done .curi--done')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'No' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.queryByText(/Casi|correcta/)).not.toBeInTheDocument();
-
-    // the child may choose another option to read its explanation
-    await user.click(screen.getByRole('button', { name: 'Sí' }));
-    expect(screen.getByRole('status')).toHaveTextContent(lesson.reto_observacion.opciones[0].conclusion);
-    expect(screen.getByRole('button', { name: 'No' })).toHaveAttribute('aria-pressed', 'false');
+    await goToChallenge(user);
+    await user.click(screen.getByRole('button', { name: 'No lo he encontrado' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Lo que podías descubrir');
+    expect(screen.getByRole('status')).toHaveTextContent(lesson.reto_descubrimiento);
+    expect(document.querySelector('.discovery .curi--idle')).toBeInTheDocument(); // calm, nothing that sounds like failing
+    expect(document.querySelector('.curi--almost')).not.toBeInTheDocument();
   });
 
-  it('without an observation question, the challenge works as before', async () => {
+  it('without a discovery: the cheer for "¡Reto hecho!" and a kind message for "No lo he encontrado"', async () => {
     const user = userEvent.setup();
-    await goToChallenge(user, { content: { ...lesson, reto_observacion: null } });
+    const content = { ...lesson, reto_descubrimiento: null };
+    const { unmount } = await goToChallenge(user, { content });
     await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
     expect(screen.getByRole('status')).toHaveTextContent('¡Genial, qué buena investigación!');
+    expect(screen.queryByText('Lo que podías descubrir')).not.toBeInTheDocument();
+    unmount();
+
+    await goToChallenge(user, { content });
+    await user.click(screen.getByRole('button', { name: 'No lo he encontrado' }));
+    expect(screen.getByRole('status')).toHaveTextContent('¡No pasa nada! Mirar con atención ya es investigar.');
+    expect(document.querySelector('.challenge__done .curi--idle')).toBeInTheDocument();
+  });
+
+  it('opens an old lesson that still has reto_observacion (phase 3) without errors, ignoring it', async () => {
+    const user = userEvent.setup();
+    const { reto_descubrimiento: _unused, ...rest } = lesson;
+    const old = {
+      ...rest,
+      reto_observacion: { pregunta: '¿Viste más de cinco semillas?', opciones: [{ texto: 'Sí', conclusion: 'Si…' }, { texto: 'No', conclusion: 'Si no…' }] }
+    };
+    await goToChallenge(user, { content: old });
+    await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
+    expect(screen.getByRole('status')).toHaveTextContent('¡Genial, qué buena investigación!');
+    expect(screen.queryByText('¿Viste más de cinco semillas?')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Sí' })).not.toBeInTheDocument();
+  });
+
+  it('a photo challenge still offers to take another photo, whichever button was pressed', async () => {
+    const user = userEvent.setup();
+    await goToChallenge(user, { content: { ...lesson, reto_foto: true } });
+    await user.click(screen.getByRole('button', { name: 'No lo he encontrado' }));
+    expect(screen.getByRole('button', { name: 'Hacer otra foto' })).toBeInTheDocument();
   });
 });
 

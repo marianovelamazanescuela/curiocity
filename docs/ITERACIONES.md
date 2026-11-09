@@ -4,6 +4,24 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-07 — Reto simplificado: una sola conclusión, "lo que podías descubrir"
+
+Rama `feature/reto-simplificado`. Al revisar los 9 retos con observación de la fase 3 (`retos-e-ideas-v3.json`), solo unos 4 aportaban algo.
+
+**Por qué se simplifica**
+- **La opción "no lo vi"** llevaba casi siempre a una conclusión vacía ("puede que no se vea bien").
+- **Obviedades:** algunas conclusiones solo describían lo que el niño ya había visto.
+- **Retos fuera de la asignatura:** algunos retos de Historia no miraban el pasado (buscar la etiqueta, ver cables).
+
+**Qué se cambió**
+- Fuera las opciones. `reto_observacion` se sustituye por `reto_descubrimiento`: 1 o 2 frases con algo nuevo y cierto (el porqué, la causa o el origen) de lo que el reto pide observar, que vale lo encuentre o no el niño.
+- El reto tiene que mirar algo con sentido desde la asignatura. En Historia, una pista del pasado en el propio objeto (forma, material, uniones, desgaste, diseño antiguo), nunca etiquetas, envoltorios ni cables.
+- En la tarjeta del reto, "¡Reto hecho!" y "No lo he encontrado" muestran la misma conclusión, con Curi en "done" o en "idle": nada suena a fallo. Sin conclusión, un mensaje amable.
+
+**Cómo se probó:** se generaron de nuevo las 9 lecciones con OpenAI real (`capturas/fase-3/retos-v4.json`) y se hicieron capturas a 360 px de la tarjeta del reto (`capturas/fase-3/reto-v4/`). En un primer intento, la manzana en Historia volvió a pedir una etiqueta, y se concretó la regla de Historia en el prompt. Quedan flojos Matemáticas de la manzana (una idea casi obvia) y Biología de la botella (más reciclaje que biología, porque la relación con la asignatura es débil).
+
+---
+
 ## 2026-11-07 — Iconos de la app: fondo opaco y ojos dentro de la zona segura
 
 Los iconos tenían los ojos de borde a borde (Android los cortaba al recortar en círculo) y la zona de los ojos era transparente (en fondos oscuros no se veían e iOS la rellenaba de negro). Ahora son crema opaco, con los ojos al 60 % del ancho (80 % en los favicons, con el trazo algo más grueso para que se vea a 16 px). Hay iconos *maskable* nuevos con los ojos al 50 %, y la caché del service worker pasa a v3 para que los móviles reciban los iconos nuevos.

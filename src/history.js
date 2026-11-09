@@ -21,7 +21,7 @@ function save(list) {
 }
 
 /** Adds an entry at the top (replacing an earlier one with the same object) and returns the new list. */
-// Subjects are not stored: they are asked again (cached on the server) so the hooks match the age group.
+// Only the object and a thumbnail are stored (never lessons): subjects and lessons are asked again (cached on the server).
 export function addToHistory({ object, thumb }) {
   const entry = { id: Date.now(), date: new Date().toISOString(), object, thumb };
   const list = [entry, ...loadHistory().filter(e => e.object.toLowerCase() !== object.toLowerCase())].slice(0, MAX_ENTRIES);

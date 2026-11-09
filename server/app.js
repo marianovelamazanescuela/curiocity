@@ -89,7 +89,7 @@ const jsonSchema = schema => ({ type: 'json_schema', json_schema: schema });
  * Asks the model and validates its JSON. One retry if the answer is unusable (it happens rarely,
  * e.g. two identical options), because a second attempt is cheaper than losing the content.
  * A usable answer with an optional part missing (`complete: false`) is also retried once; if the
- * retry is not better, the usable answer is kept (e.g. a challenge without its observation question).
+ * retry is not better, the usable answer is kept (e.g. a challenge without what it could reveal).
  * Returns the validated value, null if the output stayed invalid, or undefined if the API failed.
  */
 async function askValidated(request, validate, attempts = 2) {
