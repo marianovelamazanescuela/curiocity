@@ -52,16 +52,23 @@ afterEach(() => {
 });
 
 describe('Lesson cards', () => {
-  it('shows the object and subject in a pill, progress segments and the Previous / Next buttons', async () => {
+  it('shows the pill and the X at the top, 6 progress segments and "Anterior" on every screen', async () => {
     const user = userEvent.setup();
-    const { container } = renderLesson();
+    const onBack = vi.fn();
+    const { container } = renderLesson({ onBack });
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Manzana · Biología');
-    expect(screen.getByRole('button', { name: 'Volver a las asignaturas' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeInTheDocument();
-    expect(container.querySelectorAll('.progress__step')).toHaveLength(5);
+    expect(container.querySelector('.page-nav').querySelectorAll('button')).toHaveLength(1); // only the X
+    expect(container.querySelectorAll('.progress__step')).toHaveLength(6);
     expect(container.querySelectorAll('.progress__step--done')).toHaveLength(1);
-    // first card: nothing to go back to
-    expect(screen.queryByRole('button', { name: 'Anterior' })).not.toBeInTheDocument();
+
+    // The X leaves the lesson and goes back to the subjects
+    await user.click(screen.getByRole('button', { name: 'Cerrar la lección' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+    // On the first screen, "Anterior" (the circle at the bottom) also goes back to the subjects
+    const firstPrevious = screen.getByRole('button', { name: 'Volver a las asignaturas' });
+    expect(firstPrevious).toHaveClass('icon-btn--big');
+    await user.click(firstPrevious);
+    expect(onBack).toHaveBeenCalledTimes(2);
 
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
     await user.click(next());
@@ -73,11 +80,11 @@ describe('Lesson cards', () => {
   it('does not move past the question until it is answered, not even by swiping', async () => {
     const user = userEvent.setup();
     renderLesson();
-    // until the question is answered, only the hint shows
+    // until the question is answered, the hint shows instead of "Siguiente"
     expect(screen.queryByRole('button', { name: /Siguiente/ })).not.toBeInTheDocument();
     expect(screen.getByText('Elige una respuesta para seguir')).toBeInTheDocument();
     swipe(currentCard(), { dx: -120 });
-    expect(currentCard()).toHaveAccessibleName(/Tarjeta 1 de 5/);
+    expect(currentCard()).toHaveAccessibleName(/Tarjeta 1 de 6/);
 
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
     expect(next()).toBeEnabled();
@@ -90,11 +97,11 @@ describe('Lesson cards', () => {
     expect(currentCard()).not.toHaveFocus(); // not stolen on first render
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
     await user.click(next());
-    expect(currentCard()).toHaveAccessibleName('Tarjeta 2 de 5 ¿Sabías que…?');
+    expect(currentCard()).toHaveAccessibleName('Tarjeta 2 de 6 ¿Sabías que…?');
     expect(currentCard()).toHaveFocus();
 
     await user.click(screen.getByRole('button', { name: /Anterior/ }));
-    expect(currentCard()).toHaveAccessibleName(/Tarjeta 1 de 5/);
+    expect(currentCard()).toHaveAccessibleName(/Tarjeta 1 de 6/);
     expect(currentCard()).toHaveFocus();
   });
 
@@ -104,13 +111,13 @@ describe('Lesson cards', () => {
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
 
     swipe(currentCard(), { dx: -120 }); // to the left: next
-    expect(currentCard()).toHaveAccessibleName(/Tarjeta 2 de 5/);
+    expect(currentCard()).toHaveAccessibleName(/Tarjeta 2 de 6/);
     swipe(currentCard(), { dx: -70, dy: 200 }); // mostly vertical: scrolling, not a swipe
-    expect(currentCard()).toHaveAccessibleName(/Tarjeta 2 de 5/);
+    expect(currentCard()).toHaveAccessibleName(/Tarjeta 2 de 6/);
     swipe(currentCard(), { dx: -30 }); // too short
-    expect(currentCard()).toHaveAccessibleName(/Tarjeta 2 de 5/);
+    expect(currentCard()).toHaveAccessibleName(/Tarjeta 2 de 6/);
     swipe(currentCard(), { dx: 120 }); // to the right: previous
-    expect(currentCard()).toHaveAccessibleName(/Tarjeta 1 de 5/);
+    expect(currentCard()).toHaveAccessibleName(/Tarjeta 1 de 6/);
   });
 
   it('has no "Not now" on the challenge: "Siguiente" already does that', async () => {
@@ -135,12 +142,60 @@ describe('Lesson cards', () => {
     expect(screen.getByText('Una manzana tiene poco que ver con la música, pero…')).toBeInTheDocument();
   });
 
-  it('skips the fact card when there is no fact, and the offline lesson has 3 cards', () => {
+  it('skips the fact card when there is no fact, and the offline lesson has 4 screens', () => {
     const { unmount } = renderLesson({ content: { ...lesson, dato_sorprendente: '' } });
-    expect(currentCard()).toHaveAccessibleName(/de 4/);
+    expect(currentCard()).toHaveAccessibleName(/de 5/);
     unmount();
     renderLesson({ content: { offline: true, intro: 'Investiga', por_que: 'Explicación', reto: 'Dibuja', otra_idea: 'Mide', enlaces: [], objetos_relacionados: [] } });
-    expect(currentCard()).toHaveAccessibleName('Tarjeta 1 de 3 Investiga tú');
+    expect(currentCard()).toHaveAccessibleName('Tarjeta 1 de 4 Investiga tú');
+  });
+
+  it('"¿Sabías que…?" and "¿Por qué?" share the same composition: Curi on top and the same text size', async () => {
+    const user = userEvent.setup();
+    renderLesson();
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    await user.click(next());
+    expect(currentCard().querySelector('.curi')).toHaveClass('curi--idle');
+    expect(screen.getByText(lesson.dato_sorprendente)).toHaveClass('lesson-text--read');
+    await user.click(next());
+    expect(currentCard()).toHaveAccessibleName(/¿Por qué\?/);
+    expect(currentCard().querySelector('.curi')).toHaveClass('curi--thinking');
+    expect(screen.getByText(lesson.por_que).closest('.prose')).toHaveClass('lesson-text--read');
+  });
+
+  it('the final question has its own screen, and the last one is "Sigue explorando"', async () => {
+    const user = userEvent.setup();
+    const onTakePhoto = vi.fn();
+    const content = {
+      ...lesson,
+      objetos_relacionados: ['pera'],
+      enlaces: [{ title: 'Manzana', url: 'https://es.vikidia.org/wiki/Manzana', source: 'Vikidia' }]
+    };
+    renderLesson({ content, onTakePhoto, nextSubjects: [{ key: 'historia', hook: 'Hace miles de años ya se comían' }] });
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    for (let i = 0; i < 4; i++) await user.click(next());
+
+    // 5: only the question, the pause and the ideas button; nothing of the end yet
+    expect(currentCard()).toHaveAccessibleName('Tarjeta 5 de 6 Para seguir pensando');
+    expect(screen.getByText(lesson.para_seguir_pensando)).toHaveClass('lesson-text--title');
+    expect(screen.queryByRole('button', { name: 'WhatsApp' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'pera' })).not.toBeInTheDocument();
+
+    // 6: Curi done, the title, then subjects, related objects, links and sharing, in that order
+    await user.click(next());
+    const card = currentCard();
+    expect(card).toHaveAccessibleName('Tarjeta 6 de 6 Sigue explorando');
+    expect(card.querySelector('.curi')).toHaveClass('curi--done');
+    expect(document.querySelectorAll('.progress__step--done')).toHaveLength(6);
+    const order = [...card.querySelectorAll('h4, .share h3')].map(h => h.textContent);
+    expect(order).toEqual(['Míralo desde otra asignatura', 'Otros objetos', 'Para saber más', 'Compartir']);
+    expect(screen.getByRole('button', { name: /^Historia\s*Hace/ })).toBeInTheDocument();
+
+    // At the bottom: "Anterior" and "Hacer otra foto" instead of "Siguiente"
+    expect(screen.queryByRole('button', { name: /Siguiente/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Hacer otra foto' }));
+    expect(onTakePhoto).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -159,7 +214,7 @@ describe('Sharing', () => {
   async function goToEnd(user, props) {
     renderLesson(props);
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
-    for (let i = 0; i < 4; i++) await user.click(next());
+    for (let i = 0; i < 5; i++) await user.click(next());
   }
 
   it('always shows WhatsApp and Correo; "Más…" only when the browser has a share sheet', async () => {

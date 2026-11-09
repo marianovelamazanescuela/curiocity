@@ -131,7 +131,7 @@ describe('App', () => {
     await user.click(await screen.findByRole('button', { name: /Biología/ }));
     expect(await screen.findByRole('heading', { name: lesson.pregunta_inicial.pregunta })).toBeInTheDocument();
     expect(bodyOf(fetchMock, '/api/ai')).toEqual({ objectName: 'Manzana', subject: 'Biology', language: 'Spanish' });
-    expect(screen.getByRole('region', { name: /Tarjeta 1 de 5/ })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /Tarjeta 1 de 6/ })).toBeInTheDocument();
 
     // Nothing is explained before the child answers, and "Siguiente" waits for an answer
     expect(screen.queryByText(lesson.dato_sorprendente)).not.toBeInTheDocument();
@@ -145,7 +145,7 @@ describe('App', () => {
 
     // One idea per card
     await user.click(screen.getByRole('button', { name: /Siguiente/ }));
-    expect(screen.getByRole('region', { name: /Tarjeta 2 de 5.*¿Sabías que…?/ })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /Tarjeta 2 de 6.*¿Sabías que…?/ })).toBeInTheDocument();
     expect(screen.getByText(lesson.dato_sorprendente)).toBeInTheDocument();
     expect(screen.queryByText('Así están protegidas.')).not.toBeInTheDocument();
 
@@ -158,10 +158,15 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
     expect(screen.getByText('¡Genial, qué buena investigación!')).toBeInTheDocument();
 
-    // Last card: open question, links, related objects, sharing, other subjects. No "Siguiente".
+    // Screen 5: the open question alone
     expect(screen.queryByText(lesson.para_seguir_pensando)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Siguiente/ }));
     expect(screen.getByText(lesson.para_seguir_pensando)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Vikidia/ })).not.toBeInTheDocument();
+
+    // Screen 6, "Sigue explorando": other subjects, related objects, links, sharing. No "Siguiente".
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    expect(screen.getByRole('region', { name: /Tarjeta 6 de 6.*Sigue explorando/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Siguiente/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Manzana.*Vikidia/ })).toHaveAttribute('href', lesson.enlaces[0].url);
     // only the other featured subjects, with their hook; no invitation to take another photo yet
@@ -172,8 +177,10 @@ describe('App', () => {
 
     // "Anterior" goes back, and what the child did is kept
     await user.click(screen.getByRole('button', { name: /Anterior/ }));
+    await user.click(screen.getByRole('button', { name: /Anterior/ }));
     expect(screen.getByText(lesson.reto)).toBeInTheDocument();
     expect(screen.getByText('¡Genial, qué buena investigación!')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
     await user.click(screen.getByRole('button', { name: /Siguiente/ }));
 
     // Related object → subject picker for that object
@@ -189,7 +196,7 @@ describe('App', () => {
 
     const goToEnd = async () => {
       await user.click(await screen.findByRole('button', { name: lesson.pregunta_inicial.opciones[1] }));
-      for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+      for (let i = 0; i < 5; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
     };
     const endSubjects = () =>
       screen.queryAllByRole('button', { name: /^(Biología|Historia|Arte)\s*\S/ }).map(b => b.querySelector('.subject-row__label').textContent);
@@ -219,7 +226,7 @@ describe('App', () => {
     await takePhoto(user);
     await user.click(await screen.findByRole('button', { name: 'Biología' }));
     await user.click(await screen.findByRole('button', { name: lesson.pregunta_inicial.opciones[1] }));
-    for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    for (let i = 0; i < 5; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
     expect(screen.queryByText('Míralo desde otra asignatura')).not.toBeInTheDocument();
     expect(screen.getByText('¿Exploramos otro objeto?')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'pera' })).toBeInTheDocument(); // next to the related objects
@@ -300,7 +307,7 @@ describe('App', () => {
     // no quiz offline: nothing true is known about the object
     expect(screen.queryByText('Adivina primero')).not.toBeInTheDocument();
     // 3 cards: investigate (intro + explanation), challenge, final
-    expect(screen.getByRole('region', { name: /Tarjeta 1 de 3.*Investiga tú/ })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /Tarjeta 1 de 4.*Investiga tú/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Siguiente/ }));
     expect(screen.getByText('Dibuja tu objeto usando solo dos colores.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));

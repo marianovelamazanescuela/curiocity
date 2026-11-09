@@ -230,7 +230,6 @@ export default function App() {
         nextSubjects={nextSubjects(currentRanking || null, subjectKey, seenSubjects[detection.object])}
         content={content}
         onBack={backToSubjects}
-        onClose={handleClose}
         onSelectSubject={key => loadSubject(key)}
         onRelatedObject={handleRelatedObject}
         onToast={showToast}

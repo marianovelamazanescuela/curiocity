@@ -6,7 +6,7 @@ import { buildShareText, canShareNatively, mailtoUrl, nativeShare, whatsappUrl }
 import { SubjectList } from './SubjectRow';
 import Curi, { CuriThinking } from './Curi';
 import { CircleButton, PageNav } from './Page';
-import { IconArrowLeft, IconArrowRight, IconCamera, IconChevronLeft, IconClose, IconOpen } from './icons';
+import { IconArrowLeft, IconArrowRight, IconCamera, IconClose, IconOpen } from './icons';
 
 const SWIPE_MIN_PX = 60; // a deliberate horizontal swipe, not a wobble while scrolling
 
@@ -115,23 +115,25 @@ function ChallengeResult({ t, result, discovery, focusRef }) {
 }
 
 /**
- * The lesson as a sequence of cards, one idea each:
- * question → surprising fact → why → challenge → final (open question, links, related objects, sharing).
- * Offline content knows nothing true about the object, so it has no question or fact: 3 cards.
+ * The lesson as a sequence of screens, one idea each:
+ * question → surprising fact → why → challenge → final question (with ideas) →
+ * "Sigue explorando" (other subjects, related objects, encyclopedia links, sharing).
+ * Offline content knows nothing true about the object, so it has no question or fact: 4 screens.
  */
 function lessonCards(content) {
-  if (content.offline) return ['why', 'challenge', 'final'];
+  if (content.offline) return ['why', 'challenge', 'final', 'explore'];
   return [
     content.pregunta_inicial && 'question',
     content.dato_sorprendente && 'fact',
     'why',
     'challenge',
-    'final'
+    'final',
+    'explore'
   ].filter(Boolean);
 }
 
 export default function ContentView({
-  t, photo, objectName, subjectKey, nextSubjects = [], content, onBack, onClose, onSelectSubject, onRelatedObject, onToast, onTakePhoto
+  t, photo, objectName, subjectKey, nextSubjects = [], content, onBack, onSelectSubject, onRelatedObject, onToast, onTakePhoto
 }) {
   const subject = getSubject(subjectKey);
   const [index, setIndex] = useState(0);
@@ -156,12 +158,10 @@ export default function ContentView({
     revealRef.current?.focus({ preventScroll: true });
   }, [challengeResult, showIdeas]);
 
-  // Top: back to the subjects, the pill (the only place with the subject's colour) and close.
+  // Top: the pill (the only place with the subject's colour), centred, and the X, which leaves the
+  // lesson and goes back to the subjects.
   const header = (
-    <PageNav
-      left={<CircleButton label={t.backToSubjects} onClick={onBack}><IconChevronLeft /></CircleButton>}
-      right={<CircleButton label={t.close} onClick={onClose}><IconClose /></CircleButton>}
-    >
+    <PageNav right={<CircleButton label={t.closeLesson} onClick={onBack}><IconClose /></CircleButton>}>
       <h2 className="lesson-pill">
         <span className="object-name-text">{objectName}</span> · {t.subjects[subjectKey]}
       </h2>
@@ -197,7 +197,8 @@ export default function ContentView({
     setIndex(next);
   };
   const goNext = () => canAdvance && goTo(index + 1);
-  const goPrevious = () => goTo(index - 1);
+  // On the first screen, "Anterior" goes back to the subjects.
+  const goPrevious = () => (index === 0 ? onBack() : goTo(index - 1));
 
   // Optional swipe (the buttons are always there). Only clear horizontal swipes count,
   // so scrolling the page up and down never changes card by accident.
@@ -233,15 +234,16 @@ export default function ContentView({
       <>
         <Curi state="idle" size={64} />
         <h3 id={titleId} className="kicker">{t.didYouKnow}</h3>
-        <p className="lesson-text lesson-text--big">{content.dato_sorprendente}</p>
+        <p className="lesson-text lesson-text--read">{content.dato_sorprendente}</p>
       </>
     );
   } else if (current === 'why') {
     body = (
       <>
+        <Curi state="thinking" size={64} />
         <h3 id={titleId} className="kicker">{content.offline ? t.investigate : t.why}</h3>
-        {content.offline && <p className="lesson-text card__intro">{content.intro}</p>}
-        <div className="prose lesson-text">
+        {content.offline && <p className="lesson-text lesson-text--read card__intro">{content.intro}</p>}
+        <div className="prose lesson-text lesson-text--read">
           {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
         </div>
       </>
@@ -273,11 +275,11 @@ export default function ContentView({
         </div>
       </>
     );
-  } else {
+  } else if (current === 'final') {
     body = (
       <>
         <h3 id={titleId} className="kicker">{content.offline ? t.tryThis : t.keepThinking}</h3>
-        {finalText && <p className="lesson-text lesson-text--big">{finalText}</p>}
+        {finalText && <p className="lesson-text lesson-text--title final__question">{finalText}</p>}
         {!content.offline && <p className="think-pause">{t.thinkAMoment}</p>}
         {ideas.length > 0 && !showIdeas && (
           <button className="btn btn--outline" onClick={() => setShowIdeas(true)}>
@@ -292,6 +294,58 @@ export default function ContentView({
             </ul>
           </div>
         )}
+      </>
+    );
+  } else {
+    // "Sigue explorando": other featured subjects, related objects, encyclopedias and sharing.
+    body = (
+      <>
+        <Curi state="done" size={64} />
+        <h3 id={titleId} className="explore__title">{t.relatedObjects}</h3>
+
+        {nextSubjects.length > 0 && (
+          <section className="explore__section">
+            <h4 className="kicker">{t.otherSubjects}</h4>
+            <SubjectList t={t} items={nextSubjects} onSelect={onSelectSubject} getSubject={getSubject} />
+          </section>
+        )}
+
+        {(content.objetos_relacionados.length > 0 || nextSubjects.length === 0) && (
+          <section className="explore__section">
+            <h4 className="kicker">{t.otherObjects}</h4>
+            {content.objetos_relacionados.length > 0 && (
+              <div className="chips">
+                {content.objetos_relacionados.map(name => (
+                  <button key={name} className="chip chip--button" onClick={() => onRelatedObject(name)}>{name}</button>
+                ))}
+              </div>
+            )}
+            {/* No other subject left (or no ranking): invite to photograph another object
+                ("Hacer otra foto" is the main button at the bottom). */}
+            {nextSubjects.length === 0 && <p className="another-photo">{t.exploreAnotherObject}</p>}
+          </section>
+        )}
+
+        {content.enlaces.length > 0 && (
+          <section className="explore__section">
+            <h4 className="kicker">{t.recommendedResources}</h4>
+            <ul className="links">
+              {content.enlaces.map((link, i) => (
+                <li key={i}>
+                  <a className="links__item" href={link.url} target="_blank" rel="noopener noreferrer">
+                    <span>
+                      <span className="links__title">{link.title || link.url}</span>
+                      <span className="links__source">{link.source || hostnameOf(link.url)}</span>
+                    </span>
+                    <IconOpen />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <ShareBar t={t} objectName={objectName} subjectName={t.subjects[subjectKey]} content={content} photo={photo} onToast={onToast} />
       </>
     );
   }
@@ -321,76 +375,28 @@ export default function ContentView({
         {body}
       </section>
 
-      {isLast && (
-        <div className="lesson__end reveal">
-          {content.enlaces.length > 0 && (
-            <section>
-              <h3 className="kicker">{t.recommendedResources}</h3>
-              <ul className="links">
-                {content.enlaces.map((link, i) => (
-                  <li key={i}>
-                    <a className="links__item" href={link.url} target="_blank" rel="noopener noreferrer">
-                      <span>
-                        <span className="links__title">{link.title || link.url}</span>
-                        <span className="links__source">{link.source || hostnameOf(link.url)}</span>
-                      </span>
-                      <IconOpen />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
+      {/* Bottom, on every screen: "Anterior" (circle; on the first screen it goes back to the subjects)
+          and, on the right, "Siguiente", the hint while the question waits for an answer, or
+          "Hacer otra foto" on the last screen. */}
+      <div className="lesson-nav">
+        <div className="lesson-nav__buttons">
+          <CircleButton big label={index === 0 ? t.backToSubjects : t.previous} onClick={goPrevious}>
+            <IconArrowLeft />
+          </CircleButton>
+          {current === 'question' && answer === null && (
+            <p id="answer-hint" className="lesson-nav__hint">{t.answerToContinue}</p>
           )}
-
-          {(content.objetos_relacionados.length > 0 || nextSubjects.length === 0) && (
-            <section>
-              <h3 className="kicker">{t.relatedObjects}</h3>
-              {content.objetos_relacionados.length > 0 && (
-                <div className="chips">
-                  {content.objetos_relacionados.map(name => (
-                    <button key={name} className="chip chip--button" onClick={() => onRelatedObject(name)}>{name}</button>
-                  ))}
-                </div>
-              )}
-              {nextSubjects.length === 0 && (
-                <div className="another-photo">
-                  <p>{t.exploreAnotherObject}</p>
-                  <button className="btn btn--outline" onClick={onTakePhoto}>
-                    <IconCamera /> {t.takeAnotherPhoto}
-                  </button>
-                </div>
-              )}
-            </section>
+          {canAdvance && (
+            <button className="btn btn--primary lesson-nav__next" onClick={goNext}>
+              {t.next} <IconArrowRight />
+            </button>
           )}
-
-          <ShareBar t={t} objectName={objectName} subjectName={t.subjects[subjectKey]} content={content} photo={photo} onToast={onToast} />
-
-          {nextSubjects.length > 0 && (
-            <section>
-              <h3 className="kicker">{t.otherSubjects}</h3>
-              <SubjectList t={t} items={nextSubjects} onSelect={onSelectSubject} getSubject={getSubject} />
-            </section>
+          {isLast && (
+            <button className="btn btn--primary lesson-nav__next" onClick={onTakePhoto}>
+              <IconCamera /> {t.takeAnotherPhoto}
+            </button>
           )}
         </div>
-      )}
-
-      {/* Bottom: "Anterior" (circle) and "Siguiente" (pill). Until the question is answered only
-          the hint shows; on the first card there is nothing to go back to. */}
-      <div className="lesson-nav">
-        {current === 'question' && answer === null ? (
-          <p id="answer-hint" className="lesson-nav__hint">{t.answerToContinue}</p>
-        ) : (
-          <div className="lesson-nav__buttons">
-            {index > 0 && (
-              <CircleButton big label={t.previous} onClick={goPrevious}><IconArrowLeft /></CircleButton>
-            )}
-            {canAdvance && (
-              <button className="btn btn--primary lesson-nav__next" onClick={goNext}>
-                {t.next} <IconArrowRight />
-              </button>
-            )}
-          </div>
-        )}
       </div>
     </article>
   );

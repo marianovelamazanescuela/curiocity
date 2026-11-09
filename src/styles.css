@@ -1148,12 +1148,15 @@ p {
 }
 
 /* The surprising fact and the final question: 27 px / 1.35 */
-.lesson .lesson-text.lesson-text--big {
-  font-size: 27px;
-  line-height: 1.35;
+/* "¿Sabías que…?" and "¿Por qué?": the same composition and the same text size */
+.lesson .lesson-text.lesson-text--read {
+  font-size: 22.5px;
+  line-height: 1.4;
 }
 
-.lesson-card--fact .curi {
+.lesson-card--fact .curi,
+.lesson-card--why .curi,
+.lesson-card--explore .curi {
   margin-bottom: 32px;
 }
 
@@ -1279,6 +1282,23 @@ p {
   line-height: 1.45;
 }
 
+/* "Sigue explorando" (last screen): title like the logo, then sections separated by air */
+.explore__title {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1.05;
+}
+
+.explore__section,
+.lesson-card--explore .share {
+  margin-top: 44px;
+}
+
+.lesson .final__question {
+  margin-bottom: 0;
+}
+
 /* Final card: a pause to think, then some possible ideas (never "the" answer) */
 .think-pause {
   margin: 20px 0 24px;
@@ -1306,12 +1326,6 @@ p {
 }
 
 /* End of the lesson: links, related objects, sharing and other subjects, separated by air */
-.lesson__end {
-  display: grid;
-  gap: 44px;
-  margin-top: 56px;
-}
-
 .links {
   margin: 0;
   padding: 0;
@@ -1383,10 +1397,8 @@ p {
 }
 
 .another-photo {
-  display: grid;
-  justify-items: start;
-  gap: 14px;
   margin-top: 20px;
+  font-size: 18px;
 }
 
 .share__options {
@@ -1424,6 +1436,7 @@ p {
 }
 
 .lesson-nav__hint {
+  flex: 1;
   min-height: var(--btn-h);
   display: grid;
   place-items: center;
