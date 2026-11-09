@@ -22,6 +22,12 @@ Rama `feature/reto-simplificado`. Al revisar los 9 retos con observación de la 
 
 ---
 
+## 2026-11-07 — Iconos de la app: fondo opaco y ojos dentro de la zona segura
+
+Los iconos tenían los ojos de borde a borde (Android los cortaba al recortar en círculo) y la zona de los ojos era transparente (en fondos oscuros no se veían e iOS la rellenaba de negro). Ahora son crema opaco, con los ojos al 60 % del ancho (80 % en los favicons, con el trazo algo más grueso para que se vea a 16 px). Hay iconos *maskable* nuevos con los ojos al 50 %, y la caché del service worker pasa a v3 para que los móviles reciban los iconos nuevos.
+
+---
+
 ## 2026-11-06 — Ajustes tras probar la fase 2: sin voz, 8–10 años, Literata en toda la app (fase 3)
 
 Rama `feature/fase-3-ajustes`. Ajustes tras probar la fase 2 con la app real.
