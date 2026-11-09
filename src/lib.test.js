@@ -115,7 +115,7 @@ describe('removeOldSettings', () => {
 describe('colour contrast (WCAG AA, at least 4.5:1)', () => {
   // Reads the palette from styles.css so the test follows any change there.
   const css = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
-  const token = name => css.match(new RegExp(`--${name}:\s*(#[0-9a-f]{6})`, 'i'))[1];
+  const token = name => css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i'))[1];
   const luminance = hex => {
     const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
       .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
