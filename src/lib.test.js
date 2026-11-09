@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { translations, detectUserLanguage } from './i18n';
 import { SUBJECTS, nextSubjects } from './subjects';
 import { buildFallbackContent } from './fallbackContent';
@@ -113,7 +114,7 @@ describe('removeOldSettings', () => {
 
 describe('colour contrast (WCAG AA, at least 4.5:1)', () => {
   // Reads the palette from styles.css so the test follows any change there.
-  const css = readFileSync(new URL('./styles.css', import.meta.url), 'utf8');
+  const css = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
   const token = name => css.match(new RegExp(`--${name}:\s*(#[0-9a-f]{6})`, 'i'))[1];
   const luminance = hex => {
     const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
