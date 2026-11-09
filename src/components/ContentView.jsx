@@ -200,7 +200,7 @@ export default function ContentView({
   const goPrevious = () => goTo(index - 1);
 
   // Optional swipe (the buttons are always there). Only clear horizontal swipes count,
-  // so scrolling the sheet up and down never changes card by accident.
+  // so scrolling the page up and down never changes card by accident.
   const onTouchStart = e => {
     const touch = e.touches[0];
     swipeRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;

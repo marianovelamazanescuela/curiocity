@@ -96,7 +96,7 @@ server/
   app.test.js, content.test.js
 src/
   App.jsx           flujo: cámara → análisis → asignaturas → contenido; historial
-  components/       CameraView, Sheet (<dialog>), SubjectPicker, ContentView (lección en tarjetas), SubjectCard, Curi (mascota), HistoryView, ObjectHeader, Toast, Splash
+  components/       CameraView, Page (páginas a pantalla completa), SubjectPicker, SubjectRow, ContentView (lección en tarjetas), Curi (mascota), HistoryView, icons (trazo fino), Toast, Splash
   useCamera.js      gestión de la cámara
   api.js            llamadas al servidor + reconocimiento local de respaldo
   history.js        historial guardado solo en el dispositivo
@@ -108,7 +108,7 @@ src/
   styles.css        diseño: tipografía, tokens de color y componentes
 public/
   sw.js             service worker (abrir sin conexión)
-  fonts/            Literata (toda la app), alojada en el proyecto (licencia OFL)
+  fonts/            Literata (lectura e interfaz, redonda y cursiva) y Sofia Sans Condensed (titulares), alojadas en el proyecto (licencia OFL)
   …                 logo, iconos, manifest
 ```
 
@@ -120,4 +120,4 @@ public/
 
 ### Diseño
 
-Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color cálido por asignatura (ocre, piedra, terracota, caramelo, coral, arcilla y naranja; en [src/subjects.js](src/subjects.js)). Tipografía: Literata en toda la app (`--font`), alojada en `public/fonts/`. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).
+Paleta de la marca: crema `#faebd9` y tinta `#1d1d1b`, con un color cálido por asignatura (ocre, piedra, terracota, caramelo, coral, arcilla y naranja; en [src/subjects.js](src/subjects.js)). Tipografía: Literata para la lectura y la interfaz (`--font`) y Sofia Sans Condensed solo para los titulares que hacen eco del logo (`--font-display`), alojadas en `public/fonts/`. Sin botones con fondo negro: píldoras de papel con borde de tinta y círculos de contorno. Todos los valores están como variables CSS al principio de [src/styles.css](src/styles.css).
