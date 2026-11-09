@@ -78,8 +78,8 @@
   /* Headings that echo the logo (thin and condensed) */
   --font-display: 'Sofia Sans Condensed', 'Arial Narrow', sans-serif;
 
-  /* Lesson text size (one size for the whole 8–10 audience) */
-  --lesson-size: 18.5px;
+  /* Lesson text (one size for the whole 8–10 audience); the question and the fact are bigger */
+  --lesson-size: 20px;
   --lesson-leading: 1.5;
 
   --radius-s: 14px;
@@ -509,58 +509,6 @@ p {
   border-width: 1.5px;
 }
 
-.link-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  border-radius: var(--pill);
-  font-weight: 600;
-}
-
-.chip--button {
-  min-height: 42px;
-  padding: 0 16px;
-  border: 1.5px solid var(--ink);
-  background: transparent;
-  font-size: 16px;
-  transition: background-color 0.15s, transform 0.15s var(--ease-out);
-}
-
-.chip--button:active {
-  transform: scale(0.96);
-}
-
-.chip--button:hover {
-  background: var(--paper);
-}
-
-.chip--subject {
-  padding: 3px 12px;
-  margin-bottom: 4px;
-  background: var(--subject);
-  font-size: 14px;
-}
-
 /* =========================================================
    Subjects page: the photo in a ring, "Has encontrado" + the object's name, the subjects as a list
    ========================================================= */
@@ -744,72 +692,6 @@ p {
   margin-top: 8px;
 }
 
-.prose p {
-  font-size: inherit;
-  line-height: inherit;
-}
-
-.prose p + p {
-  margin-top: 12px;
-}
-
-.links {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.links__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: var(--tap);
-  padding: 12px 14px;
-  border-radius: var(--radius-s);
-  border: 1.5px solid var(--ink-faint);
-  color: inherit;
-  text-decoration: none;
-  transition: border-color 0.15s;
-}
-
-.links__item:hover {
-  border-color: var(--ink);
-}
-
-.links__item > span {
-  display: grid;
-}
-
-.links__title {
-  font-weight: 700;
-}
-
-.links__source {
-  font-size: 14px;
-  color: var(--ink-soft);
-}
-
-.share {
-  margin-top: 28px;
-}
-
-.share__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* At 360 px: WhatsApp and Correo side by side, "Más…" below at full width (large buttons) */
-.share__options .btn {
-  flex: 1 1 auto;
-  gap: 6px;
-  padding: 0 12px;
-  font-size: 16px;
-}
-
 .message {
   display: flex;
   flex-direction: column;
@@ -829,87 +711,6 @@ p {
 .message__text {
   color: var(--ink-soft);
   margin-bottom: 14px;
-}
-
-.btn--small {
-  min-height: 40px;
-  padding: 0 16px;
-  font-size: 16px;
-}
-
-/* =========================================================
-   Interactive lesson: question → fact → why → challenge → open question
-   ========================================================= */
-.card__kicker {
-  margin-bottom: 6px;
-  font-size: 14px;
-  font-weight: 400; /* headings inside the cards: not bold, there is little room */
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.quiz {
-  display: grid;
-  gap: 8px;
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.quiz__option {
-  width: 100%;
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 16px;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius-s);
-  background: var(--paper);
-  font-size: 18px;
-  font-weight: 600;
-  text-align: left;
-  transition: transform 0.15s var(--ease-out), opacity 0.15s;
-}
-
-.quiz__option:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.quiz__option:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
-/* The right answer stays fully visible, with a thick border and a tick (not colour alone). */
-.quiz__option--correct:disabled {
-  opacity: 1;
-  border-width: 3px;
-}
-
-/* A wrong choice is marked gently: dashed border, no red. */
-.quiz__option--chosen:disabled {
-  opacity: 0.8;
-  border-style: dashed;
-}
-
-.quiz__mark {
-  flex: none;
-  font-size: 26px;
-}
-
-.quiz__feedback {
-  margin-top: 14px;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.3;
-  animation: rise 0.3s var(--ease-out) both;
-}
-
-.reveal {
-  animation: rise 0.4s var(--ease-out) both;
-  scroll-margin-top: 12px;
 }
 
 /* =========================================================
@@ -1015,200 +816,6 @@ p {
 }
 
 /* =========================================================
-   Motion
-   ========================================================= */
-/* =========================================================
-   Lesson cards: one idea per card, in the subject's tint, with dots and big buttons.
-   ========================================================= */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.lesson__bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 14px;
-}
-
-.dots {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.dots__dot {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--pill);
-  border: 1.5px solid var(--ink);
-  transition: width 0.25s var(--ease-out), background-color 0.25s;
-}
-
-.dots__dot--done {
-  background: var(--ink-soft);
-  border-color: var(--ink-soft);
-}
-
-.dots__dot--on {
-  width: 30px;
-  background: var(--ink);
-}
-
-.lesson-card {
-  margin-top: 8px;
-  padding: 20px 18px 18px;
-  border-radius: var(--radius-l);
-  background: var(--subject);
-  scroll-margin-top: 12px;
-  touch-action: pan-y; /* vertical scrolling stays native; horizontal swipes change card */
-  animation: card-in 0.35s var(--ease-out) both;
-}
-
-.lesson-card:focus {
-  outline: none;
-}
-
-.lesson-card:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
-}
-
-.card__kicker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 10px;
-}
-
-.card__kicker svg {
-  flex: none;
-  font-size: 22px;
-}
-
-.card__title {
-  margin-bottom: 4px;
-}
-
-.lesson .lesson-text.lesson-text--big {
-  font-size: calc(var(--lesson-size) * 1.12);
-}
-
-.card__intro {
-  margin-bottom: 12px;
-}
-
-.prose p + p {
-  margin-top: 12px;
-}
-
-.challenge__text {
-  padding: 14px 16px;
-  border: 1.5px dashed var(--ink);
-  border-radius: var(--radius-m);
-  background: var(--paper);
-}
-
-.challenge__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.challenge__done {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.lesson__end {
-  margin-top: 8px;
-}
-
-/* Previous / Next: always reachable at the bottom of the sheet */
-.lesson-nav {
-  position: sticky;
-  bottom: calc(-28px - env(safe-area-inset-bottom));
-  z-index: 1;
-  margin: 18px calc(-1 * var(--space)) 0;
-  padding: 10px var(--space) calc(10px + env(safe-area-inset-bottom));
-  background: linear-gradient(to bottom, transparent, var(--cream) 14px);
-}
-
-.lesson-nav__buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.lesson-nav__btn {
-  flex: 1;
-  min-height: 52px;
-  padding: 0 14px;
-  background-color: var(--cream);
-}
-
-.lesson-nav__btn.btn--primary {
-  background-color: var(--ink);
-}
-
-.lesson-nav__btn:disabled {
-  opacity: 0.35;
-  transform: none;
-}
-
-.lesson-nav__hint {
-  margin-bottom: 8px;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-@keyframes card-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: none; }
-}
-
-/* =========================================================
-   Lesson typography: Literata for what the child reads (question, options, fact, why,
-   challenge, final question): the same typeface as the interface, with its own size.
-   ========================================================= */
-.lesson .lesson-text {
-  font-size: var(--lesson-size);
-  line-height: var(--lesson-leading);
-  font-weight: 400;
-  font-optical-sizing: auto;
-  letter-spacing: 0;
-  hyphens: manual;
-  overflow-wrap: break-word;
-}
-
-.lesson .lesson-text--title {
-  font-size: calc(var(--lesson-size) * 1.25);
-  line-height: 1.25;
-  font-weight: 400;
-}
-
-.lesson .quiz__option .lesson-text,
-.lesson .challenge__text {
-  font-weight: 500;
-  line-height: 1.35;
-}
-
-/* =========================================================
    Curi (mascot): CSS-only motion. Occasional blink, pupils that wander while thinking,
    and smooth changes between states. With reduced motion only the state changes.
    ========================================================= */
@@ -1295,9 +902,10 @@ p {
 }
 
 .curi-say__text {
-  font-weight: 700;
   font-size: 18px;
-  line-height: 1.3;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--ink-soft);
 }
 
 @keyframes curi-blink {
@@ -1359,49 +967,262 @@ p {
   }
 }
 
-/* End of the lesson with no other featured subject left: invitation to photograph another object */
-.another-photo {
+/* =========================================================
+   Lesson: one idea per card, straight on the cream background, left-aligned.
+   The subject's colour appears only in the pill at the top.
+   ========================================================= */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The lesson fills the screen so "Anterior / Siguiente" sit at the bottom even on short cards */
+.page__inner {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+}
+
+.page__inner > * {
+  flex: 1 0 auto;
+}
+
+.page__inner:has(.lesson) {
+  padding-bottom: 0;
+}
+
+.lesson {
+  display: flex;
+  flex-direction: column;
+}
+
+.lesson .page-nav {
   align-items: center;
-  gap: 10px 14px;
+}
+
+.lesson-pill {
+  max-width: 100%;
+  padding: 5px 16px;
+  border-radius: 18px;
+  background: var(--subject);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.lesson__bar {
+  margin-top: 20px;
+}
+
+.progress {
+  display: grid;
+  grid-template-columns: repeat(var(--cards, 5), 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress__step {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ink-track);
+  transition: background-color 0.25s;
+}
+
+.progress__step--done {
+  background: var(--ink);
+}
+
+.lesson__loading {
+  padding-top: 72px;
+}
+
+.lesson-card {
+  margin-top: 60px;
+  scroll-margin-top: 20px;
+  touch-action: pan-y; /* vertical scrolling stays native; horizontal swipes change card */
+  animation: card-in 0.35s var(--ease-out) both;
+}
+
+.lesson-card:focus {
+  outline: none;
+}
+
+.lesson-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 6px;
+}
+
+/* Support labels ("Adivina primero", "¿Sabías que…?", section names): Literata italic, soft ink */
+.kicker {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.lesson .lesson-text {
+  font-size: var(--lesson-size);
+  line-height: var(--lesson-leading);
+  font-weight: 400;
+  letter-spacing: 0;
+  hyphens: manual;
+  overflow-wrap: break-word;
+}
+
+/* The question: 29 px / 1.28 */
+.lesson .lesson-text--title {
+  margin-bottom: 28px;
+  font-size: 29px;
+  line-height: 1.28;
+}
+
+/* The surprising fact and the final question: 27 px / 1.35 */
+.lesson .lesson-text.lesson-text--big {
+  font-size: 27px;
+  line-height: 1.35;
+}
+
+.lesson-card--fact .curi {
+  margin-bottom: 32px;
+}
+
+.prose p + p {
   margin-top: 14px;
 }
 
-.another-photo p {
+.card__intro {
+  margin-bottom: 14px;
+}
+
+/* Answer options: paper, fine border, 60 px high */
+.quiz {
+  display: grid;
+  gap: 12px;
   margin: 0;
-  font-weight: 600;
+  padding: 0;
+  list-style: none;
+}
+
+.quiz__option {
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 20px;
+  border: 1px solid var(--ink-line);
+  border-radius: 16px;
+  background: var(--paper);
+  text-align: left;
+  transition: transform 0.15s var(--ease-out), border-color 0.15s, opacity 0.15s;
+}
+
+.quiz__option:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.quiz__option:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.lesson .quiz__option .lesson-text {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.quiz__option:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* The right answer stays fully visible, with an ink border and a tick (not colour alone). */
+.quiz__option--correct:disabled {
+  opacity: 1;
+  border: 1.5px solid var(--ink);
+}
+
+/* A wrong choice is marked gently: dashed border, no red. */
+.quiz__option--chosen:disabled {
+  opacity: 0.8;
+  border-style: dashed;
+  border-color: var(--ink);
+}
+
+.quiz__mark {
+  flex: none;
+  font-size: 24px;
+}
+
+.quiz__feedback {
+  margin-top: 24px;
+  font-size: 20px;
+  line-height: 1.35;
+  animation: rise 0.3s var(--ease-out) both;
+}
+
+.reveal {
+  animation: rise 0.4s var(--ease-out) both;
+  scroll-margin-top: 20px;
+}
+
+/* Challenge: the text, then "¡Reto hecho!" (pill) and "No lo he encontrado" (fine line), stacked */
+.lesson .challenge__text {
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+.challenge__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.challenge__actions:empty {
+  display: none;
+}
+
+.challenge__done {
+  margin-top: 32px;
+  font-size: 20px;
+  line-height: 1.35;
 }
 
 /* After the challenge (found it or not): "what you could discover", with Curi */
 .discovery {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  margin-top: 16px;
+  gap: 16px;
+  margin-top: 32px;
   outline: none;
 }
 
 .discovery__title {
-  margin: 4px 0 4px;
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  margin: 6px 0 6px;
 }
 
-.discovery__text {
+.lesson .discovery__text {
   margin: 0;
-}
-
-/* "¡Reto hecho!" and "No lo he encontrado": same width, one under the other at 360 px */
-.challenge__actions .btn {
-  flex: 1 1 auto;
+  font-size: 19px;
+  line-height: 1.45;
 }
 
 /* Final card: a pause to think, then some possible ideas (never "the" answer) */
 .think-pause {
-  margin: 14px 0;
+  margin: 20px 0 24px;
   font-style: italic;
   color: var(--ink-soft);
 }
@@ -1410,23 +1231,149 @@ p {
   outline: none;
 }
 
-.ideas__intro {
-  margin: 0 0 8px;
-  font-weight: 400;
-}
-
 .ideas__list {
   display: grid;
-  gap: 8px;
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.ideas__list li {
-  padding: 10px 14px;
-  border-left: 3px solid var(--ink);
-  border-radius: 0 var(--radius-s) var(--radius-s) 0;
-  background: color-mix(in srgb, var(--paper) 70%, transparent);
+.lesson .ideas__list li {
+  padding-left: 16px;
+  border-left: 1px solid var(--ink);
+  font-size: 19px;
+  line-height: 1.45;
 }
 
+/* End of the lesson: links, related objects, sharing and other subjects, separated by air */
+.lesson__end {
+  display: grid;
+  gap: 44px;
+  margin-top: 56px;
+}
+
+.links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ink-faint);
+}
+
+.links li {
+  border-bottom: 1px solid var(--ink-faint);
+}
+
+.links__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 14px 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.links__item > span {
+  display: grid;
+  gap: 2px;
+}
+
+.links__title {
+  font-size: 18px;
+}
+
+.links__source {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.links__item .thin-icon {
+  flex: none;
+  font-size: 22px;
+}
+
+.links__item:hover .links__title {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip--button {
+  min-height: var(--tap);
+  padding: 0 20px;
+  border: 1px solid var(--ink-line);
+  border-radius: var(--pill);
+  background: transparent;
+  font-size: 17px;
+  transition: border-color 0.15s, transform 0.15s var(--ease-out);
+}
+
+.chip--button:hover {
+  border-color: var(--ink);
+}
+
+.chip--button:active {
+  transform: scale(0.96);
+}
+
+.another-photo {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.share__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* At 360 px: WhatsApp and Correo side by side, "Más…" below at full width */
+.share__options .btn {
+  flex: 1 1 auto;
+  padding: 0 16px;
+  font-size: 17px;
+}
+
+/* Previous (circle) and Next (pill): always reachable at the bottom of the screen */
+.lesson-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: auto;
+  padding: 28px 0 calc(24px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--cream) 0%, transparent), var(--cream) 24px);
+}
+
+.lesson-nav__buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lesson-nav__next {
+  margin-left: auto;
+  padding: 0 30px;
+}
+
+.lesson-nav__hint {
+  min-height: var(--btn-h);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
