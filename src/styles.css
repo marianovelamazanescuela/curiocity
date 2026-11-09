@@ -369,20 +369,31 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 18px 20px;
-  border-radius: var(--radius-m);
+  gap: 8px;
+  padding: 28px 24px;
+  border-radius: var(--radius-l);
   background: var(--cream);
+  color: var(--ink);
   text-align: center;
 }
 
 .camera__notice strong {
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 400;
 }
 
 .camera__notice span {
   color: var(--ink-soft);
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.camera__notice .btn {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.camera .camera__notice :focus-visible {
+  outline-color: var(--ink);
 }
 
 /* =========================================================
@@ -710,109 +721,142 @@ p {
 .message {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 24px 0 8px;
-  text-align: center;
+  align-items: flex-start;
 }
 
 .message__title {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.1;
-  padding: 0 40px;
+  margin-top: 60px;
+  font-size: 29px;
+  font-weight: 400;
+  line-height: 1.28;
 }
 
 .message__text {
+  margin-top: 16px;
+  font-size: 19px;
+  line-height: 1.45;
   color: var(--ink-soft);
-  margin-bottom: 14px;
+}
+
+.message .btn {
+  margin-top: 36px;
 }
 
 /* =========================================================
-   History
+   History ("Mis descubrimientos"): a list of rows like the subjects
    ========================================================= */
 .history__title {
-  padding-right: 52px;
-  margin-bottom: 18px;
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.1;
+  margin-top: 40px;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1.05;
 }
 
 .history__empty {
-  padding: 24px 0;
+  align-items: flex-start;
+  padding: 48px 0 8px;
+  text-align: left;
   color: var(--ink-soft);
-  text-align: center;
+}
+
+.history__empty p {
+  max-width: 28ch;
+  font-size: 18px;
+  line-height: 1.45;
 }
 
 .history__list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
+  margin: 28px 0 0;
   padding: 0;
   list-style: none;
+  border-top: 1px solid var(--ink-faint);
+}
+
+.history__list li {
+  border-bottom: 1px solid var(--ink-faint);
 }
 
 .history__item {
   width: 100%;
+  min-height: 80px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 14px 8px 8px;
-  border: 1.5px solid transparent;
-  border-radius: var(--radius-m);
-  background: var(--paper);
+  gap: 16px;
+  padding: 12px 0;
+  border: none;
+  background: none;
   text-align: left;
-  transition: border-color 0.15s;
 }
 
-.history__item:hover {
-  border-color: var(--ink);
+.history__item:active {
+  background: color-mix(in srgb, var(--paper) 60%, transparent);
 }
 
 .history__thumb {
   flex: none;
   width: 56px;
   height: 56px;
+  padding: 3px;
   border-radius: 50%;
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--ink);
   object-fit: cover;
 }
 
 .history__text {
+  flex: 1;
   display: grid;
+  gap: 2px;
   min-width: 0;
 }
 
 .history__name {
-  font-size: 19px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.15;
+  text-transform: lowercase;
   overflow-wrap: anywhere;
 }
 
+:lang(de) .history__name {
+  text-transform: none;
+}
+
 .history__date {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink-soft);
+}
+
+.history__chevron {
+  flex: none;
+  display: grid;
+  font-size: 22px;
 }
 
 .history__privacy {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 20px 0 6px;
-  font-size: 14px;
+  gap: 8px;
+  margin: 24px 0 0;
+  font-size: 15px;
+  font-style: italic;
   color: var(--ink-soft);
 }
 
+.history .center {
+  justify-content: flex-start;
+  margin-top: 28px;
+}
+
 /* =========================================================
-   Toast
+   Toast: paper with a fine ink border (no black fill)
    ========================================================= */
 .toast-region {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(24px + env(safe-area-inset-bottom));
+  bottom: calc(100px + env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -820,13 +864,13 @@ p {
 }
 
 .toast {
-  max-width: calc(100% - 40px);
-  padding: 12px 20px;
+  max-width: calc(100% - 56px);
+  padding: 12px 22px;
   border-radius: var(--pill);
-  background: var(--ink);
-  color: var(--cream);
-  font-weight: 600;
-  box-shadow: var(--shadow);
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(29, 29, 27, 0.12);
   animation: rise 0.3s var(--ease-out);
 }
 
