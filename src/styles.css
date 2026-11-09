@@ -1204,7 +1204,7 @@ p {
 
 .quiz__option:disabled {
   cursor: default;
-  opacity: 0.55;
+  opacity: 0.7; /* still readable: at least 4.5:1 against the paper */
 }
 
 /* The right answer stays fully visible, with an ink border and a tick (not colour alone). */
