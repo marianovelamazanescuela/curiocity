@@ -371,60 +371,54 @@ p {
 }
 
 /* =========================================================
-   Bottom sheet (native <dialog>)
+   Full-screen pages (subjects, lesson, history, notices) over the camera.
+   Cream background, 28 px side margins, its own scroll.
    ========================================================= */
-.sheet {
+.page {
   position: fixed;
-  inset: auto 0 0 0;
-  width: 100%;
-  max-width: 560px;
-  max-height: 90dvh;
-  margin: 0 auto;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  overflow: visible;
-}
-
-.sheet::backdrop {
-  background: rgba(29, 29, 27, 0.35);
-}
-
-.sheet[open] .sheet__panel {
-  animation: sheet-up 0.38s var(--ease-out);
-}
-
-.sheet__panel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-height: 90dvh;
-  border-radius: var(--radius-l) var(--radius-l) 0 0;
-  background: var(--cream);
-  box-shadow: var(--shadow);
-}
-
-.sheet__handle {
-  flex: none;
-  width: 44px;
-  height: 5px;
-  margin: 10px auto 0;
-  border-radius: var(--pill);
-  background: var(--ink-faint);
-}
-
-.sheet__close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 1;
-}
-
-.sheet__body {
+  inset: 0;
+  z-index: 5;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 18px var(--space) calc(28px + env(safe-area-inset-bottom));
+  background: var(--cream);
+  color: var(--ink);
+  outline: none;
+  animation: page-in 0.3s var(--ease-out);
+}
+
+.page__inner {
+  min-height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(20px + env(safe-area-inset-top)) var(--space) calc(32px + env(safe-area-inset-bottom));
+}
+
+/* Top navigation: the circles sit 8 px further out than the content (20 px from the edge) */
+.page-nav {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: start;
+  gap: 8px;
+  margin: 0 -8px;
+}
+
+.page-nav > .icon-btn:first-child {
+  grid-column: 1;
+}
+
+.page-nav > .icon-btn:last-child:not(:first-child) {
+  grid-column: 3;
+}
+
+.page-nav__center {
+  grid-column: 2;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.page-nav__center:empty {
+  display: none;
 }
 
 /* =========================================================
@@ -1359,9 +1353,9 @@ p {
   to { opacity: 1; transform: none; }
 }
 
-@keyframes sheet-up {
-  from { transform: translateY(100%); }
-  to { transform: none; }
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes splash-out {

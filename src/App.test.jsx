@@ -85,6 +85,32 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Música' })).toBeInTheDocument();
   });
 
+  it('opens the subjects as a full-screen page over an inert camera; both top buttons and Escape go back', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await takePhoto(user);
+    expect(await screen.findByRole('heading', { name: 'Manzana' })).toBeInTheDocument();
+    expect(screen.getByText('Has encontrado')).toBeInTheDocument();
+    expect(container.querySelector('.camera')).toHaveAttribute('inert');
+    expect(container.querySelector('dialog')).toBeNull(); // no bottom sheet any more
+
+    await user.click(screen.getByRole('button', { name: 'Objeto incorrecto: hacer otra foto' }));
+    expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+    expect(container.querySelector('.camera')).not.toHaveAttribute('inert');
+
+    await takePhoto(user);
+    await screen.findByRole('heading', { name: 'Manzana' });
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Manzana' })).not.toBeInTheDocument());
+
+    await takePhoto(user);
+    await screen.findByRole('heading', { name: 'Manzana' });
+    await user.click(screen.getByRole('button', { name: 'Volver a la cámara' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Manzana' })).not.toBeInTheDocument());
+  });
+
   it('shows every subject, without hooks, when the ranking is unknown', async () => {
     mockServer({ subjects: { ranking: null } });
     const user = userEvent.setup();
@@ -109,7 +135,7 @@ describe('App', () => {
 
     // Nothing is explained before the child answers, and "Siguiente" waits for an answer
     expect(screen.queryByText(lesson.dato_sorprendente)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Siguiente/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Siguiente/ })).not.toBeInTheDocument();
     expect(screen.getByText('Elige una respuesta para seguir')).toBeInTheDocument();
 
     // A wrong answer gets a kind message with the right one
@@ -119,7 +145,7 @@ describe('App', () => {
 
     // One idea per card
     await user.click(screen.getByRole('button', { name: /Siguiente/ }));
-    expect(screen.getByRole('region', { name: /Tarjeta 2 de 5.*Dato sorprendente/ })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /Tarjeta 2 de 5.*¿Sabías que…?/ })).toBeInTheDocument();
     expect(screen.getByText(lesson.dato_sorprendente)).toBeInTheDocument();
     expect(screen.queryByText('Así están protegidas.')).not.toBeInTheDocument();
 
@@ -166,7 +192,7 @@ describe('App', () => {
       for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
     };
     const endSubjects = () =>
-      screen.queryAllByRole('button', { name: /^(Biología|Historia|Arte)\s*\S/ }).map(b => b.querySelector('.subject-card__label').textContent);
+      screen.queryAllByRole('button', { name: /^(Biología|Historia|Arte)\s*\S/ }).map(b => b.querySelector('.subject-row__label').textContent);
 
     await takePhoto(user);
     await user.click(await screen.findByRole('button', { name: /Biología/ }));
@@ -248,14 +274,14 @@ describe('App', () => {
 
     await takePhoto(user);
     await screen.findByRole('heading', { name: 'Manzana' });
-    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+    await user.click(screen.getByRole('button', { name: 'Volver a la cámara' }));
 
     await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
     await user.click(await screen.findByRole('button', { name: /Manzana/ }));
-    expect(await screen.findByText('¿Qué quieres descubrir?')).toBeInTheDocument();
+    expect(await screen.findByText('¿Desde dónde quieres mirar?')).toBeInTheDocument();
     expect(await screen.findByText('Dentro hay una estrella escondida')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+    await user.click(screen.getByRole('button', { name: 'Volver a la cámara' }));
     await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
     await user.click(await screen.findByRole('button', { name: 'Borrar historial' }));
     await user.click(screen.getByRole('button', { name: 'Toca otra vez para borrar' }));
@@ -272,7 +298,7 @@ describe('App', () => {
     await user.click(await screen.findByRole('button', { name: /Arte/ }));
     expect(await screen.findByText(/Ahora no puedo preparar tu explicación/)).toBeInTheDocument();
     // no quiz offline: nothing true is known about the object
-    expect(screen.queryByText('¡Adivina primero!')).not.toBeInTheDocument();
+    expect(screen.queryByText('Adivina primero')).not.toBeInTheDocument();
     // 3 cards: investigate (intro + explanation), challenge, final
     expect(screen.getByRole('region', { name: /Tarjeta 1 de 3.*Investiga tú/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Siguiente/ }));
@@ -289,7 +315,7 @@ describe('App', () => {
 
     await takePhoto(user);
     expect(await screen.findByText('Eso parece una persona')).toBeInTheDocument();
-    expect(screen.queryByText('¿Qué quieres descubrir?')).not.toBeInTheDocument();
+    expect(screen.queryByText('¿Desde dónde quieres mirar?')).not.toBeInTheDocument();
   });
 
   it('tells the child when nothing was recognised', async () => {

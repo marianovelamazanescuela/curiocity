@@ -15,7 +15,7 @@ function useStream(ref, stream) {
   }, [ref, stream]);
 }
 
-export default function CameraView({ t, videoRef, stream, cameraStatus, photo, analyzing, onShutter, onRetryCamera, onOpenHistory }) {
+export default function CameraView({ inert, t, videoRef, stream, cameraStatus, photo, analyzing, onShutter, onRetryCamera, onOpenHistory }) {
   const bgRef = useRef(null);
   useStream(bgRef, stream);
   useStream(videoRef, stream);
@@ -24,7 +24,7 @@ export default function CameraView({ t, videoRef, stream, cameraStatus, photo, a
   const cameraError = cameraStatus === 'error' && !frozen;
 
   return (
-    <main className="camera">
+    <main className="camera" inert={inert}>
       {/* Blurred full-screen backdrop: live video, or the captured photo once frozen */}
       {frozen ? (
         <img className="camera__backdrop" src={photo} alt="" aria-hidden="true" />

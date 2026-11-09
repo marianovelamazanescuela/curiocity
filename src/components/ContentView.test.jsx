@@ -52,19 +52,30 @@ afterEach(() => {
 });
 
 describe('Lesson cards', () => {
-  it('shows progress dots and big Previous / Next buttons', () => {
+  it('shows the object and subject in a pill, progress segments and the Previous / Next buttons', async () => {
+    const user = userEvent.setup();
     const { container } = renderLesson();
-    expect(container.querySelectorAll('.dots__dot')).toHaveLength(5);
-    expect(container.querySelector('.dots__dot--on')).toBe(container.querySelector('.dots__dot'));
-    expect(screen.getByRole('button', { name: /Anterior/ })).toBeDisabled(); // first card
-    expect(next()).toHaveClass('lesson-nav__btn');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Manzana · Biología');
+    expect(screen.getByRole('button', { name: 'Volver a las asignaturas' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeInTheDocument();
+    expect(container.querySelectorAll('.progress__step')).toHaveLength(5);
+    expect(container.querySelectorAll('.progress__step--done')).toHaveLength(1);
+    // first card: nothing to go back to
+    expect(screen.queryByRole('button', { name: 'Anterior' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    await user.click(next());
+    expect(container.querySelectorAll('.progress__step--done')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Anterior' })).toHaveClass('icon-btn--big');
+    expect(next()).toHaveClass('lesson-nav__next');
   });
 
   it('does not move past the question until it is answered, not even by swiping', async () => {
     const user = userEvent.setup();
     renderLesson();
-    expect(next()).toBeDisabled();
-    expect(next()).toHaveAccessibleDescription('Elige una respuesta para seguir');
+    // until the question is answered, only the hint shows
+    expect(screen.queryByRole('button', { name: /Siguiente/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Elige una respuesta para seguir')).toBeInTheDocument();
     swipe(currentCard(), { dx: -120 });
     expect(currentCard()).toHaveAccessibleName(/Tarjeta 1 de 5/);
 
@@ -79,7 +90,7 @@ describe('Lesson cards', () => {
     expect(currentCard()).not.toHaveFocus(); // not stolen on first render
     await user.click(screen.getByRole('button', { name: 'En el centro' }));
     await user.click(next());
-    expect(currentCard()).toHaveAccessibleName('Tarjeta 2 de 5 Dato sorprendente');
+    expect(currentCard()).toHaveAccessibleName('Tarjeta 2 de 5 ¿Sabías que…?');
     expect(currentCard()).toHaveFocus();
 
     await user.click(screen.getByRole('button', { name: /Anterior/ }));
