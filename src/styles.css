@@ -191,7 +191,7 @@ p {
   display: grid;
   grid-template-rows: auto 1fr auto;
   justify-items: center;
-  padding: calc(16px + env(safe-area-inset-top)) var(--space) calc(28px + env(safe-area-inset-bottom));
+  padding: calc(20px + env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));
   background: var(--ink);
   isolation: isolate;
 }
@@ -214,40 +214,53 @@ p {
   z-index: -1;
   background:
     linear-gradient(to bottom, rgba(29, 29, 27, 0.45), transparent 22%),
-    linear-gradient(to top, rgba(29, 29, 27, 0.55), transparent 35%);
+    linear-gradient(to top, rgba(29, 29, 27, 0.65), transparent 38%);
 }
 
 .camera__top {
   position: relative;
   width: 100%;
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.camera__history {
-  position: absolute;
-  right: 0;
-  top: -2px;
-  border-color: transparent;
-  background: color-mix(in srgb, var(--cream) 88%, transparent);
-  backdrop-filter: blur(8px);
+/* The logo's eyes, small and in cream, as the brand mark (no logo pill) */
+.camera__brand {
+  margin: 0;
+  line-height: 0;
+  color: var(--cream);
+}
+
+.camera__eyes {
+  width: 44px;
+  height: auto;
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.3));
+}
+
+.camera .icon-btn {
+  border-color: var(--cream);
+  color: var(--cream);
+}
+
+.camera .icon-btn:hover {
+  background: rgba(250, 235, 217, 0.12);
 }
 
 .camera__history:disabled {
   opacity: 0;
 }
 
-.camera__logo {
-  height: 40px;
-  padding: 9px 20px;
-  border-radius: var(--pill);
-  background: color-mix(in srgb, var(--cream) 88%, transparent);
-  backdrop-filter: blur(8px);
+.camera__center {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
 }
 
 .viewfinder {
   position: relative;
-  align-self: center;
   width: min(78vw, 52dvh, 440px);
   aspect-ratio: 1;
 }
@@ -257,7 +270,6 @@ p {
   inset: 0;
   overflow: hidden;
   border-radius: 50%;
-  border: 3px solid var(--cream);
   background: var(--ink);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
@@ -270,18 +282,18 @@ p {
   display: block;
 }
 
-/* thin outer ring echoing the logo's monoline */
+/* Fine cream ring with a 6 px gap, the same as the photo on the subjects page */
 .viewfinder::after {
   content: '';
   position: absolute;
-  inset: -14px;
+  inset: -7.5px;
   border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--cream) 55%, transparent);
+  border: 1.5px solid var(--cream);
   pointer-events: none;
 }
 
 .viewfinder--analyzing::after {
-  border: 2px dashed var(--cream);
+  border-style: dashed;
   animation: spin 6s linear infinite;
 }
 
@@ -303,38 +315,41 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 24px;
   width: 100%;
   max-width: 420px;
 }
 
 .camera__hint {
-  padding: 8px 18px;
-  border-radius: var(--pill);
-  background: color-mix(in srgb, var(--cream) 88%, transparent);
-  backdrop-filter: blur(8px);
-  font-size: 17px;
-  font-weight: 600;
+  min-height: 1.4em;
+  color: var(--cream);
+  font-size: 18px;
+  font-style: italic;
+  line-height: 1.4;
   text-align: center;
+  /* a soft dark halo keeps the cream legible over bright scenes */
+  text-shadow: 0 0 14px rgba(29, 29, 27, 0.75), 0 1px 3px rgba(29, 29, 27, 0.6);
 }
 
+/* Shutter: a 76 px cream ring around a 60 px cream disc */
 .shutter {
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: 76px;
+  height: 76px;
   display: grid;
   place-items: center;
-  border: none;
+  padding: 0;
+  border: 2px solid var(--cream);
   border-radius: 50%;
-  background: var(--cream);
-  box-shadow:
-    0 0 0 5px rgba(29, 29, 27, 0.35),
-    0 0 0 7px var(--cream);
+  background: transparent;
   transition: transform 0.15s var(--ease-out), opacity 0.2s;
 }
 
-.shutter img {
-  width: 46px;
+.shutter__dot {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--cream);
 }
 
 .shutter:active:not(:disabled) {
