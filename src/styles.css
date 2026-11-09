@@ -1,7 +1,9 @@
 /* =========================================================
-   Font: Literata (variable: weight + optical size), for the whole interface and the lesson.
-   Self-hosted from /public/fonts so no request goes to Google.
-   Licence: SIL OFL 1.1 (public/fonts/OFL-Literata.txt)
+   Fonts, self-hosted from /public/fonts so no request goes to Google (children's IPs stay here).
+   - Literata (variable: weight + optical size, upright and italic): reading and interface.
+   - Sofia Sans Condensed (variable, 200–400): only the headings that echo the logo's thin,
+     condensed line (object name, subject names, lesson pill).
+   Licences: SIL OFL 1.1 (public/fonts/OFL-Literata.txt, public/fonts/OFL-SofiaSansCondensed.txt)
    ========================================================= */
 @font-face {
   font-family: 'Literata';
@@ -21,6 +23,42 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+@font-face {
+  font-family: 'Literata';
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Literata';
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Sofia Sans Condensed';
+  font-style: normal;
+  font-weight: 200 400;
+  font-display: swap;
+  src: url('/fonts/sofia-sans-condensed-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Sofia Sans Condensed';
+  font-style: normal;
+  font-weight: 200 400;
+  font-display: swap;
+  src: url('/fonts/sofia-sans-condensed-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* =========================================================
    Curiocity — design tokens
    Brand: cream paper + ink line, Literata, "eyes" motif.
@@ -31,10 +69,14 @@
   --paper: #fff8ef;
   --ink: #1d1d1b;
   --ink-soft: #57524b;
-  --ink-faint: rgba(29, 29, 27, 0.14);
+  --ink-faint: rgba(29, 29, 27, 0.14); /* fine lines between rows */
+  --ink-line: rgba(29, 29, 27, 0.22); /* border of the answer options */
+  --ink-track: rgba(29, 29, 27, 0.18); /* progress segments still to come */
 
-  /* The one typeface of the app (interface and lesson). Change this line to change it everywhere. */
+  /* Reading and interface typeface. Change this line to change it everywhere. */
   --font: 'Literata', Georgia, serif;
+  /* Headings that echo the logo (thin and condensed) */
+  --font-display: 'Sofia Sans Condensed', 'Arial Narrow', sans-serif;
 
   /* Lesson text size (one size for the whole 8–10 audience) */
   --lesson-size: 18.5px;
@@ -45,8 +87,9 @@
   --radius-l: 28px;
   --pill: 999px;
 
-  --space: 20px;
+  --space: 28px; /* side margins of every page */
   --tap: 48px; /* minimum touch target */
+  --btn-h: 52px; /* main buttons (pill and circle) */
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
@@ -385,19 +428,21 @@ p {
 }
 
 /* =========================================================
-   Buttons & chips
+   Buttons: no black fills. Main = paper pill with an ink border; secondary = transparent pill
+   with a fine line; navigation = outlined circles with a thin-stroke icon.
    ========================================================= */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: var(--tap);
-  padding: 0 24px;
+  gap: 10px;
+  min-height: var(--btn-h);
+  padding: 0 26px;
   border-radius: var(--pill);
   border: 1.5px solid var(--ink);
+  background: transparent;
   font-size: 18px;
-  font-weight: 600; /* Literata is wider and darker than a sans: 600 reads as bold without weighing too much */
+  font-weight: 400;
   letter-spacing: 0;
   transition: transform 0.15s var(--ease-out), background-color 0.15s;
 }
@@ -407,20 +452,25 @@ p {
 }
 
 .btn svg {
+  flex: none;
   font-size: 20px;
 }
 
 .btn--primary {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--paper);
+}
+
+.btn--primary:hover {
+  background: #fff;
 }
 
 .btn--outline {
-  background: transparent;
+  border-width: 1px;
+  border-color: var(--ink-line);
 }
 
 .btn--outline:hover {
-  background: var(--paper);
+  border-color: var(--ink);
 }
 
 .btn--ghost {
@@ -429,22 +479,40 @@ p {
   color: var(--ink-soft);
   text-decoration: underline;
   text-underline-offset: 4px;
-  font-weight: 600;
 }
 
 .btn--wide {
   width: 100%;
 }
 
+/* Outlined circle: page navigation (48 px, 1 px border) and "Anterior" (52 px, 1.5 px) */
 .icon-btn {
-  width: 44px;
-  height: 44px;
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
   display: grid;
   place-items: center;
+  padding: 0;
   border-radius: 50%;
-  border: 1.5px solid var(--ink);
-  background: var(--cream);
-  font-size: 22px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font-size: 24px;
+  transition: transform 0.15s var(--ease-out), background-color 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--paper);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+.icon-btn--big {
+  width: var(--btn-h);
+  height: var(--btn-h);
+  border-width: 1.5px;
 }
 
 .link-btn {
