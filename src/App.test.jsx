@@ -165,6 +165,26 @@ describe('App', () => {
       expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
     });
 
+    it('leaves the rings out when they overlap a lot: only the photo and the buttons', async () => {
+      mockServer({
+        detect: {
+          object: 'plátanos',
+          objects: [
+            { name: 'plátanos', x: 0.4, y: 0.43, size: 0.55 },
+            { name: 'cuenco', x: 0.49, y: 0.65, size: 0.82 }
+          ]
+        }
+      });
+      const user = userEvent.setup();
+      const { container } = render(<App />);
+      await takePhoto(user);
+      expect(await screen.findByRole('heading', { name: '¿Qué quieres explorar?' })).toBeInTheDocument();
+      expect(container.querySelector('.chooser__photo img')).toBeInTheDocument();
+      expect(container.querySelectorAll('.chooser__marker')).toHaveLength(0);
+      await user.click(screen.getByRole('button', { name: 'cuenco' }));
+      expect(await screen.findByRole('heading', { name: 'Cuenco' })).toBeInTheDocument();
+    });
+
     it('with a single object, goes straight to the subjects, and "Volver" goes to the camera', async () => {
       mockServer({ detect: { object: 'perro', objects: [detect.objects[0]] } });
       const user = userEvent.setup();

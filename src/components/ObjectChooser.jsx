@@ -1,8 +1,6 @@
 import { CircleButton, PageNav } from './Page';
 import { IconCamera, IconChevronLeft } from './icons';
-
-// Ring diameter as a fraction of the photo, as in the CSS: clamp(52px, size * 85%, 70%).
-const ringFraction = size => Math.min(Math.max(size * 0.85, 0.15), 0.7);
+import { ringFraction, ringsOverlap } from '../detection';
 
 // Where the name tag goes so it stays inside the photo: inside a big ring, otherwise under the
 // ring (or above it when it would fall off the bottom), aligned to the side near the edges.
@@ -18,10 +16,12 @@ function labelPlacement({ x, y, size }) {
  * Several objects in the photo: the child chooses which one to explore. The photo fills the width,
  * with a cream ring over each object (positions are approximate) and its name in a small tag; under
  * it, the same objects as large buttons. The buttons are the accessible way: the rings are hidden
- * from screen readers and out of the keyboard order, so nothing is announced twice.
+ * from screen readers and out of the keyboard order, so nothing is announced twice. When the rings
+ * overlap a lot (a crowded fruit bowl), they are left out: only the photo and the buttons.
  * objects: [{ name, x, y, size }] with positions from 0 to 1 over the square photo.
  */
 export default function ObjectChooser({ t, photo, objects, onChoose, onBackToCamera, onRetake }) {
+  const showRings = !ringsOverlap(objects);
   return (
     <section className="chooser">
       <PageNav
@@ -30,7 +30,7 @@ export default function ObjectChooser({ t, photo, objects, onChoose, onBackToCam
       />
       <div className="chooser__photo">
         {photo && <img src={photo} alt={t.capturedPhoto} />}
-        {objects.map((o, i) => (
+        {showRings && objects.map((o, i) => (
           <button
             key={o.name}
             type="button"

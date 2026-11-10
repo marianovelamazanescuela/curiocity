@@ -15,6 +15,8 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 **Resultado de las posiciones:** razonables cuando los objetos están separados: el banco y el árbol del parque, y el portátil y los libros del escritorio. En el frutero, los anillos de las frutas se solapan y sus nombres se pisan, y la lámpara del escritorio queda algo desplazada. Los botones de debajo siempre funcionan.
 
+**Decisión:** si dos anillos se solapan mucho (centros a menos del 60 % de la suma de sus radios), no se dibuja ninguno y quedan solo la foto y los botones. *Por qué:* en escenas abarrotadas los anillos confunden más de lo que ayudan. Con las tres fotos de prueba, el parque conserva sus anillos; el frutero y el escritorio (portátil y lámpara muy juntos) se quedan solo con los botones. Se descartó quitar los anillos siempre.
+
 ---
 
 ## 2026-11-10 — Número variable de asignaturas destacadas e imágenes de ejemplo (fase 5)

@@ -52,3 +52,16 @@ export function objectsFromServer(data) {
   }
   return { objects, person: false };
 }
+
+// Ring diameter over the photo, as a fraction of its width (same as the CSS: clamp(52px, size * 85%, 70%)).
+export const ringFraction = size => Math.min(Math.max(size * 0.85, 0.15), 0.7);
+
+/**
+ * True when two rings overlap a lot (centres closer than 60 % of the sum of their radii), as in a
+ * crowded fruit bowl. Then the rings and their names would get in each other's way, so the chooser
+ * shows only the photo and the buttons.
+ */
+export function ringsOverlap(objects) {
+  const rings = objects.map(o => ({ x: o.x, y: o.y, r: ringFraction(o.size) / 2 }));
+  return rings.some((a, i) => rings.slice(i + 1).some(b => Math.hypot(a.x - b.x, a.y - b.y) < 0.6 * (a.r + b.r)));
+}
