@@ -18,8 +18,9 @@ export function PhotoRing({ photo, alt }) {
 // ranking: { featured: [{ key, hook }], others: [key] }; null = unknown (show all, no hooks);
 // undefined = still being worked out.
 // "volver a la cámara" (left) and "hacer otra foto" (right) both go back to the camera: the right
-// one is the "wrong object" recovery, named as such for screen readers.
-export default function SubjectPicker({ t, photo, objectName, ranking, onSelect, onBackToCamera, onWrongObject }) {
+// one is the "wrong object" recovery, named as such for screen readers. When the photo had several
+// objects, the left one goes back to choosing ("volver a los objetos").
+export default function SubjectPicker({ t, photo, objectName, ranking, onSelect, onBackToCamera, onWrongObject, backLabel = t.backToCamera }) {
   let subjects;
   if (ranking === undefined) {
     subjects = <CuriThinking label={t.curiThinking} />;
@@ -45,7 +46,7 @@ export default function SubjectPicker({ t, photo, objectName, ranking, onSelect,
   return (
     <section className="subjects">
       <PageNav
-        left={<CircleButton label={t.backToCamera} onClick={onBackToCamera}><IconChevronLeft /></CircleButton>}
+        left={<CircleButton label={backLabel} onClick={onBackToCamera}><IconChevronLeft /></CircleButton>}
         right={<CircleButton label={photo ? t.wrongObjectRetake : t.takeAnotherPhoto} onClick={onWrongObject}><IconCamera /></CircleButton>}
       >
         <PhotoRing photo={photo} alt={t.capturedPhoto} />

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { translations, detectUserLanguage } from './i18n';
 import { getSubject, nextSubjects } from './subjects';
-import { detectObject, fetchContent, fetchRanking } from './api';
+import { detectObjects, fetchContent, fetchRanking } from './api';
 import { addToHistory, clearHistory, loadHistory } from './history';
 import { useCamera } from './useCamera';
 import Splash from './components/Splash';
 import CameraView from './components/CameraView';
 import Page, { CircleButton, PageNav } from './components/Page';
+import ObjectChooser from './components/ObjectChooser';
 import SubjectPicker from './components/SubjectPicker';
 import ContentView from './components/ContentView';
 import HistoryView from './components/HistoryView';
@@ -55,7 +56,9 @@ export default function App() {
   // camera → analyzing (frozen photo in the viewfinder) → result (full-screen page); or history (page)
   const [phase, setPhase] = useState('camera');
   const [photo, setPhoto] = useState(null);
-  // { status: 'found'|'none'|'person'|'error', object, fromPhoto }
+  // { status: 'found'|'choose'|'none'|'person'|'error', object, fromPhoto, choices }
+  // choose: several objects in the photo, the child picks one (objects: [{ name, x, y, size }]);
+  // found: choices keeps those objects, so "Volver" can go back to choosing.
   const [detection, setDetection] = useState(null);
   const [history, setHistory] = useState(loadHistory);
   const [subjectKey, setSubjectKey] = useState(null);
@@ -68,6 +71,7 @@ export default function App() {
 
   const videoRef = useRef(null);
   const requestRef = useRef(null); // AbortController of the in-flight request
+  const thumbRef = useRef(null); // thumbnail of the last photo, saved in the history with the chosen object
 
   const camera = useCamera(phase === 'camera');
 
@@ -113,19 +117,32 @@ export default function App() {
     const signal = newRequest();
 
     try {
-      const { object, person } = await detectObject(canvas, lang, signal);
+      const { objects, person } = await detectObjects(canvas, lang, signal);
+      thumbRef.current = makeThumbnail(canvas);
       if (person) setDetection({ status: 'person' });
-      else if (object) {
-        const name = capitalize(object);
-        setDetection({ status: 'found', object: name, fromPhoto: true });
-        setHistory(addToHistory({ object: name, thumb: makeThumbnail(canvas) }));
-      } else setDetection({ status: 'none' });
+      else if (objects.length > 1) setDetection({ status: 'choose', objects });
+      else if (objects.length === 1) chooseObject(objects[0]);
+      else setDetection({ status: 'none' });
     } catch (err) {
       if (err.name === 'AbortError') return;
       console.error('Detection failed:', err);
       setDetection({ status: 'error' });
     }
     setPhase('result');
+  };
+
+  // The child explores one object of the photo: it goes to the history, with the photo's thumbnail.
+  const chooseObject = (chosen, choices = null) => {
+    const name = capitalize(chosen.name);
+    setDetection({ status: 'found', object: name, fromPhoto: true, choices });
+    setSubjectKey(null);
+    setContent(null);
+    setHistory(addToHistory({ object: name, thumb: thumbRef.current }));
+  };
+
+  const backToChoices = () => {
+    newRequest();
+    setDetection({ status: 'choose', objects: detection.choices });
   };
 
   const handleClose = () => {
@@ -192,6 +209,17 @@ export default function App() {
         onClear={() => setHistory(clearHistory())}
       />
     );
+  } else if (detection && detection.status === 'choose') {
+    pageBody = (
+      <ObjectChooser
+        t={t}
+        photo={photo}
+        objects={detection.objects}
+        onChoose={o => chooseObject(o, detection.objects)}
+        onBackToCamera={handleClose}
+        onRetake={handleClose}
+      />
+    );
   } else if (detection && detection.status !== 'found') {
     const messages = {
       error: [t.detectionError, t.detectionErrorDesc],
@@ -215,7 +243,8 @@ export default function App() {
         objectName={detection.object}
         ranking={currentRanking}
         onSelect={key => loadSubject(key)}
-        onBackToCamera={handleClose}
+        onBackToCamera={detection.choices ? backToChoices : handleClose}
+        backLabel={detection.choices ? t.backToObjects : t.backToCamera}
         onWrongObject={handleClose}
       />
     );
@@ -254,7 +283,7 @@ export default function App() {
         onRetryCamera={camera.retry}
         onOpenHistory={openHistory}
       />
-      <Page open={pageOpen} onClose={handleClose} viewKey={`${phase}|${detection?.object}|${subjectKey}|${Boolean(content)}`}>
+      <Page open={pageOpen} onClose={handleClose} viewKey={`${phase}|${detection?.status}|${detection?.object}|${subjectKey}|${Boolean(content)}`}>
         {pageBody}
       </Page>
       <Toast toast={toast} onDone={hideToast} />

@@ -1,5 +1,6 @@
 import { buildFallbackContent } from './fallbackContent';
 import { LANGUAGE_NAMES } from './i18n';
+import { objectsFromCoco, objectsFromServer } from './detection';
 
 const PROXY_BASE = (import.meta.env.VITE_AI_PROXY_URL || '').replace(/\/$/, '');
 const apiUrl = path => `${PROXY_BASE}${path}`;
@@ -33,21 +34,20 @@ function loadCocoModel() {
 async function detectWithCoco(canvas) {
   const model = await loadCocoModel();
   const predictions = await model.detect(canvas);
-  if (!predictions.length) return { object: null };
-  const best = predictions.reduce((a, b) => (a.score > b.score ? a : b)).class;
-  // Same rule as the server: never describe people.
-  return best === 'person' ? { object: null, person: true } : { object: best };
+  // Same rules as the server: at most 4 objects, never people.
+  return { ...objectsFromCoco(predictions, canvas.width, canvas.height), method: 'local' };
 }
 
 /**
- * Returns { object, person }: object is the main object's name (in the user's language when the
- * Vision API answers) or null; person is true when the photo shows people.
+ * Returns { objects, person, method }: objects are up to 4 [{ name, x, y, size }] (names in the
+ * user's language when the Vision API answers; positions from 0 to 1 over the square photo);
+ * person is true when the photo only shows people; method is 'server' or 'local'.
  * Throws only if both detectors fail.
  */
-export async function detectObject(canvas, lang, signal) {
+export async function detectObjects(canvas, lang, signal) {
   try {
     const data = await postJson('/api/detect', { image: canvas.toDataURL('image/jpeg', 0.8), language: LANGUAGE_NAMES[lang] }, signal);
-    return { object: data.object || null, person: data.person === true };
+    return { ...objectsFromServer(data), method: 'server' };
   } catch (err) {
     if (err.name === 'AbortError') throw err;
     console.info('Vision API unavailable, falling back to COCO-SSD:', err.message);
