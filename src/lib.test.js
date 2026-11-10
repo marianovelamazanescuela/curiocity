@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { translations, detectUserLanguage } from './i18n';
 import { SUBJECTS, nextSubjects } from './subjects';
 import { buildFallbackContent } from './fallbackContent';
@@ -107,5 +109,29 @@ describe('removeOldSettings', () => {
     expect(localStorage.getItem('curiocity_age')).toBeNull();
     expect(localStorage.getItem('curiocity_history')).toBe('[]');
     localStorage.clear();
+  });
+});
+
+describe('colour contrast (WCAG AA, at least 4.5:1)', () => {
+  // Reads the palette from styles.css so the test follows any change there.
+  const css = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8');
+  const token = name => css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i'))[1];
+  const luminance = hex => {
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+
+  it('soft ink is readable on the cream background and on paper', () => {
+    expect(ratio(token('ink-soft'), token('cream'))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(token('ink-soft'), token('paper'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('ink is readable on every subject tint (lesson pill, subject circles)', () => {
+    for (const { key, color } of SUBJECTS) expect(ratio(token('ink'), color), key).toBeGreaterThanOrEqual(4.5);
   });
 });

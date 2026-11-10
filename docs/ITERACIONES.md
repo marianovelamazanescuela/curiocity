@@ -4,6 +4,34 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-09 — Rediseño C: páginas a pantalla completa, titulares como el logo y botones ligeros (fase 4)
+
+Rama `feature/rediseno-c`. El rediseño se hizo en Claude Design: se probaron dos alternativas, A y B, y la C es la síntesis que se aplica aquí (capturas de referencia en `capturas/diseno-c/`).
+
+**Por qué**
+- **Pantallas recargadas y poco aire** entre componentes: tarjetas de color, cajas y etiquetas en mayúsculas competían entre sí.
+- **Panel frente a página:** el panel inferior dejaba poco sitio, con la cámara asomando detrás. Una página a pantalla completa da más espacio y una navegación más clara.
+- **Tipografía alejada del logo:** con Literata en todo, nada recordaba al trazo fino y condensado del logotipo.
+- **Peso de los botones negros:** tiraban de la vista más que el propio contenido.
+- **Logo superior innecesario:** la pastilla con "curiocity" ocupaba sitio en todas las pantallas sin aportar.
+
+**Qué se cambió**
+- **Páginas a pantalla completa** para asignaturas, lección, historial y avisos, en lugar del panel inferior. La cámara sigue siendo la pantalla de inicio y queda inerte mientras hay una página abierta. Navegación con círculos de contorno e iconos de trazo fino.
+- **Vuelve Sofia Sans Condensed**, solo para los titulares que hacen eco del logo: el nombre del objeto en minúsculas (salvo en alemán), las asignaturas y la pastilla de la lección. Literata sigue para la lectura, y se añade su cursiva para las etiquetas de apoyo. Las dos fuentes están alojadas en el proyecto, sin peticiones a Google.
+- **Sin botones negros:** píldora de papel con borde de tinta, píldora de línea fina y círculos de contorno.
+- **Asignaturas como lista** con líneas finas, y la foto en un círculo con anillo, como el visor.
+- **Lección sobre el fondo crema:** el color de la asignatura queda solo en la pastilla de arriba, con progreso en segmentos.
+- **Cámara sin logo:** los ojos en crema como marca, el texto en cursiva bajo el visor y un disparador nuevo.
+
+**Ajustes tras probar el prototipo (mismo PR)**
+- **"¿Sabías que…?" y "¿Por qué?" con la misma composición:** Curi arriba (quieto en el dato, pensando en el porqué), la etiqueta en cursiva y el texto al mismo tamaño, 22,5 px / 1,4 (el dato baja de 27 px). A 360 px el porqué cabe; si fuera más largo, la pantalla hace scroll y no se corta.
+- **Navegación más simple:** arriba solo quedan la pastilla, centrada, y la X, que ahora sale de la lección y vuelve a las asignaturas. El círculo "Anterior" está en todas las pantallas; en la primera vuelve a las asignaturas.
+- **Final en dos pantallas (6 en total):** "Para seguir pensando" muestra solo la pregunta y las ideas. "Sigue explorando" lleva a Curi contento y, en este orden, las otras asignaturas, los objetos relacionados, las enciclopedias y compartir. Abajo, "Hacer otra foto" en lugar de "Siguiente". *Por qué:* la tarjeta final mezclaba la pregunta para pensar con todo lo demás y quedaba larguísima.
+
+**Cómo se probó:** 132 tests en verde (incluido uno nuevo de contraste), lint y build. Capturas de los ajustes (pantallas 2 a 6, manzana y farola, 360 y 390 px) en `capturas/fase-4/ajustes/`. Capturas a 360 y 390 px de todas las pantallas con manzana, botella y farola (`capturas/fase-4/`), con el servidor y OpenAI reales: nada se sale de la pantalla y ninguna petición va a Google. Contraste mínimo de 4,5:1: tinta suave sobre crema (6,6:1), tinta sobre cada tinte (8,7:1 o más) y opciones no elegidas de la pregunta (se subió su opacidad para llegar).
+
+---
+
 ## 2026-11-07 — Reto simplificado: una sola conclusión, "lo que podías descubrir"
 
 Rama `feature/reto-simplificado`. Al revisar los 9 retos con observación de la fase 3 (`retos-e-ideas-v3.json`), solo unos 4 aportaban algo.

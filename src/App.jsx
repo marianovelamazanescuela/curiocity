@@ -6,11 +6,12 @@ import { addToHistory, clearHistory, loadHistory } from './history';
 import { useCamera } from './useCamera';
 import Splash from './components/Splash';
 import CameraView from './components/CameraView';
-import Sheet from './components/Sheet';
+import Page, { CircleButton, PageNav } from './components/Page';
 import SubjectPicker from './components/SubjectPicker';
 import ContentView from './components/ContentView';
 import HistoryView from './components/HistoryView';
 import Toast from './components/Toast';
+import { IconChevronLeft } from './components/icons';
 
 const SPLASH_MS = 1400;
 const MAX_IMAGE_SIDE = 800; // the Vision API doesn't need more; keeps uploads small
@@ -51,7 +52,7 @@ export default function App() {
   const t = translations[lang] || translations.en;
 
   const [showSplash, setShowSplash] = useState(true);
-  // camera → analyzing (frozen photo in the viewfinder) → result (sheet open); or history (sheet open)
+  // camera → analyzing (frozen photo in the viewfinder) → result (full-screen page); or history (page)
   const [phase, setPhase] = useState('camera');
   const [photo, setPhoto] = useState(null);
   // { status: 'found'|'none'|'person'|'error', object, fromPhoto }
@@ -177,9 +178,20 @@ export default function App() {
     setContent(null);
   };
 
-  let sheetBody = null;
+  const backToCamera = <CircleButton label={t.backToCamera} onClick={handleClose}><IconChevronLeft /></CircleButton>;
+
+  let pageBody = null;
   if (phase === 'history') {
-    sheetBody = <HistoryView t={t} lang={lang} entries={history} onOpen={openHistoryEntry} onClear={() => setHistory(clearHistory())} />;
+    pageBody = (
+      <HistoryView
+        t={t}
+        lang={lang}
+        entries={history}
+        backButton={backToCamera}
+        onOpen={openHistoryEntry}
+        onClear={() => setHistory(clearHistory())}
+      />
+    );
   } else if (detection && detection.status !== 'found') {
     const messages = {
       error: [t.detectionError, t.detectionErrorDesc],
@@ -187,26 +199,28 @@ export default function App() {
       none: [t.noObject, t.noObjectDesc]
     };
     const [title, text] = messages[detection.status] || messages.none;
-    sheetBody = (
-      <div className="message">
+    pageBody = (
+      <section className="message">
+        <PageNav left={backToCamera} />
         <h2 className="message__title">{title}</h2>
         <p className="message__text">{text}</p>
         <button className="btn btn--primary" onClick={handleClose}>{t.retake}</button>
-      </div>
+      </section>
     );
   } else if (detection && !subjectKey) {
-    sheetBody = (
+    pageBody = (
       <SubjectPicker
         t={t}
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
         ranking={currentRanking}
         onSelect={key => loadSubject(key)}
+        onBackToCamera={handleClose}
         onWrongObject={handleClose}
       />
     );
   } else if (detection) {
-    sheetBody = (
+    pageBody = (
       <ContentView
         key={`${detection.object}|${subjectKey}`}
         t={t}
@@ -224,9 +238,12 @@ export default function App() {
     );
   }
 
+  const pageOpen = phase === 'result' || phase === 'history';
+
   return (
     <div className="app">
       <CameraView
+        inert={pageOpen}
         t={t}
         videoRef={videoRef}
         stream={camera.stream}
@@ -237,15 +254,10 @@ export default function App() {
         onRetryCamera={camera.retry}
         onOpenHistory={openHistory}
       />
-      <Sheet
-        open={phase === 'result' || phase === 'history'}
-        onClose={handleClose}
-        closeLabel={t.close}
-        scrollKey={`${phase}|${detection?.object}|${subjectKey}|${Boolean(content)}`}
-        overlay={<Toast toast={toast} onDone={hideToast} />}
-      >
-        {sheetBody}
-      </Sheet>
+      <Page open={pageOpen} onClose={handleClose} viewKey={`${phase}|${detection?.object}|${subjectKey}|${Boolean(content)}`}>
+        {pageBody}
+      </Page>
+      <Toast toast={toast} onDone={hideToast} />
       {showSplash && <Splash t={t} />}
     </div>
   );

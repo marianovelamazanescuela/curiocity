@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { MdLockOutline } from 'react-icons/md';
 import Curi from './Curi';
+import { PageNav } from './Page';
+import { IconChevronRight } from './icons';
 
 function formatDate(iso, lang) {
   try {
@@ -10,12 +12,13 @@ function formatDate(iso, lang) {
   }
 }
 
-export default function HistoryView({ t, lang, entries, onOpen, onClear }) {
+export default function HistoryView({ t, lang, entries, backButton, onOpen, onClear }) {
   // Two taps to clear, so a child can't wipe the history by accident.
   const [confirming, setConfirming] = useState(false);
 
   return (
     <section className="history">
+      <PageNav left={backButton} />
       <h2 className="history__title">{t.history}</h2>
 
       {entries.length === 0 ? (
@@ -33,6 +36,7 @@ export default function HistoryView({ t, lang, entries, onOpen, onClear }) {
                   <span className="history__name">{entry.object}</span>
                   <span className="history__date">{formatDate(entry.date, lang)}</span>
                 </span>
+                <span className="history__chevron"><IconChevronRight /></span>
               </button>
             </li>
           ))}
@@ -46,7 +50,7 @@ export default function HistoryView({ t, lang, entries, onOpen, onClear }) {
       {entries.length > 0 && (
         <div className="center">
           <button
-            className={`btn ${confirming ? 'btn--primary' : 'btn--ghost'}`}
+            className={`btn ${confirming ? 'btn--primary' : 'btn--outline'}`}
             onClick={() => {
               if (confirming) {
                 onClear();

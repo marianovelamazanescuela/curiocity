@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  MdArrowBack, MdArrowForward, MdEmail, MdIosShare, MdOpenInNew, MdLightbulbOutline,
-  MdCheckCircle, MdSearchOff, MdTimer, MdPhotoCamera, MdChatBubbleOutline, MdHelpOutline, MdSearch
-} from 'react-icons/md';
+import { MdMailOutline, MdIosShare, MdLightbulbOutline, MdCheck } from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
 import { getSubject } from '../subjects';
 import { buildShareText, canShareNatively, mailtoUrl, nativeShare, whatsappUrl } from '../share';
-import ObjectHeader from './ObjectHeader';
-import SubjectCard from './SubjectCard';
+import { SubjectList } from './SubjectRow';
 import Curi, { CuriThinking } from './Curi';
+import { CircleButton, PageNav } from './Page';
+import { IconArrowLeft, IconArrowRight, IconCamera, IconClose, IconOpen } from './icons';
 
 const SWIPE_MIN_PX = 60; // a deliberate horizontal swipe, not a wobble while scrolling
 
@@ -45,10 +43,10 @@ function ShareBar({ t, objectName, subjectName, content, photo, onToast }) {
 
   return (
     <section className="share">
-      <h3 className="section-title">{t.share}</h3>
+      <h3 className="kicker">{t.share}</h3>
       <div className="share__options">
         <button className="btn btn--outline" onClick={viaWhatsApp}><FaWhatsapp aria-hidden="true" /> {t.shareViaWhatsApp}</button>
-        <button className="btn btn--outline" onClick={viaEmail}><MdEmail aria-hidden="true" /> {t.shareViaEmail}</button>
+        <button className="btn btn--outline" onClick={viaEmail}><MdMailOutline aria-hidden="true" /> {t.shareViaEmail}</button>
         {canShareNatively() && (
           <button className="btn btn--outline" onClick={viaSystem}><MdIosShare aria-hidden="true" /> {t.shareMore}</button>
         )}
@@ -74,7 +72,7 @@ function Quiz({ t, question, answer, onAnswer }) {
             <li key={i}>
               <button className={cls} onClick={() => onAnswer(i)} disabled={answered} aria-pressed={answered ? i === answer : undefined}>
                 <span className="lesson-text">{option}</span>
-                {answered && i === question.correcta && <MdCheckCircle className="quiz__mark" aria-hidden="true" />}
+                {answered && i === question.correcta && <MdCheck className="quiz__mark" aria-hidden="true" />}
               </button>
             </li>
           );
@@ -109,7 +107,7 @@ function ChallengeResult({ t, result, discovery, focusRef }) {
     <div className="discovery reveal" ref={focusRef} tabIndex={-1} role="status">
       <Curi state={found ? 'done' : 'idle'} size={64} />
       <div>
-        <p className="discovery__title">{t.whatYouCouldDiscover}</p>
+        <p className="kicker discovery__title">{t.whatYouCouldDiscover}</p>
         <p className="lesson-text discovery__text">{discovery}</p>
       </div>
     </div>
@@ -117,18 +115,20 @@ function ChallengeResult({ t, result, discovery, focusRef }) {
 }
 
 /**
- * The lesson as a sequence of cards, one idea each:
- * question → surprising fact → why → challenge → final (open question, links, related objects, sharing).
- * Offline content knows nothing true about the object, so it has no question or fact: 3 cards.
+ * The lesson as a sequence of screens, one idea each:
+ * question → surprising fact → why → challenge → final question (with ideas) →
+ * "Sigue explorando" (other subjects, related objects, encyclopedia links, sharing).
+ * Offline content knows nothing true about the object, so it has no question or fact: 4 screens.
  */
 function lessonCards(content) {
-  if (content.offline) return ['why', 'challenge', 'final'];
+  if (content.offline) return ['why', 'challenge', 'final', 'explore'];
   return [
     content.pregunta_inicial && 'question',
     content.dato_sorprendente && 'fact',
     'why',
     'challenge',
-    'final'
+    'final',
+    'explore'
   ].filter(Boolean);
 }
 
@@ -158,24 +158,23 @@ export default function ContentView({
     revealRef.current?.focus({ preventScroll: true });
   }, [challengeResult, showIdeas]);
 
+  // Top: the pill (the only place with the subject's colour), centred, and the X, which leaves the
+  // lesson and goes back to the subjects.
   const header = (
-    <>
-      <button className="link-btn" onClick={onBack}>
-        <MdArrowBack aria-hidden="true" /> {t.back}
-      </button>
-      <ObjectHeader photo={photo} objectName={objectName} photoAlt={t.capturedPhoto}>
-        <span className="chip chip--subject">
-          <subject.icon aria-hidden="true" /> {t.subjects[subjectKey]}
-        </span>
-      </ObjectHeader>
-    </>
+    <PageNav right={<CircleButton label={t.closeLesson} onClick={onBack}><IconClose /></CircleButton>}>
+      <h2 className="lesson-pill">
+        <span className="object-name-text">{objectName}</span> · {t.subjects[subjectKey]}
+      </h2>
+    </PageNav>
   );
 
   if (!content) {
     return (
-      <article className="content lesson" style={{ '--subject': subject.color }}>
+      <article className="lesson" style={{ '--subject': subject.color }}>
         {header}
-        <CuriThinking label={t.curiThinking} />
+        <div className="lesson__loading">
+          <CuriThinking label={t.curiThinking} />
+        </div>
       </article>
     );
   }
@@ -198,10 +197,11 @@ export default function ContentView({
     setIndex(next);
   };
   const goNext = () => canAdvance && goTo(index + 1);
-  const goPrevious = () => goTo(index - 1);
+  // On the first screen, "Anterior" goes back to the subjects.
+  const goPrevious = () => (index === 0 ? onBack() : goTo(index - 1));
 
   // Optional swipe (the buttons are always there). Only clear horizontal swipes count,
-  // so scrolling the sheet up and down never changes card by accident.
+  // so scrolling the page up and down never changes card by accident.
   const onTouchStart = e => {
     const touch = e.touches[0];
     swipeRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
@@ -224,7 +224,7 @@ export default function ContentView({
   if (current === 'question') {
     body = (
       <>
-        <p className="card__kicker"><MdHelpOutline aria-hidden="true" /> {t.guessFirst}</p>
+        <p className="kicker">{t.guessFirst}</p>
         <h3 id={titleId} className="card__title lesson-text lesson-text--title">{question.pregunta}</h3>
         <Quiz t={t} question={question} answer={answer} onAnswer={setAnswer} />
       </>
@@ -232,19 +232,18 @@ export default function ContentView({
   } else if (current === 'fact') {
     body = (
       <>
-        <h3 id={titleId} className="card__kicker"><MdLightbulbOutline aria-hidden="true" /> {t.surprisingFact}</h3>
-        <p className="lesson-text lesson-text--big">{content.dato_sorprendente}</p>
+        <Curi state="idle" size={64} />
+        <h3 id={titleId} className="kicker">{t.didYouKnow}</h3>
+        <p className="lesson-text lesson-text--read">{content.dato_sorprendente}</p>
       </>
     );
   } else if (current === 'why') {
     body = (
       <>
-        <h3 id={titleId} className="card__kicker">
-          {content.offline ? <MdSearch aria-hidden="true" /> : <MdHelpOutline aria-hidden="true" />}
-          {content.offline ? t.investigate : t.why}
-        </h3>
-        {content.offline && <p className="lesson-text card__intro">{content.intro}</p>}
-        <div className="prose lesson-text">
+        <Curi state="thinking" size={64} />
+        <h3 id={titleId} className="kicker">{content.offline ? t.investigate : t.why}</h3>
+        {content.offline && <p className="lesson-text lesson-text--read card__intro">{content.intro}</p>}
+        <div className="prose lesson-text lesson-text--read">
           {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
         </div>
       </>
@@ -252,7 +251,7 @@ export default function ContentView({
   } else if (current === 'challenge') {
     body = (
       <>
-        <h3 id={titleId} className="card__kicker"><MdTimer aria-hidden="true" /> {t.challenge}</h3>
+        <h3 id={titleId} className="kicker">{t.challenge}</h3>
         <p className="lesson-text challenge__text">{content.reto}</p>
         {challengeResult && (
           <ChallengeResult t={t} result={challengeResult} discovery={discovery} focusRef={revealRef} />
@@ -261,28 +260,26 @@ export default function ContentView({
           {!challengeResult && (
             <>
               <button className="btn btn--primary" onClick={() => setChallengeResult('done')}>
-                <MdCheckCircle aria-hidden="true" /> {t.challengeDone}
+                {t.challengeDone}
               </button>
               <button className="btn btn--outline" onClick={() => setChallengeResult('notFound')}>
-                <MdSearchOff aria-hidden="true" /> {t.notFound}
+                {t.notFound}
               </button>
             </>
           )}
           {challengeResult && content.reto_foto && (
             <button className="btn btn--outline" onClick={onTakePhoto}>
-              <MdPhotoCamera aria-hidden="true" /> {t.takeAnotherPhoto}
+              <IconCamera /> {t.takeAnotherPhoto}
             </button>
           )}
         </div>
       </>
     );
-  } else {
+  } else if (current === 'final') {
     body = (
       <>
-        <h3 id={titleId} className="card__kicker">
-          <MdChatBubbleOutline aria-hidden="true" /> {content.offline ? t.tryThis : t.keepThinking}
-        </h3>
-        {finalText && <p className="lesson-text lesson-text--big">{finalText}</p>}
+        <h3 id={titleId} className="kicker">{content.offline ? t.tryThis : t.keepThinking}</h3>
+        {finalText && <p className="lesson-text lesson-text--title final__question">{finalText}</p>}
         {!content.offline && <p className="think-pause">{t.thinkAMoment}</p>}
         {ideas.length > 0 && !showIdeas && (
           <button className="btn btn--outline" onClick={() => setShowIdeas(true)}>
@@ -291,7 +288,7 @@ export default function ContentView({
         )}
         {ideas.length > 0 && showIdeas && (
           <div className="ideas reveal" ref={revealRef} tabIndex={-1}>
-            <p className="ideas__intro">{t.ideasIntro}</p>
+            <p className="kicker ideas__intro">{t.ideasIntro}</p>
             <ul className="ideas__list">
               {ideas.map((idea, i) => <li key={i} className="lesson-text">{idea}</li>)}
             </ul>
@@ -299,16 +296,68 @@ export default function ContentView({
         )}
       </>
     );
+  } else {
+    // "Sigue explorando": other featured subjects, related objects, encyclopedias and sharing.
+    body = (
+      <>
+        <Curi state="done" size={64} />
+        <h3 id={titleId} className="explore__title">{t.relatedObjects}</h3>
+
+        {nextSubjects.length > 0 && (
+          <section className="explore__section">
+            <h4 className="kicker">{t.otherSubjects}</h4>
+            <SubjectList t={t} items={nextSubjects} onSelect={onSelectSubject} getSubject={getSubject} />
+          </section>
+        )}
+
+        {(content.objetos_relacionados.length > 0 || nextSubjects.length === 0) && (
+          <section className="explore__section">
+            <h4 className="kicker">{t.otherObjects}</h4>
+            {content.objetos_relacionados.length > 0 && (
+              <div className="chips">
+                {content.objetos_relacionados.map(name => (
+                  <button key={name} className="chip chip--button" onClick={() => onRelatedObject(name)}>{name}</button>
+                ))}
+              </div>
+            )}
+            {/* No other subject left (or no ranking): invite to photograph another object
+                ("Hacer otra foto" is the main button at the bottom). */}
+            {nextSubjects.length === 0 && <p className="another-photo">{t.exploreAnotherObject}</p>}
+          </section>
+        )}
+
+        {content.enlaces.length > 0 && (
+          <section className="explore__section">
+            <h4 className="kicker">{t.recommendedResources}</h4>
+            <ul className="links">
+              {content.enlaces.map((link, i) => (
+                <li key={i}>
+                  <a className="links__item" href={link.url} target="_blank" rel="noopener noreferrer">
+                    <span>
+                      <span className="links__title">{link.title || link.url}</span>
+                      <span className="links__source">{link.source || hostnameOf(link.url)}</span>
+                    </span>
+                    <IconOpen />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <ShareBar t={t} objectName={objectName} subjectName={t.subjects[subjectKey]} content={content} photo={photo} onToast={onToast} />
+      </>
+    );
   }
 
   return (
-    <article className="content lesson" style={{ '--subject': subject.color }}>
+    <article className="lesson" style={{ '--subject': subject.color }}>
       {header}
 
       <div className="lesson__bar">
-        <ol className="dots" aria-hidden="true">
+        <ol className="progress" aria-hidden="true" style={{ '--cards': cards.length }}>
           {cards.map((card, i) => (
-            <li key={card} className={i === index ? 'dots__dot dots__dot--on' : i < index ? 'dots__dot dots__dot--done' : 'dots__dot'} />
+            <li key={card} className={i <= index ? 'progress__step progress__step--done' : 'progress__step'} />
           ))}
         </ol>
         <p id="lesson-progress" className="visually-hidden">{progress}</p>
@@ -326,81 +375,25 @@ export default function ContentView({
         {body}
       </section>
 
-      {isLast && (
-        <div className="lesson__end reveal">
-          {content.enlaces.length > 0 && (
-            <section>
-              <h3 className="section-title">{t.recommendedResources}</h3>
-              <ul className="links">
-                {content.enlaces.map((link, i) => (
-                  <li key={i}>
-                    <a className="links__item" href={link.url} target="_blank" rel="noopener noreferrer">
-                      <span>
-                        <span className="links__title">{link.title || link.url}</span>
-                        <span className="links__source">{link.source || hostnameOf(link.url)}</span>
-                      </span>
-                      <MdOpenInNew aria-hidden="true" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {(content.objetos_relacionados.length > 0 || nextSubjects.length === 0) && (
-            <section>
-              <h3 className="section-title">{t.relatedObjects}</h3>
-              {content.objetos_relacionados.length > 0 && (
-                <div className="chips">
-                  {content.objetos_relacionados.map(name => (
-                    <button key={name} className="chip chip--button" onClick={() => onRelatedObject(name)}>{name}</button>
-                  ))}
-                </div>
-              )}
-              {nextSubjects.length === 0 && (
-                <div className="another-photo">
-                  <p>{t.exploreAnotherObject}</p>
-                  <button className="btn btn--outline" onClick={onTakePhoto}>
-                    <MdPhotoCamera aria-hidden="true" /> {t.takeAnotherPhoto}
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
-
-          <ShareBar t={t} objectName={objectName} subjectName={t.subjects[subjectKey]} content={content} photo={photo} onToast={onToast} />
-
-          {nextSubjects.length > 0 && (
-            <section>
-              <h3 className="section-title">{t.otherSubjects}</h3>
-              <ul className="subject-list">
-                {nextSubjects.map(({ key, hook }) => (
-                  <li key={key}>
-                    <SubjectCard t={t} subject={getSubject(key)} hook={hook} onSelect={onSelectSubject} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
-      )}
-
+      {/* Bottom, on every screen: "Anterior" (circle; on the first screen it goes back to the subjects)
+          and, on the right, "Siguiente", the hint while the question waits for an answer, or
+          "Hacer otra foto" on the last screen. */}
       <div className="lesson-nav">
-        {current === 'question' && answer === null && (
-          <p id="answer-hint" className="lesson-nav__hint">{t.answerToContinue}</p>
-        )}
         <div className="lesson-nav__buttons">
-          <button className="btn btn--outline lesson-nav__btn" onClick={goPrevious} disabled={index === 0}>
-            <MdArrowBack aria-hidden="true" /> {t.previous}
-          </button>
-          {!isLast && (
-            <button
-              className="btn btn--primary lesson-nav__btn"
-              onClick={goNext}
-              disabled={!canAdvance}
-              aria-describedby={canAdvance ? undefined : 'answer-hint'}
-            >
-              {t.next} <MdArrowForward aria-hidden="true" />
+          <CircleButton big label={index === 0 ? t.backToSubjects : t.previous} onClick={goPrevious}>
+            <IconArrowLeft />
+          </CircleButton>
+          {current === 'question' && answer === null && (
+            <p id="answer-hint" className="lesson-nav__hint">{t.answerToContinue}</p>
+          )}
+          {canAdvance && (
+            <button className="btn btn--primary lesson-nav__next" onClick={goNext}>
+              {t.next} <IconArrowRight />
+            </button>
+          )}
+          {isLast && (
+            <button className="btn btn--primary lesson-nav__next" onClick={onTakePhoto}>
+              <IconCamera /> {t.takeAnotherPhoto}
             </button>
           )}
         </div>

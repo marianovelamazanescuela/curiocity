@@ -1,7 +1,9 @@
 /* =========================================================
-   Font: Literata (variable: weight + optical size), for the whole interface and the lesson.
-   Self-hosted from /public/fonts so no request goes to Google.
-   Licence: SIL OFL 1.1 (public/fonts/OFL-Literata.txt)
+   Fonts, self-hosted from /public/fonts so no request goes to Google (children's IPs stay here).
+   - Literata (variable: weight + optical size, upright and italic): reading and interface.
+   - Sofia Sans Condensed (variable, 200–400): only the headings that echo the logo's thin,
+     condensed line (object name, subject names, lesson pill).
+   Licences: SIL OFL 1.1 (public/fonts/OFL-Literata.txt, public/fonts/OFL-SofiaSansCondensed.txt)
    ========================================================= */
 @font-face {
   font-family: 'Literata';
@@ -21,6 +23,42 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+@font-face {
+  font-family: 'Literata';
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Literata';
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Sofia Sans Condensed';
+  font-style: normal;
+  font-weight: 200 400;
+  font-display: swap;
+  src: url('/fonts/sofia-sans-condensed-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Sofia Sans Condensed';
+  font-style: normal;
+  font-weight: 200 400;
+  font-display: swap;
+  src: url('/fonts/sofia-sans-condensed-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* =========================================================
    Curiocity — design tokens
    Brand: cream paper + ink line, Literata, "eyes" motif.
@@ -31,13 +69,17 @@
   --paper: #fff8ef;
   --ink: #1d1d1b;
   --ink-soft: #57524b;
-  --ink-faint: rgba(29, 29, 27, 0.14);
+  --ink-faint: rgba(29, 29, 27, 0.14); /* fine lines between rows */
+  --ink-line: rgba(29, 29, 27, 0.22); /* border of the answer options */
+  --ink-track: rgba(29, 29, 27, 0.18); /* progress segments still to come */
 
-  /* The one typeface of the app (interface and lesson). Change this line to change it everywhere. */
+  /* Reading and interface typeface. Change this line to change it everywhere. */
   --font: 'Literata', Georgia, serif;
+  /* Headings that echo the logo (thin and condensed) */
+  --font-display: 'Sofia Sans Condensed', 'Arial Narrow', sans-serif;
 
-  /* Lesson text size (one size for the whole 8–10 audience) */
-  --lesson-size: 18.5px;
+  /* Lesson text (one size for the whole 8–10 audience); the question and the fact are bigger */
+  --lesson-size: 20px;
   --lesson-leading: 1.5;
 
   --radius-s: 14px;
@@ -45,8 +87,9 @@
   --radius-l: 28px;
   --pill: 999px;
 
-  --space: 20px;
+  --space: 28px; /* side margins of every page */
   --tap: 48px; /* minimum touch target */
+  --btn-h: 52px; /* main buttons (pill and circle) */
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --shadow: 0 10px 30px rgba(29, 29, 27, 0.18);
@@ -148,7 +191,7 @@ p {
   display: grid;
   grid-template-rows: auto 1fr auto;
   justify-items: center;
-  padding: calc(16px + env(safe-area-inset-top)) var(--space) calc(28px + env(safe-area-inset-bottom));
+  padding: calc(20px + env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));
   background: var(--ink);
   isolation: isolate;
 }
@@ -171,40 +214,53 @@ p {
   z-index: -1;
   background:
     linear-gradient(to bottom, rgba(29, 29, 27, 0.45), transparent 22%),
-    linear-gradient(to top, rgba(29, 29, 27, 0.55), transparent 35%);
+    linear-gradient(to top, rgba(29, 29, 27, 0.65), transparent 38%);
 }
 
 .camera__top {
   position: relative;
   width: 100%;
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.camera__history {
-  position: absolute;
-  right: 0;
-  top: -2px;
-  border-color: transparent;
-  background: color-mix(in srgb, var(--cream) 88%, transparent);
-  backdrop-filter: blur(8px);
+/* The logo's eyes, small and in cream, as the brand mark (no logo pill) */
+.camera__brand {
+  margin: 0;
+  line-height: 0;
+  color: var(--cream);
+}
+
+.camera__eyes {
+  width: 44px;
+  height: auto;
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.3));
+}
+
+.camera .icon-btn {
+  border-color: var(--cream);
+  color: var(--cream);
+}
+
+.camera .icon-btn:hover {
+  background: rgba(250, 235, 217, 0.12);
 }
 
 .camera__history:disabled {
   opacity: 0;
 }
 
-.camera__logo {
-  height: 40px;
-  padding: 9px 20px;
-  border-radius: var(--pill);
-  background: color-mix(in srgb, var(--cream) 88%, transparent);
-  backdrop-filter: blur(8px);
+.camera__center {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
 }
 
 .viewfinder {
   position: relative;
-  align-self: center;
   width: min(78vw, 52dvh, 440px);
   aspect-ratio: 1;
 }
@@ -214,7 +270,6 @@ p {
   inset: 0;
   overflow: hidden;
   border-radius: 50%;
-  border: 3px solid var(--cream);
   background: var(--ink);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
@@ -227,18 +282,18 @@ p {
   display: block;
 }
 
-/* thin outer ring echoing the logo's monoline */
+/* Fine cream ring with a 6 px gap, the same as the photo on the subjects page */
 .viewfinder::after {
   content: '';
   position: absolute;
-  inset: -14px;
+  inset: -7.5px;
   border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--cream) 55%, transparent);
+  border: 1.5px solid var(--cream);
   pointer-events: none;
 }
 
 .viewfinder--analyzing::after {
-  border: 2px dashed var(--cream);
+  border-style: dashed;
   animation: spin 6s linear infinite;
 }
 
@@ -260,38 +315,41 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 24px;
   width: 100%;
   max-width: 420px;
 }
 
 .camera__hint {
-  padding: 8px 18px;
-  border-radius: var(--pill);
-  background: color-mix(in srgb, var(--cream) 88%, transparent);
-  backdrop-filter: blur(8px);
-  font-size: 17px;
-  font-weight: 600;
+  min-height: 1.4em;
+  color: var(--cream);
+  font-size: 18px;
+  font-style: italic;
+  line-height: 1.4;
   text-align: center;
+  /* a soft dark halo keeps the cream legible over bright scenes */
+  text-shadow: 0 0 14px rgba(29, 29, 27, 0.75), 0 1px 3px rgba(29, 29, 27, 0.6);
 }
 
+/* Shutter: a 76 px cream ring around a 60 px cream disc */
 .shutter {
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: 76px;
+  height: 76px;
   display: grid;
   place-items: center;
-  border: none;
+  padding: 0;
+  border: 2px solid var(--cream);
   border-radius: 50%;
-  background: var(--cream);
-  box-shadow:
-    0 0 0 5px rgba(29, 29, 27, 0.35),
-    0 0 0 7px var(--cream);
+  background: transparent;
   transition: transform 0.15s var(--ease-out), opacity 0.2s;
 }
 
-.shutter img {
-  width: 46px;
+.shutter__dot {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--cream);
 }
 
 .shutter:active:not(:disabled) {
@@ -311,93 +369,100 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 18px 20px;
-  border-radius: var(--radius-m);
+  gap: 8px;
+  padding: 28px 24px;
+  border-radius: var(--radius-l);
   background: var(--cream);
+  color: var(--ink);
   text-align: center;
 }
 
 .camera__notice strong {
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 400;
 }
 
 .camera__notice span {
   color: var(--ink-soft);
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.camera__notice .btn {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.camera .camera__notice :focus-visible {
+  outline-color: var(--ink);
 }
 
 /* =========================================================
-   Bottom sheet (native <dialog>)
+   Full-screen pages (subjects, lesson, history, notices) over the camera.
+   Cream background, 28 px side margins, its own scroll.
    ========================================================= */
-.sheet {
+.page {
   position: fixed;
-  inset: auto 0 0 0;
-  width: 100%;
-  max-width: 560px;
-  max-height: 90dvh;
-  margin: 0 auto;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  overflow: visible;
-}
-
-.sheet::backdrop {
-  background: rgba(29, 29, 27, 0.35);
-}
-
-.sheet[open] .sheet__panel {
-  animation: sheet-up 0.38s var(--ease-out);
-}
-
-.sheet__panel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-height: 90dvh;
-  border-radius: var(--radius-l) var(--radius-l) 0 0;
-  background: var(--cream);
-  box-shadow: var(--shadow);
-}
-
-.sheet__handle {
-  flex: none;
-  width: 44px;
-  height: 5px;
-  margin: 10px auto 0;
-  border-radius: var(--pill);
-  background: var(--ink-faint);
-}
-
-.sheet__close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 1;
-}
-
-.sheet__body {
+  inset: 0;
+  z-index: 5;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 18px var(--space) calc(28px + env(safe-area-inset-bottom));
+  background: var(--cream);
+  color: var(--ink);
+  outline: none;
+  animation: page-in 0.3s var(--ease-out);
+}
+
+.page__inner {
+  min-height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(20px + env(safe-area-inset-top)) var(--space) calc(32px + env(safe-area-inset-bottom));
+}
+
+/* Top navigation: the circles sit 8 px further out than the content (20 px from the edge) */
+.page-nav {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: start;
+  gap: 8px;
+  margin: 0 -8px;
+}
+
+.page-nav > .icon-btn:first-child {
+  grid-column: 1;
+}
+
+.page-nav > .icon-btn:last-child:not(:first-child) {
+  grid-column: 3;
+}
+
+.page-nav__center {
+  grid-column: 2;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.page-nav__center:empty {
+  display: none;
 }
 
 /* =========================================================
-   Buttons & chips
+   Buttons: no black fills. Main = paper pill with an ink border; secondary = transparent pill
+   with a fine line; navigation = outlined circles with a thin-stroke icon.
    ========================================================= */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: var(--tap);
-  padding: 0 24px;
+  gap: 10px;
+  min-height: var(--btn-h);
+  padding: 0 26px;
   border-radius: var(--pill);
   border: 1.5px solid var(--ink);
+  background: transparent;
   font-size: 18px;
-  font-weight: 600; /* Literata is wider and darker than a sans: 600 reads as bold without weighing too much */
+  font-weight: 400;
   letter-spacing: 0;
   transition: transform 0.15s var(--ease-out), background-color 0.15s;
 }
@@ -407,20 +472,25 @@ p {
 }
 
 .btn svg {
+  flex: none;
   font-size: 20px;
 }
 
 .btn--primary {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--paper);
+}
+
+.btn--primary:hover {
+  background: #fff;
 }
 
 .btn--outline {
-  background: transparent;
+  border-width: 1px;
+  border-color: var(--ink-line);
 }
 
 .btn--outline:hover {
-  background: var(--paper);
+  border-color: var(--ink);
 }
 
 .btn--ghost {
@@ -429,345 +499,204 @@ p {
   color: var(--ink-soft);
   text-decoration: underline;
   text-underline-offset: 4px;
-  font-weight: 600;
 }
 
 .btn--wide {
   width: 100%;
 }
 
+/* Outlined circle: page navigation (48 px, 1 px border) and "Anterior" (52 px, 1.5 px) */
 .icon-btn {
-  width: 44px;
-  height: 44px;
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  border: 1.5px solid var(--ink);
-  background: var(--cream);
-  font-size: 22px;
-}
-
-.link-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
   padding: 0;
-  border: none;
-  background: none;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  border-radius: var(--pill);
-  font-weight: 600;
-}
-
-.chip--button {
-  min-height: 42px;
-  padding: 0 16px;
-  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  border: 1px solid var(--ink);
   background: transparent;
-  font-size: 16px;
-  transition: background-color 0.15s, transform 0.15s var(--ease-out);
+  color: var(--ink);
+  font-size: 24px;
+  transition: transform 0.15s var(--ease-out), background-color 0.15s;
 }
 
-.chip--button:active {
-  transform: scale(0.96);
-}
-
-.chip--button:hover {
+.icon-btn:hover {
   background: var(--paper);
 }
 
-.chip--subject {
-  padding: 3px 12px;
-  margin-bottom: 4px;
-  background: var(--subject);
-  font-size: 14px;
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+.icon-btn--big {
+  width: var(--btn-h);
+  height: var(--btn-h);
+  border-width: 1.5px;
 }
 
 /* =========================================================
-   Sheet content
+   Subjects page: the photo in a ring, "Has encontrado" + the object's name, the subjects as a list
    ========================================================= */
-.object-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-right: 52px; /* room for the close button */
-  margin-bottom: 8px;
+.photo-ring {
+  width: 176px;
+  height: 176px;
+  padding: 6px; /* gap between the photo and the ring, as in the camera viewfinder */
+  border-radius: 50%;
+  border: 1px solid var(--ink);
 }
 
-.object-header__thumb {
-  flex: none;
-  width: 76px;
-  height: 76px;
+.photo-ring__photo {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border: 2px solid var(--ink);
   background: var(--paper);
 }
 
-.object-header__thumb img {
+.photo-ring__photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.object-header__thumb .object-header__eyes {
-  width: 60%;
+.photo-ring__photo .photo-ring__eyes {
+  width: 50%;
   height: auto;
   object-fit: contain;
 }
 
-.object-header__name {
-  font-size: clamp(30px, 9vw, 40px);
-  font-weight: 600; /* semibold: the name leads without weighing too much */
+.found {
+  margin-top: 28px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+/* The object's name echoes the logo: thin, condensed, lower case (except in German, where
+   nouns always take a capital letter). */
+.object-name {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-size: 60px;
+  font-weight: 300;
   line-height: 1;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   overflow-wrap: anywhere;
 }
 
-.section-title {
-  margin: 28px 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.05em; /* capitals of a serif need less tracking than a sans */
-  text-transform: uppercase;
-  color: var(--ink-soft);
+.object-name,
+.object-name-text {
+  text-transform: lowercase;
 }
 
-.section-title--center {
-  text-align: center;
-  font-size: 22px;
-  letter-spacing: 0;
+:lang(de) .object-name,
+:lang(de) .object-name-text {
   text-transform: none;
-  color: var(--ink);
 }
 
-.subject-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin: 0 0 18px;
-  padding: 0;
-  list-style: none;
-}
-
-/* odd number of subjects: the last card spans the full row */
-.subject-grid li:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-
-.subject-card {
-  width: 100%;
-  min-height: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px;
-  border: 1.5px solid transparent;
-  border-radius: var(--radius-m);
-  background: var(--subject);
-  text-align: left;
-  transition: transform 0.15s var(--ease-out), border-color 0.15s;
-  animation: rise 0.4s var(--ease-out) both;
-}
-
-.subject-grid li:nth-child(2) .subject-card { animation-delay: 0.03s; }
-.subject-grid li:nth-child(3) .subject-card { animation-delay: 0.06s; }
-.subject-grid li:nth-child(4) .subject-card { animation-delay: 0.09s; }
-.subject-grid li:nth-child(5) .subject-card { animation-delay: 0.12s; }
-.subject-grid li:nth-child(6) .subject-card { animation-delay: 0.15s; }
-.subject-grid li:nth-child(7) .subject-card { animation-delay: 0.18s; }
-
-.subject-card:hover {
-  border-color: var(--ink);
-}
-
-.subject-card:active {
-  transform: scale(0.97);
-}
-
-.subject-card__icon {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--paper) 70%, transparent);
-  font-size: 22px;
-}
-
-.subject-card__label {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.prose p {
-  font-size: inherit;
-  line-height: inherit;
-}
-
-.prose p + p {
-  margin-top: 12px;
-}
-
-.links {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.links__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: var(--tap);
-  padding: 12px 14px;
-  border-radius: var(--radius-s);
-  border: 1.5px solid var(--ink-faint);
-  color: inherit;
-  text-decoration: none;
-  transition: border-color 0.15s;
-}
-
-.links__item:hover {
-  border-color: var(--ink);
-}
-
-.links__item > span {
-  display: grid;
-}
-
-.links__title {
-  font-weight: 700;
-}
-
-.links__source {
-  font-size: 14px;
-  color: var(--ink-soft);
-}
-
-.share {
-  margin-top: 28px;
-}
-
-.share__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* At 360 px: WhatsApp and Correo side by side, "Más…" below at full width (large buttons) */
-.share__options .btn {
-  flex: 1 1 auto;
-  gap: 6px;
-  padding: 0 12px;
-  font-size: 16px;
-}
-
-.message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 24px 0 8px;
-  text-align: center;
-}
-
-.message__title {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.1;
-  padding: 0 40px;
-}
-
-.message__text {
-  color: var(--ink-soft);
-  margin-bottom: 14px;
-}
-
-.btn--small {
-  min-height: 40px;
-  padding: 0 16px;
-  font-size: 16px;
-}
-
-/* =========================================================
-   Featured subjects (with hook) and "More subjects"
-   ========================================================= */
-.subject-list {
-  display: grid;
-  gap: 10px;
-  margin: 0 0 14px;
-  padding: 0;
-  list-style: none;
-}
-
-.subject-card__text {
-  display: grid;
-  gap: 4px;
-}
-
-.subject-card--featured {
-  min-height: 0;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-}
-
-.subject-card--featured .subject-card__icon {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  font-size: 26px;
-}
-
-.subject-card__hook {
-  font-size: 17px;
-  font-weight: 500;
+.subjects__question {
+  margin: 40px 0 16px;
+  font-size: 19px;
+  font-weight: 400;
   line-height: 1.3;
 }
 
-.subject-list li:nth-child(2) .subject-card { animation-delay: 0.05s; }
-.subject-list li:nth-child(3) .subject-card { animation-delay: 0.1s; }
+.subjects .curi-say {
+  padding: 24px 0;
+}
 
+.subject-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ink-faint);
+}
+
+.subject-list li {
+  border-bottom: 1px solid var(--ink-faint);
+}
+
+.subject-row {
+  width: 100%;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border: none;
+  background: none;
+  text-align: left;
+  animation: rise 0.4s var(--ease-out) both;
+}
+
+.subject-list li:nth-child(2) .subject-row { animation-delay: 0.04s; }
+.subject-list li:nth-child(3) .subject-row { animation-delay: 0.08s; }
+.subject-list li:nth-child(4) .subject-row { animation-delay: 0.12s; }
+
+.subject-row__icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--subject);
+  font-size: 22px;
+}
+
+.subject-row__text {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.subject-row__label {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.subject-row__hook {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.subject-row__chevron {
+  flex: none;
+  display: grid;
+  font-size: 22px;
+  transition: transform 0.15s var(--ease-out);
+}
+
+.subject-row:hover .subject-row__chevron {
+  transform: translateX(3px);
+}
+
+.subject-row:active {
+  background: color-mix(in srgb, var(--paper) 60%, transparent);
+}
+
+.subject-row:focus-visible {
+  outline-offset: 2px;
+}
+
+/* "Más asignaturas": plain text with a chevron, no border */
 .more-subjects {
-  margin-bottom: 18px;
+  margin-top: 24px;
 }
 
 .more-subjects__toggle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
   min-height: var(--tap);
-  margin-bottom: 10px;
-  border-radius: var(--pill);
-  border: 1.5px solid var(--ink);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 17px;
+  color: var(--ink-soft);
   cursor: pointer;
   list-style: none;
 }
@@ -776,186 +705,158 @@ p {
   display: none;
 }
 
-.more-subjects__toggle::after {
-  content: '';
-  width: 9px;
-  height: 9px;
-  margin-left: 10px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: translateY(-3px) rotate(45deg);
+.more-subjects__toggle .thin-icon {
+  font-size: 20px;
   transition: transform 0.15s;
 }
 
-.more-subjects[open] .more-subjects__toggle::after {
-  transform: translateY(2px) rotate(-135deg);
+.more-subjects[open] .more-subjects__toggle .thin-icon {
+  transform: rotate(180deg);
 }
 
-.more-subjects__toggle:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
+.more-subjects[open] .subject-list {
+  margin-top: 8px;
 }
 
-/* =========================================================
-   Interactive lesson: question → fact → why → challenge → open question
-   ========================================================= */
-.card__kicker {
-  margin-bottom: 6px;
-  font-size: 14px;
-  font-weight: 400; /* headings inside the cards: not bold, there is little room */
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.quiz {
-  display: grid;
-  gap: 8px;
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.quiz__option {
-  width: 100%;
-  min-height: 52px;
+.message {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 16px;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius-s);
-  background: var(--paper);
-  font-size: 18px;
-  font-weight: 600;
-  text-align: left;
-  transition: transform 0.15s var(--ease-out), opacity 0.15s;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.quiz__option:active:not(:disabled) {
-  transform: scale(0.98);
+.message__title {
+  margin-top: 60px;
+  font-size: 29px;
+  font-weight: 400;
+  line-height: 1.28;
 }
 
-.quiz__option:disabled {
-  cursor: default;
-  opacity: 0.55;
+.message__text {
+  margin-top: 16px;
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--ink-soft);
 }
 
-/* The right answer stays fully visible, with a thick border and a tick (not colour alone). */
-.quiz__option--correct:disabled {
-  opacity: 1;
-  border-width: 3px;
-}
-
-/* A wrong choice is marked gently: dashed border, no red. */
-.quiz__option--chosen:disabled {
-  opacity: 0.8;
-  border-style: dashed;
-}
-
-.quiz__mark {
-  flex: none;
-  font-size: 26px;
-}
-
-.quiz__feedback {
-  margin-top: 14px;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.3;
-  animation: rise 0.3s var(--ease-out) both;
-}
-
-.reveal {
-  animation: rise 0.4s var(--ease-out) both;
-  scroll-margin-top: 12px;
+.message .btn {
+  margin-top: 36px;
 }
 
 /* =========================================================
-   History
+   History ("Mis descubrimientos"): a list of rows like the subjects
    ========================================================= */
 .history__title {
-  padding-right: 52px;
-  margin-bottom: 18px;
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.1;
+  margin-top: 40px;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1.05;
 }
 
 .history__empty {
-  padding: 24px 0;
+  align-items: flex-start;
+  padding: 48px 0 8px;
+  text-align: left;
   color: var(--ink-soft);
-  text-align: center;
+}
+
+.history__empty p {
+  max-width: 28ch;
+  font-size: 18px;
+  line-height: 1.45;
 }
 
 .history__list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
+  margin: 28px 0 0;
   padding: 0;
   list-style: none;
+  border-top: 1px solid var(--ink-faint);
+}
+
+.history__list li {
+  border-bottom: 1px solid var(--ink-faint);
 }
 
 .history__item {
   width: 100%;
+  min-height: 80px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 14px 8px 8px;
-  border: 1.5px solid transparent;
-  border-radius: var(--radius-m);
-  background: var(--paper);
+  gap: 16px;
+  padding: 12px 0;
+  border: none;
+  background: none;
   text-align: left;
-  transition: border-color 0.15s;
 }
 
-.history__item:hover {
-  border-color: var(--ink);
+.history__item:active {
+  background: color-mix(in srgb, var(--paper) 60%, transparent);
 }
 
 .history__thumb {
   flex: none;
   width: 56px;
   height: 56px;
+  padding: 3px;
   border-radius: 50%;
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--ink);
   object-fit: cover;
 }
 
 .history__text {
+  flex: 1;
   display: grid;
+  gap: 2px;
   min-width: 0;
 }
 
 .history__name {
-  font-size: 19px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.15;
+  text-transform: lowercase;
   overflow-wrap: anywhere;
 }
 
+:lang(de) .history__name {
+  text-transform: none;
+}
+
 .history__date {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink-soft);
+}
+
+.history__chevron {
+  flex: none;
+  display: grid;
+  font-size: 22px;
 }
 
 .history__privacy {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 20px 0 6px;
-  font-size: 14px;
+  gap: 8px;
+  margin: 24px 0 0;
+  font-size: 15px;
+  font-style: italic;
   color: var(--ink-soft);
 }
 
+.history .center {
+  justify-content: flex-start;
+  margin-top: 28px;
+}
+
 /* =========================================================
-   Toast
+   Toast: paper with a fine ink border (no black fill)
    ========================================================= */
 .toast-region {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(24px + env(safe-area-inset-bottom));
+  bottom: calc(100px + env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -963,208 +864,14 @@ p {
 }
 
 .toast {
-  max-width: calc(100% - 40px);
-  padding: 12px 20px;
+  max-width: calc(100% - 56px);
+  padding: 12px 22px;
   border-radius: var(--pill);
-  background: var(--ink);
-  color: var(--cream);
-  font-weight: 600;
-  box-shadow: var(--shadow);
-  animation: rise 0.3s var(--ease-out);
-}
-
-/* =========================================================
-   Motion
-   ========================================================= */
-/* =========================================================
-   Lesson cards: one idea per card, in the subject's tint, with dots and big buttons.
-   ========================================================= */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.lesson__bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 14px;
-}
-
-.dots {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.dots__dot {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--pill);
-  border: 1.5px solid var(--ink);
-  transition: width 0.25s var(--ease-out), background-color 0.25s;
-}
-
-.dots__dot--done {
-  background: var(--ink-soft);
-  border-color: var(--ink-soft);
-}
-
-.dots__dot--on {
-  width: 30px;
-  background: var(--ink);
-}
-
-.lesson-card {
-  margin-top: 8px;
-  padding: 20px 18px 18px;
-  border-radius: var(--radius-l);
-  background: var(--subject);
-  scroll-margin-top: 12px;
-  touch-action: pan-y; /* vertical scrolling stays native; horizontal swipes change card */
-  animation: card-in 0.35s var(--ease-out) both;
-}
-
-.lesson-card:focus {
-  outline: none;
-}
-
-.lesson-card:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
-}
-
-.card__kicker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 10px;
-}
-
-.card__kicker svg {
-  flex: none;
-  font-size: 22px;
-}
-
-.card__title {
-  margin-bottom: 4px;
-}
-
-.lesson .lesson-text.lesson-text--big {
-  font-size: calc(var(--lesson-size) * 1.12);
-}
-
-.card__intro {
-  margin-bottom: 12px;
-}
-
-.prose p + p {
-  margin-top: 12px;
-}
-
-.challenge__text {
-  padding: 14px 16px;
-  border: 1.5px dashed var(--ink);
-  border-radius: var(--radius-m);
+  border: 1px solid var(--ink);
   background: var(--paper);
-}
-
-.challenge__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.challenge__done {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.lesson__end {
-  margin-top: 8px;
-}
-
-/* Previous / Next: always reachable at the bottom of the sheet */
-.lesson-nav {
-  position: sticky;
-  bottom: calc(-28px - env(safe-area-inset-bottom));
-  z-index: 1;
-  margin: 18px calc(-1 * var(--space)) 0;
-  padding: 10px var(--space) calc(10px + env(safe-area-inset-bottom));
-  background: linear-gradient(to bottom, transparent, var(--cream) 14px);
-}
-
-.lesson-nav__buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.lesson-nav__btn {
-  flex: 1;
-  min-height: 52px;
-  padding: 0 14px;
-  background-color: var(--cream);
-}
-
-.lesson-nav__btn.btn--primary {
-  background-color: var(--ink);
-}
-
-.lesson-nav__btn:disabled {
-  opacity: 0.35;
-  transform: none;
-}
-
-.lesson-nav__hint {
-  margin-bottom: 8px;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-@keyframes card-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: none; }
-}
-
-/* =========================================================
-   Lesson typography: Literata for what the child reads (question, options, fact, why,
-   challenge, final question): the same typeface as the interface, with its own size.
-   ========================================================= */
-.lesson .lesson-text {
-  font-size: var(--lesson-size);
-  line-height: var(--lesson-leading);
-  font-weight: 400;
-  font-optical-sizing: auto;
-  letter-spacing: 0;
-  hyphens: manual;
-  overflow-wrap: break-word;
-}
-
-.lesson .lesson-text--title {
-  font-size: calc(var(--lesson-size) * 1.25);
-  line-height: 1.25;
-  font-weight: 400;
-}
-
-.lesson .quiz__option .lesson-text,
-.lesson .challenge__text {
-  font-weight: 500;
-  line-height: 1.35;
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(29, 29, 27, 0.12);
+  animation: rise 0.3s var(--ease-out);
 }
 
 /* =========================================================
@@ -1254,9 +961,10 @@ p {
 }
 
 .curi-say__text {
-  font-weight: 700;
   font-size: 18px;
-  line-height: 1.3;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--ink-soft);
 }
 
 @keyframes curi-blink {
@@ -1291,9 +999,9 @@ p {
   to { opacity: 1; transform: none; }
 }
 
-@keyframes sheet-up {
-  from { transform: translateY(100%); }
-  to { transform: none; }
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes splash-out {
@@ -1318,49 +1026,282 @@ p {
   }
 }
 
-/* End of the lesson with no other featured subject left: invitation to photograph another object */
-.another-photo {
+/* =========================================================
+   Lesson: one idea per card, straight on the cream background, left-aligned.
+   The subject's colour appears only in the pill at the top.
+   ========================================================= */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The lesson fills the screen so "Anterior / Siguiente" sit at the bottom even on short cards */
+.page__inner {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+}
+
+.page__inner > * {
+  flex: 1 0 auto;
+}
+
+.page__inner:has(.lesson) {
+  padding-bottom: 0;
+}
+
+.lesson {
+  display: flex;
+  flex-direction: column;
+}
+
+.lesson .page-nav {
   align-items: center;
-  gap: 10px 14px;
+}
+
+.lesson-pill {
+  max-width: 100%;
+  padding: 5px 16px;
+  border-radius: 18px;
+  background: var(--subject);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.lesson__bar {
+  margin-top: 20px;
+}
+
+.progress {
+  display: grid;
+  grid-template-columns: repeat(var(--cards, 5), 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress__step {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ink-track);
+  transition: background-color 0.25s;
+}
+
+.progress__step--done {
+  background: var(--ink);
+}
+
+.lesson__loading {
+  padding-top: 72px;
+}
+
+.lesson-card {
+  margin-top: 60px;
+  scroll-margin-top: 20px;
+  touch-action: pan-y; /* vertical scrolling stays native; horizontal swipes change card */
+  animation: card-in 0.35s var(--ease-out) both;
+}
+
+.lesson-card:focus {
+  outline: none;
+}
+
+.lesson-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 6px;
+}
+
+/* Support labels ("Adivina primero", "¿Sabías que…?", section names): Literata italic, soft ink */
+.kicker {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.lesson .lesson-text {
+  font-size: var(--lesson-size);
+  line-height: var(--lesson-leading);
+  font-weight: 400;
+  letter-spacing: 0;
+  hyphens: manual;
+  overflow-wrap: break-word;
+}
+
+/* The question: 29 px / 1.28 */
+.lesson .lesson-text--title {
+  margin-bottom: 28px;
+  font-size: 29px;
+  line-height: 1.28;
+}
+
+/* The surprising fact and the final question: 27 px / 1.35 */
+/* "¿Sabías que…?" and "¿Por qué?": the same composition and the same text size */
+.lesson .lesson-text.lesson-text--read {
+  font-size: 22.5px;
+  line-height: 1.4;
+}
+
+.lesson-card--fact .curi,
+.lesson-card--why .curi,
+.lesson-card--explore .curi {
+  margin-bottom: 32px;
+}
+
+.prose p + p {
   margin-top: 14px;
 }
 
-.another-photo p {
+.card__intro {
+  margin-bottom: 14px;
+}
+
+/* Answer options: paper, fine border, 60 px high */
+.quiz {
+  display: grid;
+  gap: 12px;
   margin: 0;
-  font-weight: 600;
+  padding: 0;
+  list-style: none;
+}
+
+.quiz__option {
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 20px;
+  border: 1px solid var(--ink-line);
+  border-radius: 16px;
+  background: var(--paper);
+  text-align: left;
+  transition: transform 0.15s var(--ease-out), border-color 0.15s, opacity 0.15s;
+}
+
+.quiz__option:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.quiz__option:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.lesson .quiz__option .lesson-text {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.quiz__option:disabled {
+  cursor: default;
+  opacity: 0.7; /* still readable: at least 4.5:1 against the paper */
+}
+
+/* The right answer stays fully visible, with an ink border and a tick (not colour alone). */
+.quiz__option--correct:disabled {
+  opacity: 1;
+  border: 1.5px solid var(--ink);
+}
+
+/* A wrong choice is marked gently: dashed border, no red. */
+.quiz__option--chosen:disabled {
+  opacity: 0.8;
+  border-style: dashed;
+  border-color: var(--ink);
+}
+
+.quiz__mark {
+  flex: none;
+  font-size: 24px;
+}
+
+.quiz__feedback {
+  margin-top: 24px;
+  font-size: 20px;
+  line-height: 1.35;
+  animation: rise 0.3s var(--ease-out) both;
+}
+
+.reveal {
+  animation: rise 0.4s var(--ease-out) both;
+  scroll-margin-top: 20px;
+}
+
+/* Challenge: the text, then "¡Reto hecho!" (pill) and "No lo he encontrado" (fine line), stacked */
+.lesson .challenge__text {
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+.challenge__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.challenge__actions:empty {
+  display: none;
+}
+
+.challenge__done {
+  margin-top: 32px;
+  font-size: 20px;
+  line-height: 1.35;
 }
 
 /* After the challenge (found it or not): "what you could discover", with Curi */
 .discovery {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  margin-top: 16px;
+  gap: 16px;
+  margin-top: 32px;
   outline: none;
 }
 
 .discovery__title {
-  margin: 4px 0 4px;
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  margin: 6px 0 6px;
 }
 
-.discovery__text {
+.lesson .discovery__text {
   margin: 0;
+  font-size: 19px;
+  line-height: 1.45;
 }
 
-/* "¡Reto hecho!" and "No lo he encontrado": same width, one under the other at 360 px */
-.challenge__actions .btn {
-  flex: 1 1 auto;
+/* "Sigue explorando" (last screen): title like the logo, then sections separated by air */
+.explore__title {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1.05;
+}
+
+.explore__section,
+.lesson-card--explore .share {
+  margin-top: 44px;
+}
+
+.lesson .final__question {
+  margin-bottom: 0;
 }
 
 /* Final card: a pause to think, then some possible ideas (never "the" answer) */
 .think-pause {
-  margin: 14px 0;
+  margin: 20px 0 24px;
   font-style: italic;
   color: var(--ink-soft);
 }
@@ -1369,23 +1310,142 @@ p {
   outline: none;
 }
 
-.ideas__intro {
-  margin: 0 0 8px;
-  font-weight: 400;
-}
-
 .ideas__list {
   display: grid;
-  gap: 8px;
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.ideas__list li {
-  padding: 10px 14px;
-  border-left: 3px solid var(--ink);
-  border-radius: 0 var(--radius-s) var(--radius-s) 0;
-  background: color-mix(in srgb, var(--paper) 70%, transparent);
+.lesson .ideas__list li {
+  padding-left: 16px;
+  border-left: 1px solid var(--ink);
+  font-size: 19px;
+  line-height: 1.45;
 }
 
+/* End of the lesson: links, related objects, sharing and other subjects, separated by air */
+.links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ink-faint);
+}
+
+.links li {
+  border-bottom: 1px solid var(--ink-faint);
+}
+
+.links__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 14px 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.links__item > span {
+  display: grid;
+  gap: 2px;
+}
+
+.links__title {
+  font-size: 18px;
+}
+
+.links__source {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.links__item .thin-icon {
+  flex: none;
+  font-size: 22px;
+}
+
+.links__item:hover .links__title {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip--button {
+  min-height: var(--tap);
+  padding: 0 20px;
+  border: 1px solid var(--ink-line);
+  border-radius: var(--pill);
+  background: transparent;
+  font-size: 17px;
+  transition: border-color 0.15s, transform 0.15s var(--ease-out);
+}
+
+.chip--button:hover {
+  border-color: var(--ink);
+}
+
+.chip--button:active {
+  transform: scale(0.96);
+}
+
+.another-photo {
+  margin-top: 20px;
+  font-size: 18px;
+}
+
+.share__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* At 360 px: WhatsApp and Correo side by side, "Más…" below at full width */
+.share__options .btn {
+  flex: 1 1 auto;
+  padding: 0 16px;
+  font-size: 17px;
+}
+
+/* Previous (circle) and Next (pill): always reachable at the bottom of the screen */
+.lesson-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: auto;
+  padding: 28px 0 calc(24px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--cream) 0%, transparent), var(--cream) 24px);
+}
+
+.lesson-nav__buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lesson-nav__next {
+  margin-left: auto;
+  padding: 0 30px;
+}
+
+.lesson-nav__hint {
+  flex: 1;
+  min-height: var(--btn-h);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}

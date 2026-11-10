@@ -12,7 +12,7 @@ function openRearCamera() {
 
 /**
  * Owns the rear-camera MediaStream. `active` turns the camera on/off (it is switched off
- * while the result sheet is open to save battery).
+ * while a page is open over it, to save battery).
  * status: 'idle' | 'starting' | 'ready' | 'error'
  */
 export function useCamera(active) {

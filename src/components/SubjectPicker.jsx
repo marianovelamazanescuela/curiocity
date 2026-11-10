@@ -1,43 +1,41 @@
 import { SUBJECTS, getSubject } from '../subjects';
-import ObjectHeader from './ObjectHeader';
-import SubjectCard from './SubjectCard';
+import { SubjectList } from './SubjectRow';
 import { CuriThinking } from './Curi';
+import { CircleButton, PageNav } from './Page';
+import { IconCamera, IconChevronDown, IconChevronLeft } from './icons';
 
-function SubjectGrid({ t, subjects, onSelect }) {
+/** The child's photo in a circle inside a fine ring, like the camera viewfinder (brand eyes if none). */
+export function PhotoRing({ photo, alt }) {
   return (
-    <ul className="subject-grid">
-      {subjects.map(subject => (
-        <li key={subject.key}>
-          <SubjectCard t={t} subject={subject} onSelect={onSelect} />
-        </li>
-      ))}
-    </ul>
+    <div className="photo-ring">
+      <div className="photo-ring__photo">
+        {photo ? <img src={photo} alt={alt} /> : <img className="photo-ring__eyes" src="/curiocity-icon.svg" alt="" aria-hidden="true" />}
+      </div>
+    </div>
   );
 }
 
 // ranking: { featured: [{ key, hook }], others: [key] }; null = unknown (show all, no hooks);
 // undefined = still being worked out.
-export default function SubjectPicker({ t, photo, objectName, ranking, onSelect, onWrongObject }) {
+// "volver a la cámara" (left) and "hacer otra foto" (right) both go back to the camera: the right
+// one is the "wrong object" recovery, named as such for screen readers.
+export default function SubjectPicker({ t, photo, objectName, ranking, onSelect, onBackToCamera, onWrongObject }) {
   let subjects;
   if (ranking === undefined) {
     subjects = <CuriThinking label={t.curiThinking} />;
   } else if (ranking === null) {
-    subjects = <SubjectGrid t={t} subjects={SUBJECTS} onSelect={onSelect} />;
+    subjects = <SubjectList t={t} items={SUBJECTS} onSelect={onSelect} getSubject={getSubject} />;
   } else {
-    const others = ranking.others.map(getSubject).filter(Boolean);
+    const others = ranking.others.filter(getSubject).map(key => ({ key }));
     subjects = (
       <>
-        <ul className="subject-list">
-          {ranking.featured.map(({ key, hook }) => (
-            <li key={key}>
-              <SubjectCard t={t} subject={getSubject(key)} hook={hook} onSelect={onSelect} />
-            </li>
-          ))}
-        </ul>
+        <SubjectList t={t} items={ranking.featured.filter(f => getSubject(f.key))} onSelect={onSelect} getSubject={getSubject} />
         {others.length > 0 && (
           <details className="more-subjects">
-            <summary className="more-subjects__toggle">{t.moreSubjects}</summary>
-            <SubjectGrid t={t} subjects={others} onSelect={onSelect} />
+            <summary className="more-subjects__toggle">
+              {t.moreSubjects} <IconChevronDown />
+            </summary>
+            <SubjectList t={t} items={others} onSelect={onSelect} getSubject={getSubject} />
           </details>
         )}
       </>
@@ -45,15 +43,17 @@ export default function SubjectPicker({ t, photo, objectName, ranking, onSelect,
   }
 
   return (
-    <section>
-      <ObjectHeader photo={photo} objectName={objectName} photoAlt={t.capturedPhoto} />
-      <h3 className="section-title section-title--center">{t.whatToDiscover}</h3>
+    <section className="subjects">
+      <PageNav
+        left={<CircleButton label={t.backToCamera} onClick={onBackToCamera}><IconChevronLeft /></CircleButton>}
+        right={<CircleButton label={photo ? t.wrongObjectRetake : t.takeAnotherPhoto} onClick={onWrongObject}><IconCamera /></CircleButton>}
+      >
+        <PhotoRing photo={photo} alt={t.capturedPhoto} />
+      </PageNav>
+      <p className="found">{t.youFound}</p>
+      <h2 className="object-name">{objectName}</h2>
+      <h3 className="subjects__question">{t.whereToLook}</h3>
       {subjects}
-      {photo && (
-        <div className="center">
-          <button className="btn btn--ghost" onClick={onWrongObject}>{t.wrongObject}</button>
-        </div>
-      )}
     </section>
   );
 }
