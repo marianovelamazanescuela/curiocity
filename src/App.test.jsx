@@ -1,7 +1,10 @@
+import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
+import { flushStudy, readStudyData, resetStudyForTests, studyStoreLoaded } from './study';
+import { closeForTests } from './study/store';
 
 // ---- Browser APIs that jsdom doesn't implement ----
 const fakeStream = { getTracks: () => [{ stop: vi.fn() }] };
@@ -431,4 +434,143 @@ describe('App', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('No puedo usar la cámara');
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
+});
+
+describe('Study mode', () => {
+  const studyLesson = { ...lesson, ideas_pregunta_final: ['Podría crecer un manzano.', 'Necesitaría agua y luz.'] };
+  const twoObjects = {
+    object: 'manzana',
+    objects: [
+      { name: 'manzana', x: 0.2, y: 0.5, size: 0.3 },
+      { name: 'vaso', x: 0.8, y: 0.5, size: 0.3 }
+    ]
+  };
+
+  beforeEach(async () => {
+    closeForTests();
+    await new Promise(resolve => {
+      const r = indexedDB.deleteDatabase('curiocity_estudio');
+      r.onsuccess = r.onerror = r.onblocked = resolve;
+    });
+    localStorage.clear();
+    resetStudyForTests();
+  });
+
+  async function walkThroughLesson(user) {
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: 'manzana' }));
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await user.click(await screen.findByRole('button', { name: 'En el centro' }));
+    for (let i = 0; i < 3; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await user.click(screen.getByRole('button', { name: /Ver algunas ideas/ }));
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await screen.findByRole('region', { name: /Sigue explorando/ });
+  }
+
+  it('switched off (the default): a whole walk records nothing and never opens the study storage', async () => {
+    mockServer({ detect: twoObjects, ai: studyLesson });
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    await walkThroughLesson(user);
+    await flushStudy();
+    expect(studyStoreLoaded()).toBe(false);
+    expect(container.querySelector('.camera__study-dot')).toBeNull();
+  });
+
+  it('switched on: records the whole walk, never the photo', async () => {
+    localStorage.setItem('curiocity_study_v1', JSON.stringify({ active: true, participant: 'G1-P1' }));
+    resetStudyForTests();
+    vi.spyOn(window, 'open').mockImplementation(() => null);
+    mockServer({ detect: twoObjects, ai: studyLesson });
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    expect(container.querySelector('.camera__study-dot')).toHaveAccessibleName('Modo estudio activo');
+
+    await walkThroughLesson(user);
+    await user.click(screen.getByRole('link', { name: /Manzana/ }));
+    await user.click(screen.getByRole('button', { name: /WhatsApp/ }));
+    await user.click(screen.getByRole('button', { name: 'Hacer otra foto' }));
+    await flushStudy();
+
+    const { eventos, lecciones } = await readStudyData();
+    const summary = eventos.map(e => [e.tipo, e.detalles.accion || e.detalles.resultado || e.detalles.motivo || ''].join(':'));
+    expect(summary).toEqual(expect.arrayContaining([
+      'sesion_inicio:', 'foto:detectada', 'foto:elegido', 'asignaturas:mostradas', 'asignaturas:elegida', 'leccion:',
+      'pantalla:entrada', 'pregunta:', 'pantalla:salida', 'reto:hecho', 'ideas_final:', 'final:enciclopedia', 'final:compartir'
+    ]));
+    expect(eventos.every(e => e.participante === 'G1-P1' && /^S-/.test(e.sesion) && !Number.isNaN(Date.parse(e.fecha)))).toBe(true);
+
+    const find = (tipo, accion) => eventos.find(e => e.tipo === tipo && (!accion || e.detalles.accion === accion));
+    expect(find('foto', 'detectada').detalles).toEqual({ accion: 'detectada', objetos: ['manzana', 'vaso'], metodo: 'server' });
+    expect(find('foto', 'elegido')).toMatchObject({ objeto: 'Manzana', detalles: { entre: ['manzana', 'vaso'] } });
+    expect(find('asignaturas', 'mostradas').detalles.destacadas).toEqual(['biologia', 'historia', 'artes']);
+    expect(find('asignaturas', 'elegida')).toMatchObject({ asignatura: 'biologia', detalles: { destacada: true, desde: 'asignaturas' } });
+    expect(find('pregunta')).toMatchObject({ pantalla: 'pregunta', detalles: { opcion: 1, respuesta: 'En el centro', acierta: true } });
+    expect(find('pregunta').detalles.tiempo_ms).toBeGreaterThanOrEqual(0);
+    expect(find('final', 'compartir').detalles).toEqual({ accion: 'compartir', canal: 'whatsapp' });
+    expect(find('final', 'enciclopedia').detalles).toEqual({ accion: 'enciclopedia', fuente: 'Vikidia', titulo: 'Manzana' });
+
+    // Every lesson event is linked to the lesson saved once
+    expect(lecciones).toHaveLength(1);
+    const lessonId = lecciones[0].id;
+    expect(eventos.filter(e => e.tipo === 'pantalla').every(e => e.leccion_id === lessonId)).toBe(true);
+    // Screens: entry and exit with duration and how the child left
+    const exits = eventos.filter(e => e.tipo === 'pantalla' && e.detalles.accion === 'salida');
+    expect(exits.map(e => `${e.pantalla}:${e.detalles.salida}`)).toEqual([
+      'pregunta:avance', 'dato:avance', 'porque:avance', 'reto:avance', 'pensar:avance', 'explorar:otra_foto'
+    ]);
+    expect(exits.every(e => e.detalles.duracion_ms >= 0)).toBe(true);
+    // Never the photo or any image
+    expect(JSON.stringify({ eventos, lecciones })).not.toMatch(/data:image|base64/);
+  });
+
+  it('a 3-second press on the eyes opens the adult panel, behind the code; activate and delete with two confirmations', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    const eyes = container.querySelector('.camera__brand');
+    await screen.findByRole('button', { name: 'Hacer foto' });
+
+    // A short press does nothing
+    fireEvent.pointerDown(eyes);
+    fireEvent.pointerUp(eyes);
+    await act(() => new Promise(r => setTimeout(r, 50)));
+    expect(screen.queryByLabelText('Código de adulto')).not.toBeInTheDocument();
+
+    fireEvent.pointerDown(eyes);
+    await act(() => new Promise(r => setTimeout(r, 3100)));
+    expect(await screen.findByLabelText('Código de adulto')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Código de adulto'), '1111');
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('El código no es correcto.');
+    await user.type(screen.getByLabelText('Código de adulto'), '2468');
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
+
+    // Participant codes: no names with spaces
+    const code = await screen.findByLabelText('Código de participante');
+    await user.type(code, 'Ana López');
+    await user.click(screen.getByRole('button', { name: 'Activar el modo estudio' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('sin espacios');
+    await user.clear(code);
+    await user.type(code, 'G1-P3');
+    await user.click(screen.getByRole('button', { name: 'Activar el modo estudio' }));
+    expect(await screen.findByText(/Activo · Participante: G1-P3/)).toBeInTheDocument();
+    expect(container.querySelector('.camera__study-dot')).toBeInTheDocument();
+
+    // Delete: two confirmations
+    await flushStudy();
+    expect((await readStudyData()).eventos.length).toBeGreaterThan(0);
+    await user.click(screen.getAllByRole('button', { name: 'Borrar datos del estudio' })[0]);
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(screen.getByText(/no se puede deshacer/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Borrar definitivamente' }));
+    await waitFor(async () => expect((await readStudyData()).eventos).toEqual([]));
+
+    await user.click(screen.getByRole('button', { name: 'Desactivar' }));
+    expect(await screen.findByText('Desactivado')).toBeInTheDocument();
+    expect(container.querySelector('.camera__study-dot')).toBeNull();
+  }, 15000);
 });

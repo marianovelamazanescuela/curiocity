@@ -238,6 +238,28 @@ p {
   filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.3));
 }
 
+/* The eyes also open the adult study panel with a 3-second press: no text selection or
+   callout menu while pressing. */
+.camera__brand {
+  position: relative;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+/* Study mode on: a small, discreet dot next to the eyes */
+.camera__study-dot {
+  position: absolute;
+  top: -2px;
+  right: -10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 0 0 1px rgba(29, 29, 27, 0.35);
+}
+
 .camera .icon-btn {
   border-color: var(--cream);
   color: var(--cream);
@@ -729,6 +751,130 @@ p {
   font-size: 29px;
   font-weight: 400;
   line-height: 1.28;
+}
+
+/* =========================================================
+   Study panel (adults only)
+   ========================================================= */
+
+.study__title {
+  margin-top: 28px;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1.05;
+}
+
+.study__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  font-size: 18px;
+}
+
+.study__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--ink);
+}
+
+.study__dot--on {
+  background: var(--ink);
+}
+
+.study__help {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.study__form {
+  display: grid;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.study__form .btn {
+  margin-top: 8px;
+}
+
+.study__label {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.study__input {
+  min-height: var(--btn-h);
+  padding: 0 18px;
+  border: 1px solid var(--ink-line);
+  border-radius: var(--radius-s);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 20px;
+}
+
+.study__input:focus-visible {
+  border-color: var(--ink);
+}
+
+.study__input--pin {
+  max-width: 180px;
+  letter-spacing: 0.4em;
+}
+
+.study__block {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.study__section {
+  margin-top: 44px;
+}
+
+.study__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.study__confirm {
+  padding: 18px;
+  border: 1px solid var(--ink-line);
+  border-radius: var(--radius-m);
+  background: var(--paper);
+}
+
+.study__confirm p {
+  margin-bottom: 14px;
+  line-height: 1.45;
+}
+
+.study__table-wrap {
+  overflow-x: auto;
+}
+
+.study__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.study__table th,
+.study__table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--ink-faint);
+  text-align: left;
+  vertical-align: top;
+}
+
+.study__table thead th {
+  font-weight: 400;
+  color: var(--ink-soft);
 }
 
 .message__text {

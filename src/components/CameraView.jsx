@@ -28,8 +28,21 @@ function BrandEyes() {
   );
 }
 
-export default function CameraView({ inert, t, videoRef, stream, cameraStatus, photo, analyzing, onShutter, onRetryCamera, onOpenHistory }) {
+// Holding the logo's eyes for 3 seconds opens the adult study panel (a hidden gesture for adults).
+const STUDY_PRESS_MS = 3000;
+
+export default function CameraView({
+  inert, t, videoRef, stream, cameraStatus, photo, analyzing, onShutter, onRetryCamera, onOpenHistory,
+  studyActive = false, studyLabel = '', onStudyPress
+}) {
   const bgRef = useRef(null);
+  const pressRef = useRef(null);
+  const cancelPress = () => clearTimeout(pressRef.current);
+  const startPress = () => {
+    cancelPress();
+    if (onStudyPress) pressRef.current = setTimeout(onStudyPress, STUDY_PRESS_MS);
+  };
+  useEffect(() => cancelPress, []);
   useStream(bgRef, stream);
   useStream(videoRef, stream);
 
@@ -46,9 +59,17 @@ export default function CameraView({ inert, t, videoRef, stream, cameraStatus, p
       )}
 
       <header className="camera__top">
-        <h1 className="camera__brand">
+        <h1
+          className="camera__brand"
+          onPointerDown={startPress}
+          onPointerUp={cancelPress}
+          onPointerLeave={cancelPress}
+          onPointerCancel={cancelPress}
+          onContextMenu={e => e.preventDefault()}
+        >
           <BrandEyes />
           <span className="visually-hidden">Curiocity</span>
+          {studyActive && <span className="camera__study-dot" role="img" aria-label={studyLabel} />}
         </h1>
         <button className="icon-btn camera__history" onClick={onOpenHistory} aria-label={t.history} disabled={frozen}>
           <IconHistory />

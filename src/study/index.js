@@ -61,7 +61,10 @@ function lessonText(lesson) {
   const copy = { ...lesson };
   for (const key of ['imagen_dato', 'imagen_porque']) {
     if (copy[key] && typeof copy[key] === 'object') {
-      const { src, ancho, alto, ...credit } = copy[key];
+      const credit = { ...copy[key] };
+      delete credit.src;
+      delete credit.ancho;
+      delete credit.alto;
       copy[key] = credit;
     }
   }

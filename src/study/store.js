@@ -44,7 +44,12 @@ export const addLesson = lesson => run('lecciones', 'readwrite', s => s.put(less
 /** Events in the order they happened, and every lesson. */
 export async function readAll() {
   const [eventos, lecciones] = await Promise.all([run('eventos', 'readonly', s => s.getAll()), run('lecciones', 'readonly', s => s.getAll())]);
-  return { eventos: (eventos || []).map(({ n, ...e }) => e), lecciones: lecciones || [] };
+  const withoutKey = e => {
+    const copy = { ...e };
+    delete copy.n; // IndexedDB's own counter, not part of the event
+    return copy;
+  };
+  return { eventos: (eventos || []).map(withoutKey), lecciones: lecciones || [] };
 }
 
 export async function clearAll() {

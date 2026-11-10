@@ -4,6 +4,9 @@ import { getSubject, nextSubjects } from './subjects';
 import { detectObjects, fetchContent, fetchRanking } from './api';
 import { addToHistory, clearHistory, loadHistory } from './history';
 import { useCamera } from './useCamera';
+import { isStudyActive, studyAppClosed, studyAppOpened, subscribeStudy, track } from './study';
+import { studyTexts } from './study/texts';
+import StudyPanel from './components/StudyPanel';
 import Splash from './components/Splash';
 import CameraView from './components/CameraView';
 import Page, { CircleButton, PageNav } from './components/Page';
@@ -82,12 +85,31 @@ export default function App() {
     if (!foundObject) return undefined;
     const controller = new AbortController();
     fetchRanking(foundObject, lang, controller.signal)
-      .then(value => setRanking({ forKey: foundObject, value }))
+      .then(value => {
+        setRanking({ forKey: foundObject, value });
+        track('asignaturas', { accion: 'mostradas', objeto: foundObject, destacadas: value ? value.featured.map(f => f.key) : null });
+        if (!value) track('error', { motivo: 'asignaturas_sin_servidor', objeto: foundObject });
+      })
       .catch(() => {}); // aborted: a newer object replaced this one
     return () => controller.abort();
   }, [foundObject, lang]);
   // undefined while loading, null if unknown (show every subject), else { featured, others }
   const currentRanking = foundObject && ranking.forKey === foundObject ? ranking.value : undefined;
+
+  // Study mode (adults only, off by default): a session per app opening, and the camera's dot.
+  const [studyOn, setStudyOn] = useState(isStudyActive);
+  useEffect(() => {
+    const unsubscribe = subscribeStudy(state => setStudyOn(state.active));
+    studyAppOpened();
+    const onShow = e => e.persisted && studyAppOpened();
+    window.addEventListener('pagehide', studyAppClosed);
+    window.addEventListener('pageshow', onShow);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('pagehide', studyAppClosed);
+      window.removeEventListener('pageshow', onShow);
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -117,8 +139,10 @@ export default function App() {
     const signal = newRequest();
 
     try {
-      const { objects, person } = await detectObjects(canvas, lang, signal);
+      const { objects, person, method } = await detectObjects(canvas, lang, signal);
       thumbRef.current = makeThumbnail(canvas);
+      track('foto', { accion: 'detectada', objetos: objects.map(o => o.name), metodo: method, persona: person || undefined });
+      if (method === 'local') track('error', { motivo: 'servidor_no_disponible', donde: 'deteccion' });
       if (person) setDetection({ status: 'person' });
       else if (objects.length > 1) setDetection({ status: 'choose', objects });
       else if (objects.length === 1) chooseObject(objects[0]);
@@ -126,6 +150,7 @@ export default function App() {
     } catch (err) {
       if (err.name === 'AbortError') return;
       console.error('Detection failed:', err);
+      track('error', { motivo: 'deteccion_fallida' });
       setDetection({ status: 'error' });
     }
     setPhase('result');
@@ -134,6 +159,7 @@ export default function App() {
   // The child explores one object of the photo: it goes to the history, with the photo's thumbnail.
   const chooseObject = (chosen, choices = null) => {
     const name = capitalize(chosen.name);
+    if (choices) track('foto', { accion: 'elegido', objeto: name, entre: choices.map(o => o.name) });
     setDetection({ status: 'found', object: name, fromPhoto: true, choices });
     setSubjectKey(null);
     setContent(null);
@@ -154,8 +180,11 @@ export default function App() {
     setContent(null);
   };
 
-  const loadSubject = async (key, objectName = detection.object) => {
+  // from: 'asignaturas' (subjects page) or 'final' (end of a lesson)
+  const loadSubject = async (key, from = 'asignaturas', objectName = detection.object) => {
     const subject = getSubject(key);
+    const featured = Boolean(currentRanking && currentRanking.featured.some(f => f.key === key));
+    track('asignaturas', { accion: 'elegida', objeto: objectName, asignatura: key, destacada: featured, desde: from });
     setSubjectKey(key);
     setSeenSubjects(seen => ({ ...seen, [objectName]: [...new Set([...(seen[objectName] || []), key])] }));
     setContent(null); // show the loading state instead of the previous subject's content
@@ -173,6 +202,16 @@ export default function App() {
     setDetection({ status: 'found', object: capitalize(name), fromPhoto: false });
     setSubjectKey(null);
     setContent(null);
+  };
+
+  const openStudyPanel = () => {
+    newRequest();
+    setPhase('study');
+  };
+
+  const wrongObject = () => {
+    track('foto', { accion: 'objeto_incorrecto', objeto: detection && detection.object });
+    handleClose();
   };
 
   const openHistory = () => {
@@ -198,7 +237,9 @@ export default function App() {
   const backToCamera = <CircleButton label={t.backToCamera} onClick={handleClose}><IconChevronLeft /></CircleButton>;
 
   let pageBody = null;
-  if (phase === 'history') {
+  if (phase === 'study') {
+    pageBody = <StudyPanel lang={lang} backButton={backToCamera} onToast={showToast} />;
+  } else if (phase === 'history') {
     pageBody = (
       <HistoryView
         t={t}
@@ -242,10 +283,10 @@ export default function App() {
         photo={detection.fromPhoto ? photo : null}
         objectName={detection.object}
         ranking={currentRanking}
-        onSelect={key => loadSubject(key)}
+        onSelect={key => loadSubject(key, 'asignaturas')}
         onBackToCamera={detection.choices ? backToChoices : handleClose}
         backLabel={detection.choices ? t.backToObjects : t.backToCamera}
-        onWrongObject={handleClose}
+        onWrongObject={wrongObject}
       />
     );
   } else if (detection) {
@@ -259,7 +300,7 @@ export default function App() {
         nextSubjects={nextSubjects(currentRanking || null, subjectKey, seenSubjects[detection.object])}
         content={content}
         onBack={backToSubjects}
-        onSelectSubject={key => loadSubject(key)}
+        onSelectSubject={key => loadSubject(key, 'final')}
         onRelatedObject={handleRelatedObject}
         onToast={showToast}
         onTakePhoto={handleClose}
@@ -267,7 +308,7 @@ export default function App() {
     );
   }
 
-  const pageOpen = phase === 'result' || phase === 'history';
+  const pageOpen = phase === 'result' || phase === 'history' || phase === 'study';
 
   return (
     <div className="app">
@@ -282,6 +323,9 @@ export default function App() {
         onShutter={handleShutter}
         onRetryCamera={camera.retry}
         onOpenHistory={openHistory}
+        studyActive={studyOn}
+        studyLabel={(studyTexts[lang] || studyTexts.en).indicator}
+        onStudyPress={openStudyPanel}
       />
       <Page open={pageOpen} onClose={handleClose} viewKey={`${phase}|${detection?.status}|${detection?.object}|${subjectKey}|${Boolean(content)}`}>
         {pageBody}
