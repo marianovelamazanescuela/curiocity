@@ -4,6 +4,51 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-10 — Modo estudio: registro anónimo de uso en el dispositivo (fase 6, parte B)
+
+**Por qué:** el jurado criticó la falta de evidencias de uso. Para un estudio piloto con niños y niñas de 8 a 10 años hacía falta saber qué hacen con la app (qué fotografían, qué asignaturas eligen, cuánto tiempo pasan en cada pantalla, si aciertan, si hacen el reto), sin datos personales y sin que nada salga del móvil.
+
+**Qué se cambió**
+- **Desactivado por defecto, y desactivado no registra nada.** Cada llamada de registro sale en su primera línea, y el código de almacenamiento (IndexedDB) va en un archivo aparte que ni se descarga.
+- **Solo para adultos:** se activa con una pulsación de 3 s en los ojos del logo y un código de 4 cifras (2468 por defecto, cambiable; se guarda como SHA-256).
+  - El código de participante (por ejemplo `G1-P3`) no admite espacios ni más de 12 caracteres, y el panel avisa de que no se pongan nombres.
+  - Mientras está activo, un punto discreto junto a los ojos.
+- **Eventos con fecha ISO, sesión aleatoria, participante y tipo:**
+  - sesiones y cambios de participante;
+  - fotos (objetos, método, elegido, objeto incorrecto);
+  - asignaturas (destacadas y elegida);
+  - pantallas (entrada, salida, duración y cómo se salió);
+  - pregunta (opción, acierto, tiempo);
+  - reto, ideas y final (enciclopedia, objeto relacionado, otra asignatura, canal de compartir);
+  - errores;
+  - la lección mostrada, una vez.
+- **Nunca se registran:** la foto ni ninguna imagen, la ubicación, identificadores del dispositivo, la IP, el *user-agent* ni texto escrito.
+- **Panel de adulto:**
+  - resumen por participante (fotos, lecciones empezadas y completadas, aciertos, retos y minutos);
+  - exportación en CSV (columnas planas y detalles en JSON, a salvo de fórmulas) y en JSON, por la hoja de compartir o como descarga;
+  - borrado con doble confirmación.
+- **Pruebas:** dependencia de desarrollo nueva, `fake-indexeddb`, solo para los tests.
+
+**Cómo se probó:**
+- **Tests:** 191 en verde, entre ellos:
+  - desactivado no se registra nada ni se carga el almacenamiento;
+  - eventos de un recorrido completo, sin la foto;
+  - CSV válido, con comas, comillas y saltos de línea;
+  - borrar;
+  - códigos de participante y de adulto.
+- **Lint y build** sin errores.
+- **Recorrido real con dos participantes seguidos en el mismo móvil:**
+  - **G1-P1:** recorre una lección entera y abre un objeto relacionado.
+  - **G1-P2:** elige una asignatura de "Más asignaturas" y sale a mitad con la X.
+  - **Conexiones del navegador:** solo nuestro servidor y `upload.wikimedia.org`, por las imágenes de la lección.
+  - **Resultados:** CSV y JSON de ejemplo y capturas del panel en `capturas/fase-6/modo-estudio/`.
+
+**Pendiente:**
+- probarlo en un móvil real (sobre todo la pulsación larga en iPhone);
+- decidir con el equipo del estudio el protocolo de códigos de participante y cada cuánto se exporta y se borra.
+
+---
+
 ## 2026-11-10 — Elegir entre varios objetos de la foto (fase 6, parte A)
 
 **Qué se cambió y por qué**
