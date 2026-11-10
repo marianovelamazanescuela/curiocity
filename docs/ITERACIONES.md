@@ -4,6 +4,19 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-10 — Elegir entre varios objetos de la foto (fase 6, parte A)
+
+**Qué se cambió y por qué**
+- **La detección devuelve hasta 4 objetos** con su posición aproximada (centro y tamaño, entre 0 y 1). El servidor valida la respuesta: recorta las posiciones, fusiona los nombres repetidos y descarta personas y partes del cuerpo en los 4 idiomas. El respaldo COCO-SSD usa sus cajas reales con los mismos límites. *Por qué:* antes la app decidía por el niño; con un perro junto a un árbol, a veces elegía el que no era.
+- **Con varios objetos, el niño elige.** La foto ocupa todo el ancho, con un anillo crema sobre cada objeto y su nombre; debajo, "¿Qué quieres explorar?" y los mismos objetos como botones grandes, que son la vía accesible porque las posiciones son aproximadas. Con un solo objeto no cambia nada. "Volver" en las asignaturas vuelve a la elección, y el historial guarda el objeto elegido.
+- **Personas:** nunca se ofrecen. Si junto a una persona hay objetos, se ofrecen los objetos; si solo hay personas, se mantiene el aviso.
+
+**Cómo se probó:** 171 tests en verde (validación con 0, 1, 4 y 6 objetos, posiciones fuera de rango, repetidos y personas; respaldo COCO-SSD; interfaz), lint y build. Recorrido real con OpenAI y tres fotos de Wikimedia Commons (frutero, parque nevado con árbol y banco, escritorio). Capturas a 360 px en `capturas/fase-6/varios-objetos/`.
+
+**Resultado de las posiciones:** razonables cuando los objetos están separados: el banco y el árbol del parque, y el portátil y los libros del escritorio. En el frutero, los anillos de las frutas se solapan y sus nombres se pisan, y la lámpara del escritorio queda algo desplazada. Los botones de debajo siempre funcionan.
+
+---
+
 ## 2026-11-10 — Número variable de asignaturas destacadas e imágenes de ejemplo (fase 5)
 
 **Qué se cambió y por qué**

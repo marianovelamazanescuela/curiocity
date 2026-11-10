@@ -9,7 +9,8 @@ Idiomas: español, inglés, francés y alemán (se detecta automáticamente del 
 ```
 Navegador (React + Vite)                     Servidor (Express)                 Servicios
 ────────────────────────                     ──────────────────                 ─────────
-Cámara → foto 800 px ── POST /api/detect ──▶ valida imagen, límite peticiones ─▶ OpenAI visión: objeto
+Cámara → foto 800 px ── POST /api/detect ──▶ valida imagen, límite peticiones ─▶ OpenAI visión: hasta 4 objetos + posición
+Varios objetos → el niño elige uno (anillos sobre la foto y botones)
 Objeto (foto, relacionado o historial)
                 ─────── POST /api/subjects ▶ puntúa 7 asignaturas, valida ───▶ OpenAI (JSON con esquema): destacadas (2-3, máx. 4) + gancho
 Elige asignatura ────── POST /api/ai ──────▶ valida, baraja opciones, caché ─▶ OpenAI (JSON con esquema): pregunta, dato,
@@ -27,7 +28,7 @@ Si algo falla, la app sigue funcionando:
 
 | Falla… | Entonces… |
 |---|---|
-| `/api/detect` | Reconoce el objeto en el propio navegador con TensorFlow.js (COCO-SSD), que solo se descarga en ese caso |
+| `/api/detect` | Reconoce los objetos en el propio navegador con TensorFlow.js (COCO-SSD), que solo se descarga en ese caso (hasta 4, con sus cajas reales, sin personas) |
 | `/api/subjects` | Muestra las 7 asignaturas sin destacar |
 | `/api/ai` | Muestra contenido local con preguntas abiertas y retos en el idioma del usuario, sin pregunta de respuesta única ni dato (no afirman nada sobre el objeto, porque no lo conocen) |
 | La red | El *service worker* abre la app igualmente (la detección necesita conexión) |
@@ -95,15 +96,17 @@ server/
   app.js            rutas de la API: validación, CORS, límite de peticiones, caché
   content.js        prompts, esquemas JSON y validación del ranking de asignaturas y de las lecciones
   openai.js         llamada a OpenAI (la clave solo existe en el servidor)
+  detection.js      prompt, esquema y validación de la detección (hasta 4 objetos, sin personas)
   encyclopedia.js   búsqueda de páginas reales en Vikidia, Klexikon y Wikipedia
   images.js         imagen principal del artículo, solo de Wikimedia Commons con autor y licencia
   index.js          arranca el servidor
   app.test.js, content.test.js, images.test.js
 src/
   App.jsx           flujo: cámara → análisis → asignaturas → contenido; historial
-  components/       CameraView, Page (páginas a pantalla completa), SubjectPicker, SubjectRow, ContentView (lección en tarjetas), Curi (mascota), HistoryView, icons (trazo fino), Toast, Splash
+  components/       CameraView, Page (páginas a pantalla completa), ObjectChooser (elegir entre varios objetos), SubjectPicker, SubjectRow, ContentView (lección en tarjetas), Curi (mascota), HistoryView, icons (trazo fino), Toast, Splash
   useCamera.js      gestión de la cámara
   api.js            llamadas al servidor + reconocimiento local de respaldo
+  detection.js      lista de objetos de la foto (respuesta del servidor o cajas de COCO-SSD)
   history.js        historial guardado solo en el dispositivo
   i18n.js           textos de la interfaz e idioma
   oldSettings.js    borra al arrancar ajustes de versiones anteriores (voz, edad)
