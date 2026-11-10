@@ -298,23 +298,43 @@ describe('POST /api/detect', () => {
     expect(openaiCalls).toHaveLength(0);
   });
 
-  it('returns the detected object name, trimmed, in the requested language', async () => {
-    openaiReply = JSON.stringify({ object: ' "manzana roja". ', person: false });
+  it('returns up to 4 objects with their position, and the first one as `object`', async () => {
+    openaiReply = JSON.stringify({
+      objects: [
+        { name: ' "perro". ', x: 0.3, y: 0.6, size: 0.4 },
+        { name: 'árbol', x: 0.8, y: 0.3, size: 0.7 }
+      ],
+      person: false
+    });
     const r = await post('/api/detect', { image, language: 'Spanish' });
-    expect(await r.json()).toEqual({ object: 'manzana roja' });
+    expect(await r.json()).toEqual({
+      object: 'perro',
+      objects: [
+        { name: 'perro', x: 0.3, y: 0.6, size: 0.4 },
+        { name: 'árbol', x: 0.8, y: 0.3, size: 0.7 }
+      ]
+    });
     expect(openaiCalls[0].messages[0].content[0].text).toContain('Spanish');
+    expect(openaiCalls[0].response_format.type).toBe('json_schema');
   });
 
-  it('never describes people', async () => {
-    openaiReply = JSON.stringify({ object: 'girl with glasses', person: true });
+  it('never describes people: only the notice when there is nothing else', async () => {
+    openaiReply = JSON.stringify({ objects: [{ name: 'girl with glasses', x: 0.5, y: 0.5, size: 0.8 }], person: true });
     const r = await post('/api/detect', { image });
-    expect(await r.json()).toEqual({ object: null, person: true });
-    expect(openaiCalls[0].messages[0].content[0].text).toMatch(/Never describe or identify people/);
+    expect(await r.json()).toEqual({ object: null, objects: [], person: true });
+    expect(openaiCalls[0].messages[0].content[0].text).toMatch(/never describe or identify people/);
   });
 
-  it('returns null when there is no clear object', async () => {
-    openaiReply = JSON.stringify({ object: null, person: false });
-    expect(await (await post('/api/detect', { image })).json()).toEqual({ object: null });
+  it('offers the objects next to a person, never the person', async () => {
+    openaiReply = JSON.stringify({ objects: [{ name: 'boy', x: 0.5, y: 0.5, size: 0.8 }, { name: 'ball', x: 0.2, y: 0.8, size: 0.2 }], person: true });
+    expect(await (await post('/api/detect', { image })).json()).toEqual({ object: 'ball', objects: [{ name: 'ball', x: 0.2, y: 0.8, size: 0.2 }] });
+  });
+
+  it('returns no object when there is no clear one or the answer is unusable', async () => {
+    openaiReply = JSON.stringify({ objects: [], person: false });
+    expect(await (await post('/api/detect', { image })).json()).toEqual({ object: null, objects: [] });
+    openaiReply = 'not json';
+    expect(await (await post('/api/detect', { image })).json()).toEqual({ object: null, objects: [] });
   });
 });
 

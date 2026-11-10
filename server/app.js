@@ -4,6 +4,7 @@ const { rateLimit } = require('express-rate-limit');
 const { callOpenAI, parseModelJson } = require('./openai');
 const { findArticles } = require('./encyclopedia');
 const { findLessonImages } = require('./images');
+const { DETECTION_SCHEMA, detectionPrompt, cleanDetection } = require('./detection');
 const { RANKING_SCHEMA, LESSON_SCHEMA, rankingPrompts, lessonPrompts, cleanRanking, validateLesson } = require('./content');
 
 const app = express();
@@ -161,7 +162,7 @@ app.post('/api/ai', async (req, res) => {
   }
 });
 
-// Object detection only: what is the main thing in the photo (never describing people).
+// Object detection: up to 4 main objects with their approximate position (never people).
 app.post('/api/detect', async (req, res) => {
   const { image, language = 'English' } = req.body || {};
   if (!image) {
@@ -184,28 +185,21 @@ app.post('/api/detect', async (req, res) => {
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: `You identify objects for a children's learning app. Look at the main thing in this photo and answer ONLY with a JSON object {"object": string or null, "person": boolean}.
-- object: the common name of the main object in ${language}, 1-3 words, lowercase, no punctuation (e.g. "apple", "red car", "golden retriever"). Be specific and accurate.
-- If the main subject is a person, people or a body part (face, hand…), set "person": true and "object": null. Never describe or identify people.
-- If there is no clear object, set "object": null.`
-            },
+            { type: 'text', text: detectionPrompt(language) },
             { type: 'image_url', image_url: { url: image, detail: 'low' } }
           ]
         }
       ],
-      response_format: { type: 'json_object' },
-      max_tokens: 60,
+      response_format: jsonSchema(DETECTION_SCHEMA),
+      max_tokens: 300,
       temperature: 0.2
     });
     if (raw === null) return res.status(502).json({ error: 'Vision API error' });
 
-    const parsed = parseModelJson(raw) || {};
-    if (parsed.person === true) return res.json({ object: null, person: true });
-    const objectName = typeof parsed.object === 'string' ? parsed.object.trim().replace(/^["'.\s]+|["'.\s]+$/g, '') : '';
-    if (!objectName || objectName.toLowerCase() === 'none') return res.json({ object: null });
-    return res.json({ object: objectName.slice(0, MAX_TEXT_FIELD) });
+    const { objects, person } = cleanDetection(parseModelJson(raw), language);
+    if (person) return res.json({ object: null, objects: [], person: true });
+    // `object` (the first one) keeps older versions of the app, still cached on phones, working.
+    return res.json({ object: objects[0] ? objects[0].name : null, objects });
   } catch (err) {
     console.error('/api/detect error', err);
     return res.status(500).json({ error: 'Internal server error' });
