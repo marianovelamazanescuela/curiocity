@@ -3,6 +3,7 @@ const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const { callOpenAI, parseModelJson } = require('./openai');
 const { findArticles } = require('./encyclopedia');
+const { findLessonImages } = require('./images');
 const { RANKING_SCHEMA, LESSON_SCHEMA, rankingPrompts, lessonPrompts, cleanRanking, validateLesson } = require('./content');
 
 const app = express();
@@ -146,7 +147,12 @@ app.post('/api/ai', async (req, res) => {
     // The client has localized offline content, so signal failure instead of inventing text here.
     if (result === null) return res.status(502).json({ error: 'Invalid model output' });
 
-    const lesson = { ...result.lesson, enlaces: await findArticles([...result.searchTerms, objectName], language) };
+    // Links and example pictures are looked up in parallel; the pictures are cached with the lesson.
+    const [enlaces, imagenes] = await Promise.all([
+      findArticles([...result.searchTerms, objectName], language),
+      findLessonImages(result.imageTerms, language)
+    ]);
+    const lesson = { ...result.lesson, enlaces, ...imagenes };
     cacheSet(cacheKey, lesson);
     return res.json(lesson);
   } catch (err) {

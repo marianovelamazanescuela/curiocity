@@ -31,6 +31,26 @@ describe('validateLesson', () => {
     expect(l).not.toHaveProperty('terminos_busqueda');
   });
 
+  it('takes the picture terms as optional article titles, never as URLs', () => {
+    const terms = extra => validateLesson(lesson(extra)).imageTerms;
+    expect(terms({ imagen_dato: ' Farolero ', imagen_porque: 'Lámpara de gas' })).toEqual({ dato: 'Farolero', porque: 'Lámpara de gas' });
+    expect(terms({})).toEqual({ dato: null, porque: null }); // old answers without the fields
+    expect(terms({ imagen_dato: '', imagen_porque: '   ' })).toEqual({ dato: null, porque: null });
+    expect(terms({ imagen_dato: 'https://upload.wikimedia.org/x.jpg', imagen_porque: 'www.ejemplo.com' })).toEqual({ dato: null, porque: null });
+    expect(terms({ imagen_dato: 'x'.repeat(61), imagen_porque: 42 })).toEqual({ dato: null, porque: null });
+    // Missing or wrong picture terms never make the lesson incomplete (no retry for them)
+    expect(validateLesson(lesson({ imagen_dato: 'https://x' })).complete).toBe(true);
+    expect(validateLesson(lesson()).lesson).not.toHaveProperty('imagen_dato');
+  });
+
+  it('asks for the picture terms in the schema and the prompt', () => {
+    expect(LESSON_SCHEMA.schema.properties.imagen_dato).toEqual({ type: 'string' });
+    expect(LESSON_SCHEMA.schema.properties.imagen_porque).toEqual({ type: 'string' });
+    const { system } = lessonPrompts({ objectName: 'Farola', subject: 'History', language: 'Spanish' });
+    expect(system).toMatch(/imagen_dato: the exact title of ONE encyclopedia article/);
+    expect(system).toMatch(/never a living person/);
+  });
+
   it('shuffles by default, so the answer is not always the first option', () => {
     const positions = new Set();
     for (let i = 0; i < 40; i++) positions.add(validateLesson(lesson()).lesson.pregunta_inicial.correcta);
