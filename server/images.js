@@ -157,7 +157,10 @@ async function findImage(term, languageName) {
   for (const source of sources) {
     try {
       const result = await checkImage(source, clean);
-      if (result.image) return result.image;
+      if (result.image) {
+        console.info(`[imagen] elegida: "${clean}" → ${source.name} "${result.image.articulo}" · ${result.image.archivo}`);
+        return result.image;
+      }
       if (result.file) console.info(`[imagen] descartada: "${clean}" → ${source.name} "${result.article}" · ${result.file} · ${result.reason}`);
       else console.info(`[imagen] sin imagen: "${clean}" en ${source.name}${result.article ? ` ("${result.article}")` : ''} · ${result.reason}`);
     } catch (err) {
