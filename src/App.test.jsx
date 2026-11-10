@@ -111,6 +111,72 @@ describe('App', () => {
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Manzana' })).not.toBeInTheDocument());
   });
 
+  describe('several objects in the photo', () => {
+    const detect = {
+      object: 'perro',
+      objects: [
+        { name: 'perro', x: 0.3, y: 0.6, size: 0.4 },
+        { name: 'árbol', x: 0.75, y: 0.3, size: 0.6 }
+      ]
+    };
+    const history = () => JSON.parse(localStorage.getItem('curiocity_history_v1') || '[]').map(e => e.object);
+
+    it('lets the child choose with the buttons; the history keeps the chosen object', async () => {
+      const fetchMock = mockServer({ detect });
+      const user = userEvent.setup();
+      const { container } = render(<App />);
+
+      await takePhoto(user);
+      expect(await screen.findByRole('heading', { name: '¿Qué quieres explorar?' })).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /^(perro|árbol)$/ })).toHaveLength(2); // markers are not announced twice
+      const markers = container.querySelectorAll('.chooser__marker');
+      expect(markers).toHaveLength(2);
+      expect(markers[1]).toHaveStyle({ left: '75%', top: '30%' });
+      expect(markers[1]).toHaveAttribute('aria-hidden', 'true');
+      expect(markers[1]).toHaveAttribute('tabindex', '-1');
+      expect(history()).toEqual([]); // nothing chosen yet
+
+      await user.click(screen.getByRole('button', { name: 'árbol' }));
+      expect(await screen.findByRole('heading', { name: 'Árbol' })).toBeInTheDocument();
+      expect(bodyOf(fetchMock, '/api/subjects').objectName).toBe('Árbol');
+      expect(history()).toEqual(['Árbol']);
+
+      // "Volver" goes back to choosing; the markers also work
+      await user.click(screen.getByRole('button', { name: 'Volver a los objetos' }));
+      expect(await screen.findByRole('heading', { name: '¿Qué quieres explorar?' })).toBeInTheDocument();
+      await user.click(container.querySelector('.chooser__marker'));
+      expect(await screen.findByRole('heading', { name: 'Perro' })).toBeInTheDocument();
+      expect(history()).toEqual(['Perro', 'Árbol']);
+
+      // "Objeto incorrecto" still goes back to the camera
+      await user.click(screen.getByRole('button', { name: 'Objeto incorrecto: hacer otra foto' }));
+      expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+    });
+
+    it('offers "Hacer otra foto" and "Volver a la cámara" while choosing', async () => {
+      mockServer({ detect });
+      const user = userEvent.setup();
+      render(<App />);
+      await takePhoto(user);
+      await user.click(await screen.findByRole('button', { name: 'Hacer otra foto' }));
+      expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+      await takePhoto(user);
+      await user.click(await screen.findByRole('button', { name: 'Volver a la cámara' }));
+      expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+    });
+
+    it('with a single object, goes straight to the subjects, and "Volver" goes to the camera', async () => {
+      mockServer({ detect: { object: 'perro', objects: [detect.objects[0]] } });
+      const user = userEvent.setup();
+      render(<App />);
+      await takePhoto(user);
+      expect(await screen.findByRole('heading', { name: 'Perro' })).toBeInTheDocument();
+      expect(screen.queryByText('¿Qué quieres explorar?')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Volver a la cámara' })).toBeInTheDocument();
+      expect(history()).toEqual(['Perro']);
+    });
+  });
+
   it('shows every subject, without hooks, when the ranking is unknown', async () => {
     mockServer({ subjects: { ranking: null } });
     const user = userEvent.setup();
