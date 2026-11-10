@@ -18,6 +18,44 @@ function hostnameOf(url) {
   }
 }
 
+const IMAGE_ORIGIN = 'https://upload.wikimedia.org/';
+const FILE_PAGE_ORIGIN = 'https://commons.wikimedia.org/wiki/';
+
+/**
+ * Example picture for the fact or the why: the main image of an encyclopedia article, found by the
+ * server on Wikimedia Commons with its author and licence. It loads straight from upload.wikimedia.org
+ * without cookies (crossOrigin="anonymous") or referrer. If anything is missing or it fails to load,
+ * it disappears without leaving a gap.
+ */
+export function LessonImage({ t, image }) {
+  const [failed, setFailed] = useState(false);
+  const usable =
+    image &&
+    typeof image.src === 'string' && image.src.startsWith(IMAGE_ORIGIN) &&
+    typeof image.archivo === 'string' && image.archivo.startsWith(FILE_PAGE_ORIGIN) &&
+    image.autor && image.licencia;
+  if (!usable || failed) return null;
+  return (
+    <figure className="lesson-image">
+      <img
+        src={image.src}
+        alt={image.articulo || image.termino || ''}
+        width={image.ancho || undefined}
+        height={image.alto || undefined}
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
+        onError={() => setFailed(true)}
+      />
+      <figcaption>
+        <a href={image.archivo} target="_blank" rel="noopener noreferrer">
+          {t.imageCredit}: {image.autor} · {image.licencia} · Wikimedia Commons
+        </a>
+      </figcaption>
+    </figure>
+  );
+}
+
 /**
  * Sharing: WhatsApp and email are always visible (text only: a link cannot carry the photo).
  * "Más…" opens the system share sheet, which can attach the photo; only shown when the browser has it.
@@ -235,6 +273,7 @@ export default function ContentView({
         <Curi state="idle" size={64} />
         <h3 id={titleId} className="kicker">{t.didYouKnow}</h3>
         <p className="lesson-text lesson-text--read">{content.dato_sorprendente}</p>
+        <LessonImage key={content.imagen_dato?.src} t={t} image={content.imagen_dato} />
       </>
     );
   } else if (current === 'why') {
@@ -246,6 +285,7 @@ export default function ContentView({
         <div className="prose lesson-text lesson-text--read">
           {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
         </div>
+        {!content.offline && <LessonImage key={content.imagen_porque?.src} t={t} image={content.imagen_porque} />}
       </>
     );
   } else if (current === 'challenge') {

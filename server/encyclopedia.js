@@ -95,4 +95,4 @@ async function findArticles(terms, languageName) {
   return results.filter(Boolean);
 }
 
-module.exports = { findArticles, SOURCES };
+module.exports = { findArticles, mediaWiki, SOURCES, LANGUAGE_CODES };

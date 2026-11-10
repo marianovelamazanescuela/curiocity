@@ -4,6 +4,27 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-10 — Número variable de asignaturas destacadas e imágenes de ejemplo (fase 5)
+
+**Qué se cambió y por qué**
+- **Asignaturas destacadas:** ahora se destacan todas las que puntúan 2 o 3 (relación clara o muy fuerte), de mayor a menor y como mucho 4. Si ninguna llega a 2, solo la mejor. *Por qué:* destacar siempre 3 obligaba a subir asignaturas flojas en objetos con pocas relaciones claras. El prompt del ranking no relaja la exigencia: dice además que solo el 2 y el 3 se destacan, para que la IA no infle las notas.
+- **Imagen de ejemplo en "¿Sabías que…?" y "¿Por qué?":**
+  - La IA nunca propone URLs: solo un título de artículo para cada pantalla (`imagen_dato`, `imagen_porque`), o nada.
+  - El servidor busca ese artículo con título exacto en las enciclopedias del idioma y toma **solo su imagen principal**. La acepta únicamente si está en Wikimedia Commons con autor y licencia, sale de `upload.wikimedia.org` y no es un mapa, bandera, escudo, diagrama, icono, logo, SVG ni una imagen pequeña.
+  - La imagen va debajo del texto (primero estaba entre la etiqueta y el texto; se bajó tras revisar las capturas). Bajo la imagen, el crédito con autor, licencia y enlace al archivo. Si falla al cargar, desaparece sin dejar hueco.
+  - *Por qué:* ver lo que cuenta el dato (por ejemplo, las semillas en estrella de una manzana) ayuda a entenderlo y a recordarlo.
+- **Privacidad (decisión):** las imágenes se cargan directamente desde `upload.wikimedia.org`, sin cookies ni referer. Es la única excepción decidida a la regla de que el navegador solo habla con nuestro servidor. **Se descartó pasar las imágenes por nuestro servidor por sencillez y coste** (más tráfico y más código en el plan gratuito de Render). Wikimedia intenta poner cookies con las imágenes (una para contar visitantes únicos y otra con la ubicación aproximada), y `crossorigin="anonymous"` hace que el navegador ni las envíe ni las guarde.
+- **Rigor:** en una primera ronda salieron imágenes sueltas (garrafas de agua para un dato sobre el fondo de una botella, un manzano genérico para un dato sobre los restos de la flor). Se endureció el prompt: el artículo tiene que tratar justo de lo que nombra el texto, nunca del propio objeto ni de algo parecido. Si no, mejor sin imagen.
+
+**Cómo se probó:** 154 tests en verde (esquema, filtros, falta de autor o licencia, imagen que falla al cargar, de 0 a 6 asignaturas con puntuación 2 o más), lint y build. Recorrido real con manzana, botella y farola, OpenAI y Wikimedia reales. Capturas a 360 px en `capturas/fase-5/`.
+
+**Pendiente:**
+- Pocas lecciones tienen imagen: 2 de 12 pantallas en la prueba. Muchos artículos no existen con ese título exacto, y en Commons falta a veces el autor.
+- La IA puede elegir un artículo que no corresponde exactamente al texto, y el servidor no lo puede comprobar. Ejemplo: "Manzano silvestre" (el europeo) para un dato sobre los manzanos de Kazajistán.
+- Revisar una muestra con docentes.
+
+---
+
 ## 2026-11-09 — Rediseño C: páginas a pantalla completa, titulares como el logo y botones ligeros (fase 4)
 
 Rama `feature/rediseno-c`. El rediseño se hizo en Claude Design: se probaron dos alternativas, A y B, y la C es la síntesis que se aplica aquí (capturas de referencia en `capturas/diseno-c/`).

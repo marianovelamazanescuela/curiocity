@@ -67,7 +67,7 @@ async function takePhoto(user) {
 }
 
 describe('App', () => {
-  it('shows the 3 best subjects with a hook and the rest under "Más asignaturas"', async () => {
+  it('shows the featured subjects with a hook and the rest under "Más asignaturas"', async () => {
     const fetchMock = mockServer();
     const user = userEvent.setup();
     render(<App />);

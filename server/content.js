@@ -16,7 +16,9 @@ const SUBJECT_KEYS = {
   artes: 'Art'
 };
 const KEYS = Object.keys(SUBJECT_KEYS);
-const FEATURED_COUNT = 3;
+// Featured subjects: every one scoring 2 or 3 (clear or very strong connection), at most 4.
+const FEATURED_MIN_SCORE = 2;
+const FEATURED_MAX = 4;
 
 // A single audience: the second cycle of primary school (3rd and 4th year, 8-10 years old).
 const AUDIENCE = 'The child is 8-10 years old (3rd or 4th year of primary school) and reads with some fluency: short sentences, everyday words, and explain the reason behind things (the "why"). Use at most one number or one technical word, and only if it is certain, safe and explained simply.';
@@ -72,9 +74,9 @@ function rankingPrompts({ objectName, language }) {
   const system = `You help children (8-10) explore everyday objects through school subjects in a learning app. ${AUDIENCE}
 Score how strongly each of these 7 subjects connects with the object, for a child holding or looking at it:
 ${KEYS.map(k => `"${k}" (${SUBJECT_KEYS[k]})`).join(', ')}.
-Scores (be strict, most objects have only 2-4 subjects scoring 2 or more):
-3 = the subject is a natural, direct way to look at THIS object, with a surprising fact a child would love;
-2 = clear, direct connection;
+Scores (be strict, most objects have only 2-4 subjects scoring 2 or more; only scores 2 and 3 are shown to the child as featured, so never raise a score to make a subject appear):
+3 = very strong: the subject is a natural, direct way to look at THIS object, with a surprising fact a child would love;
+2 = clear, direct connection with THIS object (not with objects in general);
 1 = weak: it needs several steps (a plastic bottle → oil → ancient living things is Biology 1) or works for almost any object (counting, describing, drawing);
 0 = none.
 Judge each subject on its own; the order of the list above means nothing. A living thing usually scores high in Biology; a man-made object usually does not, unless living things really matter for it.
@@ -89,7 +91,8 @@ Return all 7 subjects exactly once. Write every hook in ${language}.`;
 
 /**
  * Normalises the model's ranking into { featured: [{key, hook}], others: [key] }, or null if unusable.
- * featured = the (up to) 3 best subjects with score >= 1 and a hook; others = every other subject,
+ * featured = every subject scoring 2 or 3 with a hook, best first, at most 4; if none reaches 2, only
+ * the best one with score >= 1 and a hook, so the list is never empty. others = every other subject,
  * best first, so nothing disappears: weaker subjects go under "More subjects".
  */
 function cleanRanking(parsed) {
@@ -103,7 +106,9 @@ function cleanRanking(parsed) {
   if (seen.size < 4) return null; // too incomplete to trust
   // Subjects the model forgot count as "no connection". Stable sort keeps the model's order on ties.
   const all = KEYS.map(k => seen.get(k) || { key: k, score: 0, hook: '' }).sort((a, b) => b.score - a.score);
-  const featured = all.filter(s => s.score >= 1 && s.hook).slice(0, FEATURED_COUNT);
+  const withHook = all.filter(s => s.score >= 1 && s.hook);
+  const strong = withHook.filter(s => s.score >= FEATURED_MIN_SCORE).slice(0, FEATURED_MAX);
+  const featured = strong.length ? strong : withHook.slice(0, 1);
   if (!featured.length) return null;
   const featuredKeys = new Set(featured.map(s => s.key));
   return {
@@ -126,7 +131,8 @@ const LESSON_SCHEMA = {
     additionalProperties: false,
     required: [
       'pregunta_inicial', 'dato_sorprendente', 'por_que', 'reto', 'reto_foto', 'reto_descubrimiento',
-      'para_seguir_pensando', 'ideas_pregunta_final', 'conexion_debil', 'objetos_relacionados', 'terminos_busqueda'
+      'para_seguir_pensando', 'ideas_pregunta_final', 'conexion_debil', 'objetos_relacionados', 'terminos_busqueda',
+      'imagen_dato', 'imagen_porque'
     ],
     properties: {
       pregunta_inicial: {
@@ -148,7 +154,9 @@ const LESSON_SCHEMA = {
       ideas_pregunta_final: { type: 'array', items: { type: 'string' } },
       conexion_debil: { type: 'boolean' },
       objetos_relacionados: { type: 'array', items: { type: 'string' } },
-      terminos_busqueda: { type: 'array', items: { type: 'string' } }
+      terminos_busqueda: { type: 'array', items: { type: 'string' } },
+      imagen_dato: { type: 'string' },
+      imagen_porque: { type: 'string' }
     }
   }
 };
@@ -169,6 +177,8 @@ Fields:
 - conexion_debil: true if the connection between this object and this subject is weak. Then say it honestly in the first sentence of por_que, in a friendly way (for example "A banana has little to do with music, but…"). Do not stretch: the question and the fact may be about the subject in general (well-known, certain facts, e.g. about rhythm), linked to what the child will do with the object; never an invented link between this object and the subject.
 - objetos_relacionados: 1-3 related everyday objects (simple nouns) to explore next.
 - terminos_busqueda: 1-2 encyclopedia article titles about this object, most specific first (e.g. "Banco (asiento)" rather than "Banco" for a park bench).
+- imagen_dato: the exact title of ONE encyclopedia article (in ${language}) whose main photo would show what dato_sorprendente talks about, so the child can see it (e.g. for a fact about the people who lit street lamps: "Farolero"). A concrete thing that can be photographed: an animal, a plant, a tool, a machine, a material, a job, a building. The article must be about EXACTLY the thing the text names, so that its main photo shows it; never a broader or merely related topic, and never a similar species or thing instead of the one named. Never the object itself or what it generally comes from (no "Manzano" or "Manzana" for an apple, no "Botella" for a bottle): the child already has it in front of them. If the text is about a part or detail of the object, a general article will not show it: leave it empty. Never a country, region or city (their main picture is often a map or a flag), never a living person, never an abstract idea. An empty string is much better than a loose picture.
+- imagen_porque: the same, for what por_que explains (e.g. "Lámpara de gas"); a different article from imagen_dato, or an empty string.
 Rules:
 ${COMMON_RULES}
 Write every field in ${language}.`;
@@ -221,9 +231,14 @@ function validateLesson(parsed, shuffle = defaultShuffle) {
       objetos_relacionados: stringList(parsed.objetos_relacionados, 3, 40)
     },
     searchTerms: stringList(parsed.terminos_busqueda, 3, 100),
+    // Optional: an article title for each picture, or null. Never a reason to ask the model again.
+    imageTerms: { dato: imageTerm(parsed.imagen_dato), porque: imageTerm(parsed.imagen_porque) },
     complete: Boolean(discovery && ideas)
   };
 }
+
+/** An encyclopedia article title for a picture: short, one line, no URL. Otherwise null. */
+const imageTerm = v => (ok(v, 60) && !/[\n/:]|https?|www\./i.test(v) ? clean(v) : null);
 
 const distinct = list => new Set(list.map(s => s.toLowerCase())).size === list.length;
 

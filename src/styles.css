@@ -1154,6 +1154,33 @@ p {
   line-height: 1.4;
 }
 
+/* Example picture of the fact and the why: the article's main image from Wikimedia Commons. */
+.lesson-image {
+  margin: 24px 0 0;
+}
+
+.lesson-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 170px;
+  object-fit: cover;
+  border-radius: 16px;
+  background: var(--cream-deep);
+}
+
+.lesson-image figcaption {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.lesson-image figcaption a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
 .lesson-card--fact .curi,
 .lesson-card--why .curi,
 .lesson-card--explore .curi {

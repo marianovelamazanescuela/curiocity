@@ -31,6 +31,26 @@ describe('validateLesson', () => {
     expect(l).not.toHaveProperty('terminos_busqueda');
   });
 
+  it('takes the picture terms as optional article titles, never as URLs', () => {
+    const terms = extra => validateLesson(lesson(extra)).imageTerms;
+    expect(terms({ imagen_dato: ' Farolero ', imagen_porque: 'Lámpara de gas' })).toEqual({ dato: 'Farolero', porque: 'Lámpara de gas' });
+    expect(terms({})).toEqual({ dato: null, porque: null }); // old answers without the fields
+    expect(terms({ imagen_dato: '', imagen_porque: '   ' })).toEqual({ dato: null, porque: null });
+    expect(terms({ imagen_dato: 'https://upload.wikimedia.org/x.jpg', imagen_porque: 'www.ejemplo.com' })).toEqual({ dato: null, porque: null });
+    expect(terms({ imagen_dato: 'x'.repeat(61), imagen_porque: 42 })).toEqual({ dato: null, porque: null });
+    // Missing or wrong picture terms never make the lesson incomplete (no retry for them)
+    expect(validateLesson(lesson({ imagen_dato: 'https://x' })).complete).toBe(true);
+    expect(validateLesson(lesson()).lesson).not.toHaveProperty('imagen_dato');
+  });
+
+  it('asks for the picture terms in the schema and the prompt', () => {
+    expect(LESSON_SCHEMA.schema.properties.imagen_dato).toEqual({ type: 'string' });
+    expect(LESSON_SCHEMA.schema.properties.imagen_porque).toEqual({ type: 'string' });
+    const { system } = lessonPrompts({ objectName: 'Farola', subject: 'History', language: 'Spanish' });
+    expect(system).toMatch(/imagen_dato: the exact title of ONE encyclopedia article/);
+    expect(system).toMatch(/never a living person/);
+  });
+
   it('shuffles by default, so the answer is not always the first option', () => {
     const positions = new Set();
     for (let i = 0; i < 40; i++) positions.add(validateLesson(lesson()).lesson.pregunta_inicial.correcta);
@@ -83,7 +103,25 @@ describe('cleanRanking', () => {
   const scores = { historia: 3, matematicas: 2, artes: 2, biologia: 1, geologia: 0, lengua: 1, musica: 0 };
   const model = () => ({ subjects: all.map(key => ({ key, score: scores[key], hook: scores[key] >= 2 ? `gancho ${key}` : '' })) });
 
-  it('features the 3 best subjects with their hook and keeps the rest in order', () => {
+  const withScores = sc => ({ subjects: all.map(key => ({ key, score: sc[key] || 0, hook: sc[key] ? `gancho ${key}` : '' })) });
+  const featuredKeys = sc => cleanRanking(withScores(sc)).featured.map(f => f.key);
+
+  it('features every subject scoring 2 or 3, best first, up to 4', () => {
+    expect(featuredKeys({ historia: 2, artes: 1, lengua: 1 })).toEqual(['historia']);
+    expect(featuredKeys({ historia: 2, artes: 3, lengua: 1 })).toEqual(['artes', 'historia']);
+    expect(featuredKeys({ historia: 2, artes: 3, musica: 2, lengua: 1 })).toEqual(['artes', 'historia', 'musica']);
+    expect(featuredKeys({ biologia: 2, historia: 3, artes: 2, musica: 3 })).toEqual(['historia', 'musica', 'biologia', 'artes']);
+    expect(featuredKeys({ biologia: 2, geologia: 2, historia: 3, matematicas: 2, artes: 3, musica: 2 })).toEqual(['historia', 'artes', 'biologia', 'geologia']);
+  });
+
+  it('with no subject scoring 2, features only the best one scoring 1', () => {
+    const r = cleanRanking(withScores({ lengua: 1, artes: 1 }));
+    expect(r.featured).toEqual([{ key: 'lengua', hook: 'gancho lengua' }]);
+    expect(r.others).toEqual(['artes', 'biologia', 'geologia', 'historia', 'matematicas', 'musica']);
+    expect(cleanRanking(withScores({}))).toBeNull(); // nothing at all: the app shows the 7 subjects
+  });
+
+  it('keeps every subject that is not featured under "More subjects", in order', () => {
     expect(cleanRanking(model())).toEqual({
       featured: [
         { key: 'historia', hook: 'gancho historia' },

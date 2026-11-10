@@ -9,6 +9,7 @@ let openaiReply; // what the mocked OpenAI returns: string content, { status }, 
 let openaiCalls;
 let wikiPages; // host -> Set of existing page titles in the mocked encyclopedias
 let wikiCalls;
+let commonsFiles; // file names that exist on the mocked Wikimedia Commons
 
 const post = (path, body, headers = {}) =>
   realFetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
@@ -21,12 +22,29 @@ function mockMediaWiki(url) {
   const titles = u.searchParams.get('titles');
   if (titles) {
     const found = pages.has(titles);
-    return Response.json({ query: { pages: [found ? { pageid: 1, title: titles } : { title: titles, missing: true }] } });
+    // Every existing page has a main image named after it (Farolero -> Farolero.jpg).
+    return Response.json({ query: { pages: [found ? { pageid: 1, title: titles, pageimage: `${titles}.jpg` } : { title: titles, missing: true }] } });
   }
   // Loose like the real search: any page sharing a word of 4+ letters with the term.
   const words = (u.searchParams.get('srsearch') || '').replace(/^intitle:/, '').toLowerCase().split(/\s+/).filter(w => w.length >= 4);
   const hits = [...pages].filter(p => words.some(w => p.toLowerCase().includes(w)));
   return Response.json({ query: { search: hits.map(title => ({ title })) } });
+}
+
+// Minimal Commons mock: a photo with author and licence for every file in commonsFiles.
+function mockCommons(url) {
+  const u = new URL(url);
+  wikiCalls.push(u.hostname);
+  const title = u.searchParams.get('titles');
+  const file = title.replace(/^File:/, '');
+  if (!commonsFiles[file]) return Response.json({ query: { pages: [{ title, missing: true }] } });
+  const info = {
+    mime: 'image/jpeg', width: 1600, height: 1200, thumbwidth: 600, thumbheight: 450,
+    thumburl: `https://upload.wikimedia.org/wikipedia/commons/thumb/F/${file}/600px-${file}?utm_source=x`,
+    descriptionurl: `https://commons.wikimedia.org/wiki/File:${file}`,
+    extmetadata: { Artist: { value: '<a href="https://example.org">Ana Ruiz</a>' }, LicenseShortName: { value: 'CC BY-SA 4.0' } }
+  };
+  return Response.json({ query: { pages: [{ title, imageinfo: [info] }] } });
 }
 
 beforeAll(async () => {
@@ -46,6 +64,7 @@ beforeAll(async () => {
       }
       return Response.json({ choices: [{ message: { content: reply } }] });
     }
+    if (s.startsWith('https://commons.wikimedia.org')) return mockCommons(s);
     if (/vikidia\.org|wikipedia\.org|klexikon\.zum\.de/.test(s)) return mockMediaWiki(s);
     return realFetch(url, opts);
   });
@@ -67,6 +86,7 @@ beforeEach(() => {
   openaiReply = '';
   wikiCalls = [];
   wikiPages = {};
+  commonsFiles = {};
   mod.cache.clear();
 });
 
@@ -210,6 +230,27 @@ describe('POST /api/ai', () => {
     expect(body.enlaces.map(l => l.title)).toEqual(['Concha marina']);
   });
 
+  it('adds the example pictures found on Commons and caches them with the lesson', async () => {
+    wikiPages = { 'es.vikidia.org': new Set(['Farola', 'Farolero']) };
+    commonsFiles = { 'Farolero.jpg': true };
+    openaiReply = modelLesson({ imagen_dato: 'Farolero', imagen_porque: 'Lámpara de gas' });
+    const body = await (await post('/api/ai', valid)).json();
+    expect(body.imagen_dato).toMatchObject({
+      src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/F/Farolero.jpg/600px-Farolero.jpg',
+      autor: 'Ana Ruiz',
+      licencia: 'CC BY-SA 4.0',
+      archivo: 'https://commons.wikimedia.org/wiki/File:Farolero.jpg',
+      termino: 'Farolero'
+    });
+    expect(body.imagen_porque).toBeNull(); // no such article: no picture
+    expect(JSON.stringify(body)).not.toContain('imagen_dato":"Farolero');
+
+    const calls = wikiCalls.length;
+    const again = await (await post('/api/ai', valid)).json();
+    expect(again.imagen_dato.src).toBe(body.imagen_dato.src);
+    expect(wikiCalls).toHaveLength(calls); // from the cache, nothing looked up again
+  });
+
   it('uses the encyclopedias of the requested language', async () => {
     wikiPages = { 'klexikon.zum.de': new Set(['Laterne']) };
     openaiReply = modelLesson({ terminos_busqueda: ['Laterne'] });
@@ -288,7 +329,7 @@ describe('POST /api/subjects', () => {
     expect((await post('/api/subjects', { objectName: 'x'.repeat(101) })).status).toBe(400);
   });
 
-  it('returns the 3 best subjects with a hook, the rest in order, and caches them', async () => {
+  it('returns the subjects scoring 2 or more with a hook, the rest in order, and caches them', async () => {
     openaiReply = modelRanking();
     const body = await (await post('/api/subjects', { objectName: 'Farola', language: 'Spanish' })).json();
     expect(body.ranking.featured.map(f => f.key)).toEqual(['historia', 'matematicas', 'artes']);
