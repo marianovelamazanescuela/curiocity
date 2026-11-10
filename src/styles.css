@@ -832,7 +832,8 @@ p {
   margin-top: 12px;
 }
 
-.study__section {
+/* more specific than .kicker, which sets its own margin further down */
+.study .study__section {
   margin-top: 44px;
 }
 
