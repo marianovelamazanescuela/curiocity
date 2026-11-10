@@ -272,8 +272,8 @@ export default function ContentView({
       <>
         <Curi state="idle" size={64} />
         <h3 id={titleId} className="kicker">{t.didYouKnow}</h3>
-        <LessonImage key={content.imagen_dato?.src} t={t} image={content.imagen_dato} />
         <p className="lesson-text lesson-text--read">{content.dato_sorprendente}</p>
+        <LessonImage key={content.imagen_dato?.src} t={t} image={content.imagen_dato} />
       </>
     );
   } else if (current === 'why') {
@@ -281,11 +281,11 @@ export default function ContentView({
       <>
         <Curi state="thinking" size={64} />
         <h3 id={titleId} className="kicker">{content.offline ? t.investigate : t.why}</h3>
-        {!content.offline && <LessonImage key={content.imagen_porque?.src} t={t} image={content.imagen_porque} />}
         {content.offline && <p className="lesson-text lesson-text--read card__intro">{content.intro}</p>}
         <div className="prose lesson-text lesson-text--read">
           {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
         </div>
+        {!content.offline && <LessonImage key={content.imagen_porque?.src} t={t} image={content.imagen_porque} />}
       </>
     );
   } else if (current === 'challenge') {

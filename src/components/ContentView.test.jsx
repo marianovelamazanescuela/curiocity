@@ -179,7 +179,7 @@ describe('Lesson cards', () => {
       await user.click(next());
     };
 
-    it('shows the picture between the label and the text, with its credit, on the fact and the why', async () => {
+    it('shows the picture below the text, with its credit, on the fact and the why', async () => {
       const user = userEvent.setup();
       renderLesson({ content: { ...lesson, imagen_dato: picture('Manzano'), imagen_porque: picture('Semilla') } });
       await toFact(user);
@@ -189,14 +189,14 @@ describe('Lesson cards', () => {
       expect(img).toHaveAttribute('referrerpolicy', 'no-referrer');
       expect(img).toHaveAttribute('crossorigin', 'anonymous');
       const figure = img.closest('figure');
-      expect(figure.previousElementSibling).toHaveClass('kicker');
-      expect(figure.nextElementSibling).toHaveTextContent(lesson.dato_sorprendente);
+      expect(figure.previousElementSibling).toHaveTextContent(lesson.dato_sorprendente);
+      expect(figure.nextElementSibling).toBeNull(); // the last thing on the screen
       const credit = screen.getByRole('link', { name: 'Imagen: Ana Ruiz · CC BY-SA 4.0 · Wikimedia Commons' });
       expect(credit).toHaveAttribute('href', 'https://commons.wikimedia.org/wiki/File:Manzano.jpg');
       expect(credit).toHaveAttribute('rel', 'noopener noreferrer');
 
       await user.click(next());
-      expect(screen.getByRole('img', { name: 'Semilla' }).closest('figure').nextElementSibling).toHaveTextContent(lesson.por_que);
+      expect(screen.getByRole('img', { name: 'Semilla' }).closest('figure').previousElementSibling).toHaveTextContent(lesson.por_que);
     });
 
     it('disappears without leaving a gap if the picture fails to load', async () => {

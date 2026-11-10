@@ -1156,7 +1156,7 @@ p {
 
 /* Example picture of the fact and the why: the article's main image from Wikimedia Commons. */
 .lesson-image {
-  margin: 4px 0 20px;
+  margin: 24px 0 0;
 }
 
 .lesson-image img {
