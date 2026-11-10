@@ -263,6 +263,23 @@ describe('Lesson cards', () => {
     await user.click(screen.getByRole('button', { name: 'Hacer otra foto' }));
     expect(onTakePhoto).toHaveBeenCalledTimes(1);
   });
+
+  it('on the last screen, the X goes back to the camera (the other subjects are already there)', async () => {
+    const user = userEvent.setup();
+    const onBack = vi.fn();
+    const onTakePhoto = vi.fn();
+    renderLesson({ onBack, onTakePhoto });
+    await user.click(screen.getByRole('button', { name: 'En el centro' }));
+    for (let i = 0; i < 4; i++) await user.click(next());
+    // screen 5: the X still goes back to the subjects
+    expect(screen.getByRole('button', { name: 'Cerrar la lección' })).toBeInTheDocument();
+    await user.click(next());
+    expect(currentCard()).toHaveAccessibleName('Tarjeta 6 de 6 Sigue explorando');
+    expect(screen.queryByRole('button', { name: 'Cerrar la lección' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Volver a la cámara' }));
+    expect(onTakePhoto).toHaveBeenCalledTimes(1);
+    expect(onBack).not.toHaveBeenCalled();
+  });
 });
 
 describe('Without voice', () => {

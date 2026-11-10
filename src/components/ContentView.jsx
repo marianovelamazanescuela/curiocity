@@ -197,9 +197,16 @@ export default function ContentView({
   }, [challengeResult, showIdeas]);
 
   // Top: the pill (the only place with the subject's colour), centred, and the X, which leaves the
-  // lesson and goes back to the subjects.
-  const header = (
-    <PageNav right={<CircleButton label={t.closeLesson} onClick={onBack}><IconClose /></CircleButton>}>
+  // lesson: back to the subjects, except on the last screen ("Sigue explorando"), which already
+  // offers the other subjects, so there the X goes back to the camera.
+  const renderHeader = (atEnd = false) => (
+    <PageNav
+      right={
+        <CircleButton label={atEnd ? t.backToCamera : t.closeLesson} onClick={atEnd ? onTakePhoto : onBack}>
+          <IconClose />
+        </CircleButton>
+      }
+    >
       <h2 className="lesson-pill">
         <span className="object-name-text">{objectName}</span> · {t.subjects[subjectKey]}
       </h2>
@@ -209,7 +216,7 @@ export default function ContentView({
   if (!content) {
     return (
       <article className="lesson" style={{ '--subject': subject.color }}>
-        {header}
+        {renderHeader()}
         <div className="lesson__loading">
           <CuriThinking label={t.curiThinking} />
         </div>
@@ -392,7 +399,7 @@ export default function ContentView({
 
   return (
     <article className="lesson" style={{ '--subject': subject.color }}>
-      {header}
+      {renderHeader(isLast)}
 
       <div className="lesson__bar">
         <ol className="progress" aria-hidden="true" style={{ '--cards': cards.length }}>
