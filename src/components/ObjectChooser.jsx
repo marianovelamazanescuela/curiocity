@@ -1,10 +1,15 @@
 import { CircleButton, PageNav } from './Page';
 import { IconCamera, IconChevronLeft } from './icons';
 
-// Where the name tag goes so it stays inside the photo: under the ring, or above it near the bottom,
-// and aligned to the side near the left or right edge.
-function labelPlacement({ x, y }) {
-  const vertical = y > 0.78 ? 'above' : 'below';
+// Ring diameter as a fraction of the photo, as in the CSS: clamp(52px, size * 85%, 70%).
+const ringFraction = size => Math.min(Math.max(size * 0.85, 0.15), 0.7);
+
+// Where the name tag goes so it stays inside the photo: inside a big ring, otherwise under the
+// ring (or above it when it would fall off the bottom), aligned to the side near the edges.
+function labelPlacement({ x, y, size }) {
+  const r = ringFraction(size) / 2;
+  if (r >= 0.22) return 'chooser__label--inside';
+  const vertical = y + r > 0.86 ? 'above' : 'below';
   const horizontal = x < 0.22 ? 'start' : x > 0.78 ? 'end' : 'center';
   return `chooser__label--${vertical} chooser__label--${horizontal}`;
 }

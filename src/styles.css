@@ -1021,7 +1021,8 @@ p {
   padding: 0;
   border: none;
   background: none;
-  transform: translate(-50%, -50%);
+  /* `translate`, not `transform`: the entry animation uses transform and would undo the centring */
+  translate: -50% -50%;
   animation: rise 0.4s var(--ease-out) var(--delay) both;
 }
 
@@ -1052,6 +1053,7 @@ p {
 .chooser__label--below { top: calc(100% + 6px); }
 .chooser__label--above { bottom: calc(100% + 6px); }
 .chooser__label--center { left: 50%; transform: translateX(-50%); }
+.chooser__label--inside { top: 50%; left: 50%; transform: translate(-50%, -50%); }
 .chooser__label--start { left: 0; }
 .chooser__label--end { right: 0; }
 
