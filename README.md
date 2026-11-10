@@ -11,7 +11,7 @@ Navegador (React + Vite)                     Servidor (Express)                 
 ────────────────────────                     ──────────────────                 ─────────
 Cámara → foto 800 px ── POST /api/detect ──▶ valida imagen, límite peticiones ─▶ OpenAI visión: objeto
 Objeto (foto, relacionado o historial)
-                ─────── POST /api/subjects ▶ puntúa 7 asignaturas, valida ───▶ OpenAI (JSON con esquema): 3 mejores + gancho
+                ─────── POST /api/subjects ▶ puntúa 7 asignaturas, valida ───▶ OpenAI (JSON con esquema): destacadas (2-3, máx. 4) + gancho
 Elige asignatura ────── POST /api/ai ──────▶ valida, baraja opciones, caché ─▶ OpenAI (JSON con esquema): pregunta, dato,
                                                                                porqué, reto, pregunta final, palabras de búsqueda
                                              busca esas palabras ─────────────▶ Vikidia / Klexikon / Wikipedia

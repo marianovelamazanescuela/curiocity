@@ -288,7 +288,7 @@ describe('POST /api/subjects', () => {
     expect((await post('/api/subjects', { objectName: 'x'.repeat(101) })).status).toBe(400);
   });
 
-  it('returns the 3 best subjects with a hook, the rest in order, and caches them', async () => {
+  it('returns the subjects scoring 2 or more with a hook, the rest in order, and caches them', async () => {
     openaiReply = modelRanking();
     const body = await (await post('/api/subjects', { objectName: 'Farola', language: 'Spanish' })).json();
     expect(body.ranking.featured.map(f => f.key)).toEqual(['historia', 'matematicas', 'artes']);

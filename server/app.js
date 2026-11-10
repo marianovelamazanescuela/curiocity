@@ -206,7 +206,7 @@ app.post('/api/detect', async (req, res) => {
   }
 });
 
-// Which subjects connect best with an object: the 3 best with a one-line hook, the rest in order.
+// Which subjects connect best with an object: those scoring 2 or 3 (at most 4) with a one-line hook, the rest in order.
 // Used after a photo, for related objects and for history entries.
 app.post('/api/subjects', async (req, res) => {
   const { objectName, language = 'English' } = req.body || {};

@@ -83,7 +83,25 @@ describe('cleanRanking', () => {
   const scores = { historia: 3, matematicas: 2, artes: 2, biologia: 1, geologia: 0, lengua: 1, musica: 0 };
   const model = () => ({ subjects: all.map(key => ({ key, score: scores[key], hook: scores[key] >= 2 ? `gancho ${key}` : '' })) });
 
-  it('features the 3 best subjects with their hook and keeps the rest in order', () => {
+  const withScores = sc => ({ subjects: all.map(key => ({ key, score: sc[key] || 0, hook: sc[key] ? `gancho ${key}` : '' })) });
+  const featuredKeys = sc => cleanRanking(withScores(sc)).featured.map(f => f.key);
+
+  it('features every subject scoring 2 or 3, best first, up to 4', () => {
+    expect(featuredKeys({ historia: 2, artes: 1, lengua: 1 })).toEqual(['historia']);
+    expect(featuredKeys({ historia: 2, artes: 3, lengua: 1 })).toEqual(['artes', 'historia']);
+    expect(featuredKeys({ historia: 2, artes: 3, musica: 2, lengua: 1 })).toEqual(['artes', 'historia', 'musica']);
+    expect(featuredKeys({ biologia: 2, historia: 3, artes: 2, musica: 3 })).toEqual(['historia', 'musica', 'biologia', 'artes']);
+    expect(featuredKeys({ biologia: 2, geologia: 2, historia: 3, matematicas: 2, artes: 3, musica: 2 })).toEqual(['historia', 'artes', 'biologia', 'geologia']);
+  });
+
+  it('with no subject scoring 2, features only the best one scoring 1', () => {
+    const r = cleanRanking(withScores({ lengua: 1, artes: 1 }));
+    expect(r.featured).toEqual([{ key: 'lengua', hook: 'gancho lengua' }]);
+    expect(r.others).toEqual(['artes', 'biologia', 'geologia', 'historia', 'matematicas', 'musica']);
+    expect(cleanRanking(withScores({}))).toBeNull(); // nothing at all: the app shows the 7 subjects
+  });
+
+  it('keeps every subject that is not featured under "More subjects", in order', () => {
     expect(cleanRanking(model())).toEqual({
       featured: [
         { key: 'historia', hook: 'gancho historia' },
