@@ -163,6 +163,72 @@ describe('Lesson cards', () => {
     expect(screen.getByText(lesson.por_que).closest('.prose')).toHaveClass('lesson-text--read');
   });
 
+  describe('example pictures', () => {
+    const picture = name => ({
+      src: `https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/${name}.jpg/600px-${name}.jpg`,
+      ancho: 600,
+      alto: 400,
+      autor: 'Ana Ruiz',
+      licencia: 'CC BY-SA 4.0',
+      archivo: `https://commons.wikimedia.org/wiki/File:${name}.jpg`,
+      termino: name,
+      articulo: name
+    });
+    const toFact = async user => {
+      await user.click(screen.getByRole('button', { name: 'En el centro' }));
+      await user.click(next());
+    };
+
+    it('shows the picture between the label and the text, with its credit, on the fact and the why', async () => {
+      const user = userEvent.setup();
+      renderLesson({ content: { ...lesson, imagen_dato: picture('Manzano'), imagen_porque: picture('Semilla') } });
+      await toFact(user);
+      const img = screen.getByRole('img', { name: 'Manzano' });
+      expect(img).toHaveAttribute('src', picture('Manzano').src);
+      expect(img).toHaveAttribute('loading', 'lazy');
+      expect(img).toHaveAttribute('referrerpolicy', 'no-referrer');
+      expect(img).toHaveAttribute('crossorigin', 'anonymous');
+      const figure = img.closest('figure');
+      expect(figure.previousElementSibling).toHaveClass('kicker');
+      expect(figure.nextElementSibling).toHaveTextContent(lesson.dato_sorprendente);
+      const credit = screen.getByRole('link', { name: 'Imagen: Ana Ruiz · CC BY-SA 4.0 · Wikimedia Commons' });
+      expect(credit).toHaveAttribute('href', 'https://commons.wikimedia.org/wiki/File:Manzano.jpg');
+      expect(credit).toHaveAttribute('rel', 'noopener noreferrer');
+
+      await user.click(next());
+      expect(screen.getByRole('img', { name: 'Semilla' }).closest('figure').nextElementSibling).toHaveTextContent(lesson.por_que);
+    });
+
+    it('disappears without leaving a gap if the picture fails to load', async () => {
+      const user = userEvent.setup();
+      renderLesson({ content: { ...lesson, imagen_dato: picture('Manzano') } });
+      await toFact(user);
+      fireEvent.error(screen.getByRole('img', { name: 'Manzano' }));
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+      expect(currentCard().querySelector('figure')).toBeNull();
+      expect(screen.queryByText(/Wikimedia Commons/)).not.toBeInTheDocument();
+      expect(screen.getByText(lesson.dato_sorprendente)).toBeInTheDocument();
+    });
+
+    it('shows nothing without a picture, without a licence or author, or from another site', async () => {
+      const user = userEvent.setup();
+      const cases = [
+        undefined,
+        null,
+        { ...picture('Manzano'), licencia: '' },
+        { ...picture('Manzano'), autor: '' },
+        { ...picture('Manzano'), src: 'https://example.org/manzano.jpg' },
+        { ...picture('Manzano'), archivo: 'https://example.org/File:Manzano.jpg' }
+      ];
+      for (const imagen_dato of cases) {
+        const { unmount } = renderLesson({ content: { ...lesson, imagen_dato } });
+        await toFact(user);
+        expect(currentCard().querySelector('figure')).toBeNull();
+        unmount();
+      }
+    });
+  });
+
   it('the final question has its own screen, and the last one is "Sigue explorando"', async () => {
     const user = userEvent.setup();
     const onTakePhoto = vi.fn();
