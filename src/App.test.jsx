@@ -432,3 +432,29 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
 });
+
+describe('main version (no STUDY_MODE)', () => {
+  it('a whole lesson records and sends nothing, and there is no study badge or code screen', async () => {
+    const fetchMock = mockServer({
+      detect: { object: 'manzana', objects: [{ name: 'manzana', x: 0.2, y: 0.5, size: 0.3 }, { name: 'vaso', x: 0.8, y: 0.5, size: 0.3 }] },
+      ai: { ...lesson, ideas_pregunta_final: ['Podría crecer un manzano.'] }
+    });
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    await takePhoto(user);
+    await user.click(await screen.findByRole('button', { name: 'manzana' }));
+    await user.click(await screen.findByRole('button', { name: /Biología/ }));
+    await user.click(await screen.findByRole('button', { name: 'En el centro' }));
+    for (let i = 0; i < 3; i++) await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await user.click(screen.getByRole('button', { name: '¡Reto hecho!' }));
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await screen.findByRole('region', { name: /Sigue explorando/ });
+    await new Promise(r => setTimeout(r, 50));
+
+    expect(fetchMock.mock.calls.some(([url]) => url.includes('/api/study'))).toBe(false);
+    expect(localStorage.getItem('curiocity_estudio')).toBeNull();
+    expect(container.querySelector('.camera__study')).toBeNull();
+    expect(screen.queryByText('Apunta este código')).not.toBeInTheDocument();
+  });
+});

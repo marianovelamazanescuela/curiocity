@@ -28,7 +28,8 @@ function BrandEyes() {
   );
 }
 
-export default function CameraView({ inert, t, videoRef, stream, cameraStatus, photo, analyzing, onShutter, onRetryCamera, onOpenHistory }) {
+// studyBadge: only in the study version, the "Estudio · CODE" badge next to the eyes (App).
+export default function CameraView({ inert, t, videoRef, stream, cameraStatus, photo, analyzing, onShutter, onRetryCamera, onOpenHistory, studyBadge = null }) {
   const bgRef = useRef(null);
   useStream(bgRef, stream);
   useStream(videoRef, stream);
@@ -46,10 +47,13 @@ export default function CameraView({ inert, t, videoRef, stream, cameraStatus, p
       )}
 
       <header className="camera__top">
-        <h1 className="camera__brand">
-          <BrandEyes />
-          <span className="visually-hidden">Curiocity</span>
-        </h1>
+        <div className="camera__brand-row">
+          <h1 className="camera__brand">
+            <BrandEyes />
+            <span className="visually-hidden">Curiocity</span>
+          </h1>
+          {studyBadge}
+        </div>
         <button className="icon-btn camera__history" onClick={onOpenHistory} aria-label={t.history} disabled={frozen}>
           <IconHistory />
         </button>
