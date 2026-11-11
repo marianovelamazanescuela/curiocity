@@ -64,6 +64,14 @@ function createFakeSheet({ secret }) {
       return rest.map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
     },
     raw: name => tabs.get(name) || [],
+    /** Every tab, to save it (scripts/study-sheet-local.js), and back. */
+    dump: () => Object.fromEntries(tabs),
+    restore(saved) {
+      for (const [name, rows] of Object.entries(saved)) {
+        const sheet = context.SpreadsheetApp.getActiveSpreadsheet().insertSheet(name);
+        sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+      }
+    },
     words: () => [...context.CODE_WORDS]
   };
 }
