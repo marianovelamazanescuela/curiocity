@@ -7,6 +7,7 @@ import { SubjectList } from './SubjectRow';
 import Curi, { CuriThinking } from './Curi';
 import { CircleButton, PageNav } from './Page';
 import { IconArrowLeft, IconArrowRight, IconCamera, IconClose, IconOpen } from './icons';
+import { createLessonTracker } from '../study/lessonTracker';
 
 const SWIPE_MIN_PX = 60; // a deliberate horizontal swipe, not a wobble while scrolling
 
@@ -27,7 +28,7 @@ const FILE_PAGE_ORIGIN = 'https://commons.wikimedia.org/wiki/';
  * without cookies (crossOrigin="anonymous") or referrer. If anything is missing or it fails to load,
  * it disappears without leaving a gap.
  */
-export function LessonImage({ t, image }) {
+export function LessonImage({ t, image, onFail }) {
   const [failed, setFailed] = useState(false);
   const usable =
     image &&
@@ -45,7 +46,10 @@ export function LessonImage({ t, image }) {
         loading="lazy"
         referrerPolicy="no-referrer"
         crossOrigin="anonymous"
-        onError={() => setFailed(true)}
+        onError={() => {
+          setFailed(true);
+          onFail?.();
+        }}
       />
       <figcaption>
         <a href={image.archivo} target="_blank" rel="noopener noreferrer">
@@ -60,21 +64,24 @@ export function LessonImage({ t, image }) {
  * Sharing: WhatsApp and email are always visible (text only: a link cannot carry the photo).
  * "Más…" opens the system share sheet, which can attach the photo; only shown when the browser has it.
  */
-function ShareBar({ t, objectName, subjectName, content, photo, onToast }) {
+function ShareBar({ t, objectName, subjectName, content, photo, onToast, onShare }) {
   const text = buildShareText({ objectName, subjectName, content, t });
   const title = `${objectName} · ${subjectName}`;
 
   const viaWhatsApp = () => {
+    onShare?.('whatsapp');
     window.open(whatsappUrl(text), '_blank', 'noopener');
     onToast(t.openedWhatsApp, 'info');
   };
 
   const viaEmail = () => {
+    onShare?.('correo');
     window.open(mailtoUrl(`${title} — Curiocity`, text));
     onToast(t.openedMail, 'info');
   };
 
   const viaSystem = async () => {
+    onShare?.('sistema');
     const result = await nativeShare({ title, text, imageDataUrl: photo });
     if (result === 'shared' || result === 'shared-text') onToast(t.shared);
   };
@@ -158,6 +165,11 @@ function ChallengeResult({ t, result, discovery, focusRef }) {
  * "Sigue explorando" (other subjects, related objects, encyclopedia links, sharing).
  * Offline content knows nothing true about the object, so it has no question or fact: 4 screens.
  */
+// Screen names in the study log.
+const SCREEN_NAMES = { question: 'pregunta', fact: 'dato', why: 'porque', challenge: 'reto', final: 'pensar', explore: 'explorar' };
+const OFFLINE_SCREEN_NAMES = { why: 'investiga', final: 'prueba' };
+const screenName = (card, offline) => (offline && OFFLINE_SCREEN_NAMES[card]) || SCREEN_NAMES[card];
+
 function lessonCards(content) {
   if (content.offline) return ['why', 'challenge', 'final', 'explore'];
   return [
@@ -183,6 +195,29 @@ export default function ContentView({
   const movedRef = useRef(false); // focus moves only after the child changes card, not on first render
   const swipeRef = useRef(null);
 
+  // Study mode (only records anything when an adult has switched it on): the lesson once, then
+  // each screen's entry and exit with its duration and how the child left it.
+  const [tracker] = useState(createLessonTracker);
+  const trackCards = content ? lessonCards(content) : [];
+  const trackIndex = Math.min(index, Math.max(trackCards.length - 1, 0));
+  const trackScreen = content ? screenName(trackCards[trackIndex], content.offline) : null;
+  const trackTotal = trackCards.length;
+
+  useEffect(() => {
+    tracker.lesson(content, objectName, subjectKey);
+  }, [tracker, content, objectName, subjectKey]);
+
+  useEffect(() => {
+    if (!trackScreen) return undefined;
+    return tracker.enter({ objeto: objectName, asignatura: subjectKey, pantalla: trackScreen, numero: trackIndex + 1, total: trackTotal });
+  }, [tracker, trackScreen, trackIndex, trackTotal, objectName, subjectKey]);
+
+  const leaving = (reason, action) => (...args) => {
+    tracker.leaving(reason);
+    return action?.(...args);
+  };
+  const studyEvent = (tipo, details) => tracker.event(tipo, objectName, subjectKey, details);
+
   // The new card takes the keyboard and screen-reader focus, and comes into view.
   useEffect(() => {
     if (!movedRef.current) return;
@@ -202,7 +237,7 @@ export default function ContentView({
   const renderHeader = (atEnd = false) => (
     <PageNav
       right={
-        <CircleButton label={atEnd ? t.backToCamera : t.closeLesson} onClick={atEnd ? onTakePhoto : onBack}>
+        <CircleButton label={atEnd ? t.backToCamera : t.closeLesson} onClick={atEnd ? leaving('salida_x_camara', onTakePhoto) : leaving('salida_x', onBack)}>
           <IconClose />
         </CircleButton>
       }
@@ -238,12 +273,34 @@ export default function ContentView({
 
   const goTo = next => {
     if (next < 0 || next >= cards.length) return;
+    tracker.leaving(next > index ? 'avance' : 'retroceso');
     movedRef.current = true;
     setIndex(next);
   };
   const goNext = () => canAdvance && goTo(index + 1);
   // On the first screen, "Anterior" goes back to the subjects.
-  const goPrevious = () => (index === 0 ? onBack() : goTo(index - 1));
+  const goPrevious = () => (index === 0 ? leaving('volver_asignaturas', onBack)() : goTo(index - 1));
+
+  const answerQuestion = i => {
+    setAnswer(i);
+    studyEvent('pregunta', {
+      pantalla: 'pregunta',
+      opcion: i,
+      respuesta: question.opciones[i],
+      acierta: i === question.correcta,
+      tiempo_ms: tracker.msSinceEntered()
+    });
+  };
+  const finishChallenge = result => {
+    setChallengeResult(result);
+    studyEvent('reto', { pantalla: 'reto', resultado: result === 'done' ? 'hecho' : 'no_encontrado' });
+  };
+  const openIdeas = () => {
+    setShowIdeas(true);
+    studyEvent('ideas_final', { pantalla: 'pensar' });
+  };
+  const trackFinal = details => studyEvent('final', { pantalla: 'explorar', ...details });
+  const imageFailed = pantalla => () => studyEvent('error', { pantalla, motivo: 'imagen_no_cargada' });
 
   // Optional swipe (the buttons are always there). Only clear horizontal swipes count,
   // so scrolling the page up and down never changes card by accident.
@@ -271,7 +328,7 @@ export default function ContentView({
       <>
         <p className="kicker">{t.guessFirst}</p>
         <h3 id={titleId} className="card__title lesson-text lesson-text--title">{question.pregunta}</h3>
-        <Quiz t={t} question={question} answer={answer} onAnswer={setAnswer} />
+        <Quiz t={t} question={question} answer={answer} onAnswer={answerQuestion} />
       </>
     );
   } else if (current === 'fact') {
@@ -280,7 +337,7 @@ export default function ContentView({
         <Curi state="idle" size={64} />
         <h3 id={titleId} className="kicker">{t.didYouKnow}</h3>
         <p className="lesson-text lesson-text--read">{content.dato_sorprendente}</p>
-        <LessonImage key={content.imagen_dato?.src} t={t} image={content.imagen_dato} />
+        <LessonImage key={content.imagen_dato?.src} t={t} image={content.imagen_dato} onFail={imageFailed('dato')} />
       </>
     );
   } else if (current === 'why') {
@@ -292,7 +349,7 @@ export default function ContentView({
         <div className="prose lesson-text lesson-text--read">
           {String(content.por_que).split(/\n\s*\n/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
         </div>
-        {!content.offline && <LessonImage key={content.imagen_porque?.src} t={t} image={content.imagen_porque} />}
+        {!content.offline && <LessonImage key={content.imagen_porque?.src} t={t} image={content.imagen_porque} onFail={imageFailed('porque')} />}
       </>
     );
   } else if (current === 'challenge') {
@@ -306,16 +363,16 @@ export default function ContentView({
         <div className="challenge__actions">
           {!challengeResult && (
             <>
-              <button className="btn btn--primary" onClick={() => setChallengeResult('done')}>
+              <button className="btn btn--primary" onClick={() => finishChallenge('done')}>
                 {t.challengeDone}
               </button>
-              <button className="btn btn--outline" onClick={() => setChallengeResult('notFound')}>
+              <button className="btn btn--outline" onClick={() => finishChallenge('notFound')}>
                 {t.notFound}
               </button>
             </>
           )}
           {challengeResult && content.reto_foto && (
-            <button className="btn btn--outline" onClick={onTakePhoto}>
+            <button className="btn btn--outline" onClick={leaving('otra_foto_reto', onTakePhoto)}>
               <IconCamera /> {t.takeAnotherPhoto}
             </button>
           )}
@@ -329,7 +386,7 @@ export default function ContentView({
         {finalText && <p className="lesson-text lesson-text--title final__question">{finalText}</p>}
         {!content.offline && <p className="think-pause">{t.thinkAMoment}</p>}
         {ideas.length > 0 && !showIdeas && (
-          <button className="btn btn--outline" onClick={() => setShowIdeas(true)}>
+          <button className="btn btn--outline" onClick={openIdeas}>
             <MdLightbulbOutline aria-hidden="true" /> {t.showIdeas}
           </button>
         )}
@@ -353,7 +410,15 @@ export default function ContentView({
         {nextSubjects.length > 0 && (
           <section className="explore__section">
             <h4 className="kicker">{t.otherSubjects}</h4>
-            <SubjectList t={t} items={nextSubjects} onSelect={onSelectSubject} getSubject={getSubject} />
+            <SubjectList
+              t={t}
+              items={nextSubjects}
+              onSelect={leaving('otra_asignatura', key => {
+                trackFinal({ accion: 'otra_asignatura', elegida: key });
+                onSelectSubject(key);
+              })}
+              getSubject={getSubject}
+            />
           </section>
         )}
 
@@ -363,7 +428,10 @@ export default function ContentView({
             {content.objetos_relacionados.length > 0 && (
               <div className="chips">
                 {content.objetos_relacionados.map(name => (
-                  <button key={name} className="chip chip--button" onClick={() => onRelatedObject(name)}>{name}</button>
+                  <button key={name} className="chip chip--button" onClick={leaving('objeto_relacionado', () => {
+                    trackFinal({ accion: 'objeto_relacionado', elegido: name });
+                    onRelatedObject(name);
+                  })}>{name}</button>
                 ))}
               </div>
             )}
@@ -379,7 +447,13 @@ export default function ContentView({
             <ul className="links">
               {content.enlaces.map((link, i) => (
                 <li key={i}>
-                  <a className="links__item" href={link.url} target="_blank" rel="noopener noreferrer">
+                  <a
+                    className="links__item"
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackFinal({ accion: 'enciclopedia', fuente: link.source, titulo: link.title })}
+                  >
                     <span>
                       <span className="links__title">{link.title || link.url}</span>
                       <span className="links__source">{link.source || hostnameOf(link.url)}</span>
@@ -392,7 +466,15 @@ export default function ContentView({
           </section>
         )}
 
-        <ShareBar t={t} objectName={objectName} subjectName={t.subjects[subjectKey]} content={content} photo={photo} onToast={onToast} />
+        <ShareBar
+          t={t}
+          objectName={objectName}
+          subjectName={t.subjects[subjectKey]}
+          content={content}
+          photo={photo}
+          onToast={onToast}
+          onShare={canal => trackFinal({ accion: 'compartir', canal })}
+        />
       </>
     );
   }
@@ -439,7 +521,7 @@ export default function ContentView({
             </button>
           )}
           {isLast && (
-            <button className="btn btn--primary lesson-nav__next" onClick={onTakePhoto}>
+            <button className="btn btn--primary lesson-nav__next" onClick={leaving('otra_foto', onTakePhoto)}>
               <IconCamera /> {t.takeAnotherPhoto}
             </button>
           )}

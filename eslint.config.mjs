@@ -13,7 +13,8 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      globals: globals.browser,
+      // __STUDY__: true only in the study version's build (vite.config.mjs)
+      globals: { ...globals.browser, __STUDY__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } }
     },
     plugins: { 'react-refresh': reactRefresh },
