@@ -6,12 +6,19 @@ const { findArticles } = require('./encyclopedia');
 const { findLessonImages } = require('./images');
 const { DETECTION_SCHEMA, detectionPrompt, cleanDetection } = require('./detection');
 const { RANKING_SCHEMA, LESSON_SCHEMA, rankingPrompts, lessonPrompts, cleanRanking, validateLesson } = require('./content');
+const { createStudyRouter, studyConfigFromEnv } = require('./study');
 
 const app = express();
 
 // Render (and most PaaS) sit behind a reverse proxy; trust it so req.ip is the real
 // client IP. Without this, rate limiting would treat every user as the same client.
 app.set('trust proxy', 1);
+
+// ---- Study version (only with STUDY_MODE=true) ----
+// Without it these routes do not exist (404 like any unknown API route). It has its own, smaller
+// body limit, so it is mounted before the general JSON parser.
+const studyConfig = studyConfigFromEnv();
+if (studyConfig) app.use('/api/study', createStudyRouter(studyConfig));
 
 // Images are resized to ~800px JPEG on the client (~100-300 KB as base64).
 // 2 MB leaves headroom without letting anyone push huge payloads to OpenAI.

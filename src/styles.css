@@ -1563,3 +1563,109 @@ p {
   from { opacity: 0; transform: translateX(16px); }
   to { opacity: 1; transform: none; }
 }
+
+/* =========================================================
+   Study version only (STUDY_MODE=true): the camera badge, the code
+   screen, the details and the researcher's reset page
+   ========================================================= */
+.camera__brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Quiet, small and in cream like the eyes: there for the researcher, not a toy for the child */
+.camera__study {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid rgba(250, 235, 217, 0.6);
+  border-radius: 999px;
+  background: rgba(29, 29, 27, 0.35);
+  color: var(--cream);
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.camera__study:disabled {
+  opacity: 0;
+}
+
+.study__code {
+  margin: 28px 0 0;
+  font-family: var(--font-display);
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.study__code--small {
+  margin-top: 4px;
+  font-size: 36px;
+}
+
+.study__label {
+  margin-top: 32px;
+  margin-bottom: 0;
+}
+
+.study--welcome .message__text {
+  margin-top: 24px;
+}
+
+.study__link {
+  margin-top: 36px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.study__note {
+  margin-top: 4px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.study__form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 32px;
+}
+
+.study__form .kicker {
+  margin-bottom: 8px;
+}
+
+.study__input {
+  width: 100%;
+  max-width: 320px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 19px;
+}
+
+.study__error {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--cream-deep);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.4;
+}

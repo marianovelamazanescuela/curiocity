@@ -4,6 +4,44 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-11 — Versión de estudio: registro anónimo de uso que se envía a una hoja de cálculo (fase 6, parte B)
+
+**Por qué:** el jurado criticó que no había evidencias de uso. Para un piloto con niños y niñas de 8 a 10 años hace falta saber qué hacen con la app: qué fotografían, qué asignaturas eligen, cuánto tiempo pasan en cada pantalla, si aciertan la pregunta, si hacen el reto y dónde lo dejan.
+
+**Por qué va aparte de la versión principal:** el compromiso de privacidad de Curiocity (sin analíticas, sin datos de menores, nada sale del móvil salvo lo imprescindible) no se toca. La versión de estudio es otra publicación del mismo código, con `STUDY_MODE=true`, que solo se usa con consentimiento de las familias. Sin esa variable, la app compilada no contiene ni una línea del registro (se comprobó buscando en los archivos compilados) y el servidor no tiene las rutas del estudio.
+
+**Qué se cambió**
+- **Código de participante sin escribir nada.** La primera vez, la app pide un código (palabra corta y dos cifras, como `CEDRO-66`) y lo muestra con "Apunta este código". Lo reparte la propia hoja, que lleva la lista y nunca repite uno: generarlo al azar en el móvil habría dado códigos repetidos con pocas decenas de niños. Las palabras no se diferencian en una sola letra y no tienen dobles sentidos, y las cifras van del 2 al 9 para no confundirse con O o I.
+- **Un móvil, un niño.** "Estudio · CÓDIGO" queda visible en la cámara. Para pasar el móvil a otro niño, el investigador abre `/?reiniciar-estudio`, escribe la contraseña y la app envía lo pendiente antes de dar un código nuevo.
+- **Envío con cola.** Los eventos esperan en el móvil y van en lotes al servidor, con reintentos cada vez más espaciados. Un evento solo se borra del móvil cuando la hoja confirma que lo ha guardado, y un lote repetido no se duplica. Como respaldo, "Exportar copia (CSV)".
+- **Almacenamiento: una hoja de Google Drive**, en la cuenta educativa de la Consejería, en lugar de una base de datos. *Por qué:* es un proyecto pequeño de investigación; la hoja es gratis y el equipo ve, filtra y exporta los datos directamente. Se descartó Postgres en Render (unos 6 $/mes; el gratuito se borra a los 30 días) y Excel en OneDrive (exige registrar una aplicación con el administrador del centro). El servidor no guarda nada: valida cada evento, solo con los campos permitidos y sin IP ni *user-agent*, y lo reenvía a un script de la hoja protegido con un secreto.
+- **Instrumentación de la lección**, reutilizada del primer intento: un "modo estudio" que lo guardaba todo en el móvil y que activaba un adulto con un código. Se cerró sin fusionar, porque exportar móvil a móvil no es práctico en un piloto.
+- **Documentación:** README ("Versión de estudio", con la creación paso a paso de la hoja y del servicio de Render) y `docs/ESTUDIO-PRIVACIDAD.md` para redactar el consentimiento.
+
+**Cómo se probó:** 207 tests en verde:
+- sin `STUDY_MODE` no hay registro ni rutas;
+- la validación de cada campo;
+- una clave incorrecta, rechazada;
+- la IP y el *user-agent*, ausentes de la hoja y de los registros;
+- la cola sin conexión, que se vacía al volver;
+- el reinicio con contraseña;
+- el propio script de la hoja, ejecutado en Node.
+
+También pasan el lint y la compilación de las dos versiones. Recorrido real en local con OpenAI y una hoja simulada con el mismo script:
+- dos días con el mismo móvil, y el código se mantiene;
+- la red cortada a mitad de la lección: 12 registros esperan y se envían al volver;
+- un reinicio que da un código nuevo.
+
+Capturas y el CSV de la hoja en `capturas/fase-6/version-estudio/`.
+
+**Pendiente:**
+- Crear la hoja y el servicio `curiocity-estudio` siguiendo el README.
+- Comprobar que la cuenta de la Consejería permite publicar el script para "Cualquier usuario".
+- Confirmar con la Consejería que los datos de Drive se guardan en la UE.
+- Probar la versión de estudio en móviles reales, sobre todo iPhone, y en la red del centro.
+
+---
+
 ## 2026-11-10 — Elegir entre varios objetos de la foto (fase 6, parte A)
 
 **Qué se cambió y por qué**
