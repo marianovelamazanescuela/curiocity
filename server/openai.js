@@ -12,14 +12,23 @@ const isReasoningModel = model => !/^gpt-4(o|\.1)/.test(model);
 /**
  * Adapts our request to the model:
  * - `max_completion_tokens` instead of `max_tokens` (newer models reject max_tokens with HTTP 400)
- * - reasoning models get `reasoning_effort: 'none'`: our tasks are short and factual, so there is
- *   no need to pay for (or wait for) hidden reasoning tokens. Temperature is accepted with 'none'.
+ * - reasoning models get `reasoning_effort: 'none'` unless the request asks for more: most of our
+ *   tasks are short and factual, so there is no need to pay for (or wait for) hidden reasoning.
+ *   The lesson asks for 'low' (better wrong options in the question). Temperature is only sent
+ *   with 'none'; with real reasoning the model uses its own.
+ * - older models don't know `reasoning_effort`: it is removed and the temperature is kept.
  */
 function buildRequest(body, model = getModel()) {
   const { max_tokens: maxTokens, ...rest } = body;
   const request = { model, ...rest };
   if (maxTokens !== undefined) request.max_completion_tokens = maxTokens;
-  if (isReasoningModel(model) && request.reasoning_effort === undefined) request.reasoning_effort = 'none';
+  if (!isReasoningModel(model)) {
+    delete request.reasoning_effort;
+  } else if (request.reasoning_effort === undefined) {
+    request.reasoning_effort = 'none';
+  } else if (request.reasoning_effort !== 'none') {
+    delete request.temperature;
+  }
   return request;
 }
 

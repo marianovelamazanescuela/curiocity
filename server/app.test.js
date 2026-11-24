@@ -190,15 +190,20 @@ describe('POST /api/ai', () => {
     expect((await r.json()).ideas_pregunta_final).toEqual([]);
   });
 
-  it('asks for structured output, accuracy and a low temperature, and caches', async () => {
+  it('asks for structured output, accuracy and a little reasoning, and caches', async () => {
     openaiReply = modelLesson();
     await post('/api/ai', valid);
     const call = openaiCalls[0];
     expect(call.response_format.type).toBe('json_schema');
     expect(call.response_format.json_schema.strict).toBe(true);
-    expect(call.temperature).toBeLessThanOrEqual(0.4);
+    // Reasoning "low" gives tempting wrong options; with it the model uses its own temperature.
+    expect(call.reasoning_effort).toBe('low');
+    expect(call).not.toHaveProperty('temperature');
+    expect(call.max_completion_tokens).toBeGreaterThanOrEqual(4000); // hidden reasoning counts here
     expect(call.messages[0].content).toContain('Spanish');
     expect(call.messages[0].content).toMatch(/Never include URLs/);
+    expect(call.messages[0].content).toMatch(/wrong answers must be tempting/);
+    expect(call.messages[0].content).toMatch(/not about a different object/);
 
     await post('/api/ai', { ...valid, objectName: '  FAROLA ' });
     expect(openaiCalls).toHaveLength(1);

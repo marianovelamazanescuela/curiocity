@@ -4,6 +4,23 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-24 — Opciones de la pregunta inicial menos obvias
+
+**Por qué:** en la pregunta de curiosidad, a veces se veía enseguida cuál era la correcta: las falsas eran absurdas ("para usarse como martillos") o la correcta era la más larga y precisa. El propio prompt lo provocaba: pedía que las dos falsas fueran "claramente falsas".
+
+**Qué se cambió**
+- **Prompt de la lección** (`server/content.js`): las opciones falsas tienen que ser tentadoras, algo que un niño de 8 a 10 años podría creer de verdad (un error frecuente o una suposición razonable), nunca de broma. Las tres, de la misma clase, con longitud y detalle parecidos, y sin "siempre", "nunca", "solo" o "todos" en las falsas. Se mantiene que una sola sea correcta sin discusión. Además, la pregunta trata de este objeto, sin irse a otro y sin suponer de qué material o tipo exacto es, porque la IA no ve la foto.
+- **Razonamiento "low" solo en la lección** (`server/app.js`). El resto de llamadas siguen sin razonar. Con razonamiento, el modelo usa su propia temperatura; con un modelo antiguo (`OPENAI_MODEL=gpt-4o-mini`) se quita el razonamiento y se mantiene la temperatura baja (`server/openai.js`).
+
+**Cómo se decidió:** se generó la pregunta de 20 objetos (todas las asignaturas) con tres versiones: el prompt anterior, el nuevo sin razonar y el nuevo razonando "low".
+- **El prompt solo no bastaba:** quedaban opciones absurdas ("se ilumina", en la guitarra) e incluso un error (que un vaso suena más agudo con más agua, cuando es al revés).
+- **El prompt con razonamiento "low"** dio las mejores trampas, justo los errores que tienen los niños: "plomo" en la mina del lápiz, "sudando por la piel" en el perro, "agua" o "minerales" en la hoja. No hubo errores.
+- **Contrapartida:** la lección tarda unos 11 s en lugar de 5,5 s y cuesta algo más, por los tokens de razonamiento. En la prueba, algunas preguntas se alejaban del objeto (copas griegas para una taza) o suponían su tipo (arenisca para una piedra): de ahí la frase añadida, que no se ha vuelto a probar.
+
+**Pendiente:** comprobar en uso real que la espera de la lección es aceptable para los niños y que las preguntas ya no se alejan del objeto.
+
+---
+
 ## 2026-11-11 — Versión de estudio: registro anónimo de uso que se envía a una hoja de cálculo (fase 6, parte B)
 
 **Por qué:** el jurado criticó que no había evidencias de uso. Para un piloto con niños y niñas de 8 a 10 años hace falta saber qué hacen con la app: qué fotografían, qué asignaturas eligen, cuánto tiempo pasan en cada pantalla, si aciertan la pregunta, si hacen el reto y dónde lo dejan.

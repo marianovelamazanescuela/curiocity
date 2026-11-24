@@ -22,4 +22,16 @@ describe('buildRequest', () => {
     expect(r).toMatchObject({ model: 'gpt-4o-mini', max_completion_tokens: 100 });
     expect(r).not.toHaveProperty('reasoning_effort');
   });
+
+  it('keeps the reasoning a request asks for (the lesson) and then leaves the temperature out', () => {
+    const r = buildRequest({ ...body, reasoning_effort: 'low' }, 'gpt-6-luna');
+    expect(r).toMatchObject({ reasoning_effort: 'low', max_completion_tokens: 100 });
+    expect(r).not.toHaveProperty('temperature');
+  });
+
+  it('with an older model, the lesson drops reasoning_effort and keeps its temperature', () => {
+    const r = buildRequest({ ...body, reasoning_effort: 'low' }, 'gpt-4o-mini');
+    expect(r).not.toHaveProperty('reasoning_effort');
+    expect(r).toMatchObject({ temperature: 0.35 });
+  });
 });
