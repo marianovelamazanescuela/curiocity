@@ -12,7 +12,7 @@ function formatDate(iso, lang) {
   }
 }
 
-export default function HistoryView({ t, lang, entries, backButton, onOpen, onClear }) {
+export default function HistoryView({ t, lang, entries, backButton, onOpen, onClear, onHowItWorks }) {
   // Two taps to clear, so a child can't wipe the history by accident.
   const [confirming, setConfirming] = useState(false);
 
@@ -46,6 +46,11 @@ export default function HistoryView({ t, lang, entries, backButton, onOpen, onCl
       <p className="history__privacy">
         <MdLockOutline aria-hidden="true" /> {t.historyPrivacy}
       </p>
+
+      {/* The welcome guide again; when it ends, the child comes back here */}
+      {onHowItWorks && (
+        <button className="text-link history__how" onClick={onHowItWorks}>{t.howItWorks}</button>
+      )}
 
       {entries.length > 0 && (
         <div className="center">

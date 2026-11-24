@@ -4,6 +4,7 @@ import { getSubject, nextSubjects } from './subjects';
 import { detectObjects, fetchContent, fetchRanking } from './api';
 import { addToHistory, clearHistory, loadHistory } from './history';
 import { useCamera } from './useCamera';
+import { guideSeen, markGuideSeen } from './guide';
 import { startStudy, studyCodeSeen, studyParticipant, subscribeStudy, track } from './study';
 import Splash from './components/Splash';
 import CameraView from './components/CameraView';
@@ -12,6 +13,7 @@ import ObjectChooser from './components/ObjectChooser';
 import SubjectPicker from './components/SubjectPicker';
 import ContentView from './components/ContentView';
 import HistoryView from './components/HistoryView';
+import Guide from './components/Guide';
 import Toast from './components/Toast';
 import { IconChevronLeft } from './components/icons';
 
@@ -77,8 +79,14 @@ export default function App() {
   const [studyCode, setStudyCode] = useState(studyParticipant);
 
   const [showSplash, setShowSplash] = useState(true);
-  // camera → analyzing (frozen photo in the viewfinder) → result (full-screen page); or history (page)
-  const [phase, setPhase] = useState(() => (studyView ? 'study' : 'camera'));
+  // Welcome guide: shown until the child finishes or skips it once. Kept in state too, so a
+  // blocked localStorage does not bring it back on every return to the camera.
+  const [guideDone, setGuideDone] = useState(guideSeen);
+  const [guideFrom, setGuideFrom] = useState('inicio'); // 'inicio' or 'como_funciona' (from the history)
+  // On opening: (study version: the code screen) → guide (first time) → camera. The camera, and
+  // so the browser's permission request, only starts in the 'camera' phase.
+  // camera → analyzing (frozen photo in the viewfinder) → result (full-screen page); or history, guide (pages)
+  const [phase, setPhase] = useState(() => (studyView ? 'study' : guideDone ? 'camera' : 'guide'));
   const [photo, setPhoto] = useState(null);
   // { status: 'found'|'choose'|'none'|'person'|'error', object, fromPhoto, choices }
   // choose: several objects in the photo, the child picks one (objects: [{ name, x, y, size }]);
@@ -191,7 +199,7 @@ export default function App() {
   const handleClose = () => {
     newRequest(); // abort anything pending
     setStudyView(null);
-    setPhase('camera');
+    setPhase(guideDone ? 'camera' : 'guide'); // after the study code screen, the guide if not seen yet
     setPhoto(null);
     setDetection(null);
     setSubjectKey(null);
@@ -238,6 +246,21 @@ export default function App() {
     setPhase('history');
   };
 
+  const openGuide = () => {
+    setGuideFrom('como_funciona');
+    setPhase('guide');
+  };
+
+  // Finished or skipped: the mark is saved and the child goes on to the camera, or back to the
+  // history if the guide was opened from "¿Cómo funciona?". Study version: one 'guia' event.
+  const finishGuide = details => {
+    markGuideSeen();
+    setGuideDone(true);
+    track('guia', details);
+    setGuideFrom('inicio');
+    setPhase(details.desde === 'como_funciona' ? 'history' : 'camera');
+  };
+
   const openHistoryEntry = entry => {
     setPhoto(entry.thumb);
     setDetection({ status: 'found', object: entry.object, fromPhoto: true });
@@ -256,7 +279,10 @@ export default function App() {
   const backToCamera = <CircleButton label={t.backToCamera} onClick={handleClose}><IconChevronLeft /></CircleButton>;
 
   let pageBody = null;
-  if (phase === 'study' && StudyPages) {
+  if (phase === 'guide') {
+    // Under the splash nothing is shown yet, so the guide's time and focus start when it is visible.
+    pageBody = showSplash && guideFrom === 'inicio' ? null : <Guide t={t} from={guideFrom} onFinish={finishGuide} />;
+  } else if (phase === 'study' && StudyPages) {
     pageBody = (
       <Suspense fallback={null}>
         <StudyPages view={studyView} lang={lang} backButton={backToCamera} onDone={handleClose} onToast={showToast} onViewChange={setStudyView} />
@@ -270,6 +296,7 @@ export default function App() {
         entries={history}
         backButton={backToCamera}
         onOpen={openHistoryEntry}
+        onHowItWorks={openGuide}
         onClear={() => setHistory(clearHistory())}
       />
     );
@@ -331,7 +358,7 @@ export default function App() {
     );
   }
 
-  const pageOpen = phase === 'result' || phase === 'history' || phase === 'study';
+  const pageOpen = phase === 'result' || phase === 'history' || phase === 'study' || phase === 'guide';
 
   return (
     <div className="app">
@@ -354,8 +381,9 @@ export default function App() {
           ) : null
         }
       />
-      {/* The code screen closes only with "Empezar", so the child always sees the code once */}
-      <Page open={pageOpen} onClose={studyView === 'welcome' ? noop : handleClose} viewKey={`${studyView}|${phase}|${detection?.status}|${detection?.object}|${subjectKey}|${Boolean(content)}`}>
+      {/* The code screen closes only with "Empezar", so the child always sees the code once; the
+          guide handles Escape itself (it skips the guide and saves the mark) */}
+      <Page open={pageOpen} onClose={studyView === 'welcome' || phase === 'guide' ? noop : handleClose} viewKey={`${studyView}|${phase}|${showSplash}|${detection?.status}|${detection?.object}|${subjectKey}|${Boolean(content)}`}>
         {pageBody}
       </Page>
       <Toast toast={toast} onDone={hideToast} />

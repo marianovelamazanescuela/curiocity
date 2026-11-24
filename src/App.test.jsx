@@ -18,6 +18,8 @@ beforeEach(() => {
   Object.defineProperty(HTMLVideoElement.prototype, 'videoHeight', { configurable: true, get: () => 480 });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: vi.fn() });
   vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/jpeg;base64,AAAA');
+  // The welcome guide has its own tests (describe "Guía de bienvenida"); the rest start at the camera.
+  localStorage.setItem('curiocity_guia_v1', '1');
 });
 
 afterEach(() => {
@@ -456,5 +458,104 @@ describe('main version (no STUDY_MODE)', () => {
     expect(localStorage.getItem('curiocity_estudio')).toBeNull();
     expect(container.querySelector('.camera__study')).toBeNull();
     expect(screen.queryByText('Apunta este código')).not.toBeInTheDocument();
+  });
+});
+
+describe('Guía de bienvenida', () => {
+  beforeEach(() => {
+    localStorage.removeItem('curiocity_guia_v1'); // first opening
+  });
+
+  // The guide appears when the splash goes (1.4 s)
+  const findGuide = () => screen.findByRole('heading', { name: '¡Hola! Soy Curi' }, { timeout: 3000 });
+  const getUserMedia = () => navigator.mediaDevices.getUserMedia;
+
+  it('appears the first time, and the camera does not ask for permission until "¡Vamos!"', async () => {
+    const fetchMock = mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await findGuide()).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Anterior' })).not.toBeInTheDocument(); // hidden on the first screen
+
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    expect(screen.getByRole('heading', { name: 'Haz una foto' })).toBeInTheDocument();
+    expect(screen.getByText('Haz fotos solo a cosas, nunca a personas.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    expect(screen.getByRole('heading', { name: 'Míralo de muchas formas' })).toBeInTheDocument();
+    expect(screen.getByText('Ahora el móvil te pedirá usar la cámara. Dile que sí.')).toBeInTheDocument();
+    // the new screen takes the focus
+    expect(document.activeElement).toHaveAccessibleName(/Pantalla 3 de 3/);
+
+    expect(getUserMedia()).not.toHaveBeenCalled();
+    expect(localStorage.getItem('curiocity_guia_v1')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '¡Vamos!' }));
+    expect(localStorage.getItem('curiocity_guia_v1')).toBe('1');
+    expect(screen.queryByRole('heading', { name: 'Míralo de muchas formas' })).not.toBeInTheDocument();
+    await waitFor(() => expect(getUserMedia()).toHaveBeenCalled());
+    expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled(); // the main version sends nothing about the guide
+  });
+
+  it('does not appear the second time: straight to the camera', async () => {
+    localStorage.setItem('curiocity_guia_v1', '1');
+    mockServer();
+    render(<App />);
+    await waitFor(() => expect(getUserMedia()).toHaveBeenCalled());
+    await new Promise(r => setTimeout(r, 1600)); // the splash has gone
+    expect(screen.queryByRole('heading', { name: '¡Hola! Soy Curi' })).not.toBeInTheDocument();
+  });
+
+  it('"Saltar" saves the mark and opens the camera', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+    await findGuide();
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    expect(getUserMedia()).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Saltar' }));
+    expect(localStorage.getItem('curiocity_guia_v1')).toBe('1');
+    await waitFor(() => expect(getUserMedia()).toHaveBeenCalled());
+  });
+
+  it('Escape also skips it and saves the mark', async () => {
+    mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+    await findGuide();
+    await user.keyboard('{Escape}');
+    expect(localStorage.getItem('curiocity_guia_v1')).toBe('1');
+    await waitFor(() => expect(getUserMedia()).toHaveBeenCalled());
+  });
+
+  it('can be seen again from "Mis descubrimientos", and ends back there', async () => {
+    localStorage.setItem('curiocity_guia_v1', '1');
+    mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
+    await user.click(await screen.findByRole('button', { name: '¿Cómo funciona?' }));
+    expect(await screen.findByRole('heading', { name: '¡Hola! Soy Curi' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    // the camera already has permission: no camera note this time
+    expect(screen.queryByText(/te pedirá usar la cámara/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '¡Vamos!' }));
+    expect(await screen.findByRole('heading', { name: 'Mis descubrimientos' })).toBeInTheDocument();
+  });
+
+  it('with storage blocked, the app still works and the guide does not come back while it is open', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    mockServer();
+    const user = userEvent.setup();
+    render(<App />);
+    await findGuide();
+    await user.click(screen.getByRole('button', { name: 'Saltar' }));
+    await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
+    await user.click(screen.getAllByRole('button', { name: 'Volver a la cámara' })[0]);
+    expect(await screen.findByRole('button', { name: 'Hacer foto' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '¡Hola! Soy Curi' })).not.toBeInTheDocument();
   });
 });
