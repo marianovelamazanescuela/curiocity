@@ -1,6 +1,6 @@
 # Curiocity
 
-Aplicación web (PWA) educativa para niños y niñas de 8 a 10 años (3º y 4º de Primaria): apuntan con la cámara a un objeto, la app lo reconoce y les destaca las asignaturas que tienen una relación clara con él (de 1 a 4), cada una con un gancho (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte). En cada asignatura, una mini-lección interactiva en tarjetas: primero adivinan una pregunta, luego un dato sorprendente y el porqué (a veces con una imagen de ejemplo de Wikimedia Commons), un reto de un minuto con el objeto real (con lo que podían descubrir al hacerlo) y una pregunta para seguir pensando, con algunas ideas. Les acompaña Curi, la mascota hecha con los ojos del logo. También ofrece enlaces a enciclopedias infantiles reales, objetos relacionados, las otras asignaturas destacadas y compartir por WhatsApp o correo. Guarda un historial de descubrimientos solo en el dispositivo.
+Aplicación web (PWA) educativa para niños y niñas de 8 a 10 años (3º y 4º de Primaria): apuntan con la cámara a un objeto, la app lo reconoce y les destaca las asignaturas que tienen una relación clara con él (de 1 a 4), cada una con un gancho (Biología, Geología, Historia, Matemáticas, Lengua, Música y Arte). En cada asignatura, una mini-lección interactiva en tarjetas: primero adivinan una pregunta, luego un dato sorprendente y el porqué, un reto de un minuto con el objeto real (con lo que podían descubrir al hacerlo) y una pregunta para seguir pensando, con algunas ideas. Les acompaña Curi, la mascota hecha con los ojos del logo. También ofrece enlaces a enciclopedias infantiles reales, objetos relacionados, las otras asignaturas destacadas y compartir por WhatsApp o correo. Guarda un historial de descubrimientos solo en el dispositivo.
 
 Idiomas: español, inglés, francés y alemán (se detecta automáticamente del navegador).
 
@@ -16,15 +16,13 @@ Objeto (foto, relacionado o historial)
 Elige asignatura ────── POST /api/ai ──────▶ valida, baraja opciones, caché ─▶ OpenAI (JSON con esquema): pregunta, dato,
                                                                                porqué, reto, pregunta final, palabras de búsqueda
                                              busca esas palabras ─────────────▶ Vikidia / Klexikon / Wikipedia
-                                             imagen principal del artículo ───▶ Wikimedia Commons (autor y licencia)
-Imagen del dato / porqué ◀── directamente de upload.wikimedia.org (sin cookies ni referer)
 ```
 
 **La primera vez**, antes de la cámara, una guía de bienvenida con Curi explica en tres pantallas qué hacer: hacer una foto a una cosa (nunca a personas), mirarla desde varias asignaturas y aceptar el permiso de la cámara. La cámara no se enciende ni pide permiso hasta que se termina o se salta. Se guarda una marca en el móvil (`curiocity_guia_v1`) para no volver a mostrarla, y se puede ver otra vez desde "¿Cómo funciona?" en "Mis descubrimientos" ([src/components/Guide.jsx](src/components/Guide.jsx)).
 
-**Los enlaces y las imágenes nunca los inventa la IA:** solo propone palabras de búsqueda y el servidor devuelve páginas e imágenes que existen de verdad. Las imágenes son solo la imagen principal del artículo, deben estar en Wikimedia Commons con autor y licencia (que se muestran debajo) y se descartan mapas, banderas, escudos, diagramas, iconos, logos, SVG e imágenes pequeñas.
+**Los enlaces nunca los inventa la IA:** solo propone palabras de búsqueda y el servidor devuelve páginas que existen de verdad. La lección no lleva imágenes: hubo una imagen de ejemplo de Wikimedia Commons en el dato y el porqué, pero se quitó porque a menudo no salía bien o no tenía que ver con el texto.
 
-**Privacidad:** la app no tiene cuentas ni analíticas, y el navegador solo habla con nuestro servidor. La única excepción decidida son esas imágenes de ejemplo, que se cargan directamente desde `upload.wikimedia.org`, sin cookies ni referer. Se descartó pasarlas por nuestro servidor por sencillez y coste. (Queda pendiente el reconocimiento de respaldo, que solo se usa si el servidor falla y aún descarga su modelo de servidores de Google.)
+**Privacidad:** la app no tiene cuentas ni analíticas, y el navegador solo habla con nuestro servidor. (Queda pendiente el reconocimiento de respaldo, que solo se usa si el servidor falla y aún descarga su modelo de servidores de Google.)
 
 Si algo falla, la app sigue funcionando:
 
@@ -141,7 +139,7 @@ Cada evento lleva:
 | `reto` | `hecho` o `no_encontrado` |
 | `ideas_final` | Pulsa "Ver algunas ideas" |
 | `final` | Enciclopedia abierta, objeto relacionado, otra asignatura, compartir (solo el canal) |
-| `error` | Servidor no disponible, contenido sin conexión, imagen que no carga |
+| `error` | Servidor no disponible, contenido sin conexión |
 | `leccion` | El JSON de la lección mostrada, una vez por lección, sin las direcciones de las imágenes |
 | `guia` | La guía de bienvenida: `resultado` (`terminada` o `saltada`), `pantalla` en la que acabó (`hola`, `foto` o `asignaturas`), `pantallas_vistas`, `duracion_ms` y `desde` (`inicio` o `como_funciona`) |
 
@@ -229,12 +227,11 @@ server/
   openai.js         llamada a OpenAI (la clave solo existe en el servidor)
   detection.js      prompt, esquema y validación de la detección (hasta 4 objetos, sin personas)
   encyclopedia.js   búsqueda de páginas reales en Vikidia, Klexikon y Wikipedia
-  images.js         imagen principal del artículo, solo de Wikimedia Commons con autor y licencia
   study.js          versión de estudio (solo con STUDY_MODE): valida los eventos y los reenvía a la hoja
   study-sheet.gs    script de la hoja de cálculo del estudio (se pega en Apps Script)
   study-sheet-fake.js la misma hoja simulada en Node, para los tests y la prueba en local
   index.js          arranca el servidor
-  app.test.js, content.test.js, images.test.js
+  app.test.js, content.test.js
 src/
   App.jsx           flujo: (guía la primera vez) → cámara → análisis → asignaturas → contenido; historial
   guide.js          marca de la guía de bienvenida ya vista
