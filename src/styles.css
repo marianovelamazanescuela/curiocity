@@ -1565,6 +1565,196 @@ p {
 }
 
 /* =========================================================
+   Welcome guide (first opening, and again from "¿Cómo funciona?"): three screens with Curi,
+   the lesson's progress segments and its bottom navigation; "Saltar" as a text link at the top
+   ========================================================= */
+.page__inner:has(.guide) {
+  padding-bottom: 0;
+}
+
+.guide {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide__top {
+  display: flex;
+  justify-content: flex-end;
+  min-height: var(--tap);
+  margin-right: -12px; /* the link's padding, so its text lines up with the content */
+}
+
+/* "Saltar": a text link with a 48 px touch area */
+.guide__skip,
+.text-link {
+  min-height: var(--tap);
+  padding: 0 12px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: 17px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.guide .lesson__bar {
+  margin-top: 8px;
+}
+
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  margin-top: 28px;
+  scroll-margin-top: 20px;
+  touch-action: pan-y; /* vertical scrolling stays native; horizontal swipes change screen */
+  animation: card-in 0.35s var(--ease-out) both;
+}
+
+.guide-card:focus {
+  outline: none;
+}
+
+.guide-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 6px;
+}
+
+.guide-card__art {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 180px;
+  margin-bottom: 28px;
+}
+
+.guide-card__art--row {
+  gap: 14px;
+}
+
+.guide-card__curi {
+  flex: none;
+  margin-bottom: 4px;
+}
+
+.guide-card__title {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 300;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.guide-card__text {
+  margin: 0;
+  font-size: var(--lesson-size);
+  line-height: var(--lesson-leading);
+}
+
+.guide-card__rules {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-card__rules li {
+  padding-left: 18px;
+  border-left: 1.5px solid var(--ink);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.guide-card__note {
+  margin: 18px 0 0;
+  font-size: 17px;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* Screen 2: the camera, drawn with thin ink lines */
+.guide-art {
+  flex: 0 1 140px;
+  min-width: 0;
+  width: 140px;
+  max-width: 100%;
+  height: auto;
+}
+
+.guide-art__screen {
+  fill: var(--cream-deep);
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+
+.guide-art__blur {
+  fill: var(--ink-faint);
+}
+
+.guide-art__ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+
+.guide-art__lens {
+  fill: var(--paper);
+}
+
+.guide-art__ink {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.guide-art__shutter {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+
+/* Screen 3: three subject rows, as on the subjects page */
+.guide-subjects {
+  flex: 0 1 220px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-subjects__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ink-faint);
+}
+
+.guide-subjects__row:first-child {
+  border-top: 1px solid var(--ink-faint);
+}
+
+.guide-subjects__row .subject-row__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Curi looks at the viewfinder */
+.curi--look-left .curi__pupil {
+  transform: translate(-7px, 1px);
+}
+
+.history__how {
+  margin: 20px 0 0 -12px;
+}
+
+/* =========================================================
    Study version only (STUDY_MODE=true): the camera badge, the code
    screen, the details and the researcher's reset page
    ========================================================= */
