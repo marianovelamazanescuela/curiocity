@@ -68,6 +68,20 @@ export const translations = {
     next: 'Next',
     previous: 'Previous',
     cardProgress: 'Card {n} of {total}',
+    howItWorks: 'How does it work?',
+    guide: {
+      skip: 'Skip',
+      go: 'Let’s go!',
+      progress: 'Screen {n} of {total}',
+      helloTitle: 'Hi! I’m Curi',
+      helloText: 'I love discovering things. Shall we explore together?',
+      photoTitle: 'Take a photo',
+      photoText: 'Point the camera at something that makes you curious: a leaf, a street lamp, a bottle…',
+      photoRules: ['Only take photos of things, never of people.', 'If you are outside, explore with an adult nearby.'],
+      subjectsTitle: 'Look at it in many ways',
+      subjectsText: 'I’ll tell you which subjects you can look at it from. Guess, discover curious things and do a challenge with the real object.',
+      cameraNote: 'Now your phone will ask to use the camera. Say yes.'
+    },
     answerToContinue: 'Choose an answer to continue',
     investigate: 'Investigate it yourself',
     subjects: {
@@ -148,6 +162,20 @@ export const translations = {
     next: 'Siguiente',
     previous: 'Anterior',
     cardProgress: 'Tarjeta {n} de {total}',
+    howItWorks: '¿Cómo funciona?',
+    guide: {
+      skip: 'Saltar',
+      go: '¡Vamos!',
+      progress: 'Pantalla {n} de {total}',
+      helloTitle: '¡Hola! Soy Curi',
+      helloText: 'Me encanta descubrir cosas. ¿Exploramos juntos?',
+      photoTitle: 'Haz una foto',
+      photoText: 'Apunta con la cámara a algo que te dé curiosidad: una hoja, una farola, una botella…',
+      photoRules: ['Haz fotos solo a cosas, nunca a personas.', 'Si estás fuera de casa, explora con un adulto cerca.'],
+      subjectsTitle: 'Míralo de muchas formas',
+      subjectsText: 'Te diré desde qué asignaturas puedes mirarlo. Adivina, descubre cosas curiosas y haz un reto con el objeto de verdad.',
+      cameraNote: 'Ahora el móvil te pedirá usar la cámara. Dile que sí.'
+    },
     answerToContinue: 'Elige una respuesta para seguir',
     investigate: 'Investiga tú',
     subjects: {
@@ -228,6 +256,20 @@ export const translations = {
     next: 'Suivant',
     previous: 'Précédent',
     cardProgress: 'Carte {n} sur {total}',
+    howItWorks: 'Comment ça marche ?',
+    guide: {
+      skip: 'Passer',
+      go: 'C’est parti !',
+      progress: 'Écran {n} sur {total}',
+      helloTitle: 'Salut ! Je suis Curi',
+      helloText: 'J’adore découvrir des choses. On explore ensemble ?',
+      photoTitle: 'Prends une photo',
+      photoText: 'Vise avec l’appareil photo quelque chose qui t’intrigue : une feuille, un lampadaire, une bouteille…',
+      photoRules: ['Photographie seulement des objets, jamais des personnes.', 'Si tu es dehors, explore avec un adulte près de toi.'],
+      subjectsTitle: 'Regarde-le de plusieurs façons',
+      subjectsText: 'Je te dirai par quelles matières tu peux le regarder. Devine, découvre des choses étonnantes et relève un défi avec le vrai objet.',
+      cameraNote: 'Maintenant, le téléphone va te demander d’utiliser l’appareil photo. Dis oui.'
+    },
     answerToContinue: 'Choisis une réponse pour continuer',
     investigate: 'Mène l’enquête',
     subjects: {
@@ -308,6 +350,20 @@ export const translations = {
     next: 'Weiter',
     previous: 'Zurück',
     cardProgress: 'Karte {n} von {total}',
+    howItWorks: 'Wie funktioniert das?',
+    guide: {
+      skip: 'Überspringen',
+      go: 'Los geht’s!',
+      progress: 'Seite {n} von {total}',
+      helloTitle: 'Hallo! Ich bin Curi',
+      helloText: 'Ich entdecke total gern Dinge. Wollen wir zusammen forschen?',
+      photoTitle: 'Mach ein Foto',
+      photoText: 'Richte die Kamera auf etwas, das dich neugierig macht: ein Blatt, eine Straßenlaterne, eine Flasche …',
+      photoRules: ['Fotografiere nur Dinge, niemals Menschen.', 'Wenn du draußen bist, entdecke mit einem Erwachsenen in der Nähe.'],
+      subjectsTitle: 'Schau es dir auf viele Arten an',
+      subjectsText: 'Ich sage dir, aus welchen Fächern du es betrachten kannst. Rate, entdecke spannende Dinge und mach eine Aufgabe mit dem echten Gegenstand.',
+      cameraNote: 'Gleich fragt dein Handy, ob es die Kamera benutzen darf. Sag ja.'
+    },
     answerToContinue: 'Wähle eine Antwort, um weiterzumachen',
     investigate: 'Forsche selbst',
     subjects: {

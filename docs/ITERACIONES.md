@@ -4,6 +4,25 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-24 — Guía de bienvenida con Curi la primera vez
+
+**Por qué:** al abrir la app por primera vez, un niño o niña de 8 a 10 años se encontraba directamente con la cámara: no sabía qué hacer ni por qué el navegador le pedía permiso para usarla.
+
+**Qué se cambió**
+- **Tres pantallas a página completa con Curi**, solo la primera vez, entre el splash (y, en la versión de estudio, la pantalla del código) y la cámara:
+  1. "¡Hola! Soy Curi": Curi grande, parpadeando.
+  2. "Haz una foto": un dibujo de la cámara tal como el niño la verá, con el visor y una hoja dentro, y Curi mirándolo. Debajo, dos normas cortas: solo cosas, nunca personas; fuera de casa, con un adulto cerca.
+  3. "Míralo de muchas formas": tres filas de asignaturas como en su página, con Curi guiñando el ojo. La primera vez añade "Ahora el móvil te pedirá usar la cámara. Dile que sí."
+- **El mismo lenguaje que la lección:** progreso de 3 segmentos, "Anterior" (oculto en la primera), "Siguiente" y "¡Vamos!". "Saltar", como enlace de texto arriba, y Escape también la cierran. Se puede deslizar con el dedo, y el foco pasa a cada pantalla. Los dibujos son SVG en línea con los colores de la marca, y decorativos para los lectores de pantalla.
+- **La cámara no pide permiso hasta terminar o saltar la guía.** Antes, la cámara se encendía bajo el splash.
+- **Marca `curiocity_guia_v1`** al terminar o saltar. Si el almacenamiento está bloqueado, la app funciona igual y la guía vuelve a salir la próxima vez.
+- **"¿Cómo funciona?"** en "Mis descubrimientos" la vuelve a mostrar, sin el aviso de la cámara, y al terminar se vuelve allí.
+- **Versión de estudio:** un evento `guia` con el resultado (terminada o saltada), la pantalla en la que acabó, cuántas se vieron, el tiempo y desde dónde se abrió. La pantalla va por su nombre (`hola`, `foto`, `asignaturas`), porque el servidor solo acepta nombres en esa columna. La versión principal no registra nada.
+
+**Cómo se probó:** 218 tests en verde. Los nuevos comprueban que la guía sale la primera vez y no la segunda; que "Saltar", "¡Vamos!" y Escape guardan la marca; que no se llama a la cámara mientras está la guía; que se vuelve a ver desde "Mis descubrimientos"; y el evento de la versión de estudio, incluida su validación en el servidor. Lint y compilación de las dos versiones, sin errores. Capturas de las tres pantallas a 360 y 390 px en `capturas/guia/`: en español cabe todo sin scroll; en alemán, el idioma más largo, las pantallas 2 y 3 hacen un poco de scroll y los botones siguen abajo.
+
+---
+
 ## 2026-11-24 — Opciones de la pregunta inicial menos obvias
 
 **Por qué:** en la pregunta de curiosidad, a veces se veía enseguida cuál era la correcta: las falsas eran absurdas ("para usarse como martillos") o la correcta era la más larga y precisa. El propio prompt lo provocaba: pedía que las dos falsas fueran "claramente falsas".

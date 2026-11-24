@@ -26,12 +26,13 @@ const MOUTHS = {
 const ARC_O = 'M 3.6 21 Q 10.3 9 17 21';
 const ARC_C = 'M 30.5 21 Q 37.2 9 43.9 21';
 
-export default function Curi({ state = 'idle', size = 72, className = '' }) {
+// `look="left"`: the pupils turn to the left (in the welcome guide, Curi looks at the viewfinder).
+export default function Curi({ state = 'idle', size = 72, look = null, className = '' }) {
   const s = CURI_STATES.includes(state) ? state : 'idle';
   const mouth = MOUTHS[s];
   return (
     <svg
-      className={`curi curi--${s} ${className}`.trim()}
+      className={`curi curi--${s}${look === 'left' ? ' curi--look-left' : ''} ${className}`.trim()}
       data-state={s}
       viewBox="-3 -3 53 57"
       width={size}

@@ -92,6 +92,7 @@ beforeEach(async () => {
     r.onsuccess = r.onerror = r.onblocked = resolve;
   });
   localStorage.clear();
+  localStorage.setItem('curiocity_guia_v1', '1'); // the welcome guide is tested on its own
   resetStudyForTests();
   mockServer();
 });
@@ -276,6 +277,43 @@ describe('events', () => {
     expect(waits.slice(0, 3)).toEqual([5000, 10000, 20000]);
     expect(fetchMock).toHaveBeenCalled();
     await user.keyboard('{Escape}');
+  });
+});
+
+describe('welcome guide', () => {
+  it('comes after the code screen, before the camera, and records one "guia" event', async () => {
+    localStorage.removeItem('curiocity_guia_v1');
+    const user = userEvent.setup();
+    await startFirstTime(user);
+    // code → guide → camera: the camera has not asked for permission yet
+    expect(await screen.findByRole('heading', { name: '¡Hola! Soy Curi' }, { timeout: 3000 })).toBeInTheDocument(); // after the splash
+    expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await user.click(screen.getByRole('button', { name: 'Saltar' }));
+    await waitFor(() => expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalled());
+
+    await deliver();
+    const guide = server.received.filter(e => e.tipo === 'guia');
+    expect(guide).toHaveLength(1);
+    expect(guide[0].pantalla).toBe('foto');
+    expect(guide[0].detalles).toEqual({ resultado: 'saltada', pantallas_vistas: 2, duracion_ms: expect.any(Number), desde: 'inicio' });
+  });
+
+  it('from "¿Cómo funciona?", records the whole guide as finished', async () => {
+    localStorage.setItem('curiocity_estudio', JSON.stringify({ codigo: 'LINCE-47', visto: true }));
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'Mis descubrimientos' }));
+    await user.click(await screen.findByRole('button', { name: '¿Cómo funciona?' }));
+    await user.click(await screen.findByRole('button', { name: /Siguiente/ }));
+    await user.click(screen.getByRole('button', { name: /Siguiente/ }));
+    await user.click(screen.getByRole('button', { name: '¡Vamos!' }));
+    await screen.findByRole('heading', { name: 'Mis descubrimientos' });
+
+    await deliver();
+    const guide = server.received.find(e => e.tipo === 'guia');
+    expect(guide.pantalla).toBe('asignaturas');
+    expect(guide.detalles).toMatchObject({ resultado: 'terminada', pantallas_vistas: 3, desde: 'como_funciona' });
   });
 });
 

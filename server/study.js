@@ -19,7 +19,7 @@ const SHEET_TIMEOUT_MS = 25000;
 
 const EVENT_TYPES = [
   'sesion_inicio', 'sesion_fin', 'foto', 'asignaturas', 'pantalla', 'pregunta', 'reto',
-  'ideas_final', 'final', 'error', 'leccion'
+  'ideas_final', 'final', 'error', 'leccion', 'guia'
 ];
 const SUBJECT_KEYS = ['biologia', 'geologia', 'historia', 'matematicas', 'lengua', 'musica', 'artes'];
 // A word and two digits from 2 to 9, as handed out by the spreadsheet: "LINCE-47".
