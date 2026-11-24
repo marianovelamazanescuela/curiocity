@@ -131,8 +131,7 @@ const LESSON_SCHEMA = {
     additionalProperties: false,
     required: [
       'pregunta_inicial', 'dato_sorprendente', 'por_que', 'reto', 'reto_foto', 'reto_descubrimiento',
-      'para_seguir_pensando', 'ideas_pregunta_final', 'conexion_debil', 'objetos_relacionados', 'terminos_busqueda',
-      'imagen_dato', 'imagen_porque'
+      'para_seguir_pensando', 'ideas_pregunta_final', 'conexion_debil', 'objetos_relacionados', 'terminos_busqueda'
     ],
     properties: {
       pregunta_inicial: {
@@ -154,9 +153,7 @@ const LESSON_SCHEMA = {
       ideas_pregunta_final: { type: 'array', items: { type: 'string' } },
       conexion_debil: { type: 'boolean' },
       objetos_relacionados: { type: 'array', items: { type: 'string' } },
-      terminos_busqueda: { type: 'array', items: { type: 'string' } },
-      imagen_dato: { type: 'string' },
-      imagen_porque: { type: 'string' }
+      terminos_busqueda: { type: 'array', items: { type: 'string' } }
     }
   }
 };
@@ -177,8 +174,6 @@ Fields:
 - conexion_debil: true if the connection between this object and this subject is weak. Then say it honestly in the first sentence of por_que, in a friendly way (for example "A banana has little to do with music, but…"). Do not stretch: the question and the fact may be about the subject in general (well-known, certain facts, e.g. about rhythm), linked to what the child will do with the object; never an invented link between this object and the subject.
 - objetos_relacionados: 1-3 related everyday objects (simple nouns) to explore next.
 - terminos_busqueda: 1-2 encyclopedia article titles about this object, most specific first (e.g. "Banco (asiento)" rather than "Banco" for a park bench).
-- imagen_dato: the exact title of ONE encyclopedia article (in ${language}) whose main photo would show what dato_sorprendente talks about, so the child can see it (e.g. for a fact about the people who lit street lamps: "Farolero"). A concrete thing that can be photographed: an animal, a plant, a tool, a machine, a material, a job, a building. The article must be about EXACTLY the thing the text names, so that its main photo shows it; never a broader or merely related topic, and never a similar species or thing instead of the one named. Never the object itself or what it generally comes from (no "Manzano" or "Manzana" for an apple, no "Botella" for a bottle): the child already has it in front of them. If the text is about a part or detail of the object, a general article will not show it: leave it empty. Never a country, region or city (their main picture is often a map or a flag), never a living person, never an abstract idea. An empty string is much better than a loose picture.
-- imagen_porque: the same, for what por_que explains (e.g. "Lámpara de gas"); a different article from imagen_dato, or an empty string.
 Rules:
 ${COMMON_RULES}
 Write every field in ${language}.`;
@@ -231,14 +226,9 @@ function validateLesson(parsed, shuffle = defaultShuffle) {
       objetos_relacionados: stringList(parsed.objetos_relacionados, 3, 40)
     },
     searchTerms: stringList(parsed.terminos_busqueda, 3, 100),
-    // Optional: an article title for each picture, or null. Never a reason to ask the model again.
-    imageTerms: { dato: imageTerm(parsed.imagen_dato), porque: imageTerm(parsed.imagen_porque) },
     complete: Boolean(discovery && ideas)
   };
 }
-
-/** An encyclopedia article title for a picture: short, one line, no URL. Otherwise null. */
-const imageTerm = v => (ok(v, 60) && !/[\n/:]|https?|www\./i.test(v) ? clean(v) : null);
 
 const distinct = list => new Set(list.map(s => s.toLowerCase())).size === list.length;
 

@@ -179,7 +179,7 @@ describe('participant code', () => {
 });
 
 describe('events', () => {
-  it('records the whole walk and sends it to the server, without the photo or image addresses', async () => {
+  it('records the whole walk and sends it to the server, without the photo or any image', async () => {
     vi.spyOn(window, 'open').mockImplementation(() => null);
     const user = userEvent.setup();
     await startFirstTime(user);
@@ -212,7 +212,8 @@ describe('events', () => {
     const lessons = eventos.filter(e => e.tipo === 'leccion');
     expect(lessons).toHaveLength(1);
     expect(lessons[0].detalles.leccion.dato_sorprendente).toBe(lesson.dato_sorprendente);
-    expect(lessons[0].detalles.leccion.imagen_dato).toEqual({ autor: 'Ana', licencia: 'CC BY-SA 4.0', archivo: lesson.imagen_dato.archivo });
+    // lessons no longer have pictures; one cached before (like this one) is recorded without it
+    expect(lessons[0].detalles.leccion).not.toHaveProperty('imagen_dato');
     expect(eventos.filter(e => e.tipo === 'pantalla').every(e => e.leccion_id === lessons[0].leccion_id)).toBe(true);
     const exits = eventos.filter(e => e.tipo === 'pantalla' && e.detalles.accion === 'salida');
     expect(exits.map(e => `${e.pantalla}:${e.detalles.salida}`)).toEqual([

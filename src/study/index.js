@@ -121,18 +121,12 @@ export function track(tipo, detalles = {}, when = new Date()) {
   return event;
 }
 
-// The lesson as the AI wrote it, without picture addresses (no image is ever recorded).
+// The lesson as the AI wrote it. Lessons no longer carry example pictures; a lesson cached before
+// may still have them, and no image is ever recorded.
 function lessonText(lesson) {
   const copy = { ...lesson };
-  for (const key of ['imagen_dato', 'imagen_porque']) {
-    if (copy[key] && typeof copy[key] === 'object') {
-      const credit = { ...copy[key] };
-      delete credit.src;
-      delete credit.ancho;
-      delete credit.alto;
-      copy[key] = credit;
-    }
-  }
+  delete copy.imagen_dato;
+  delete copy.imagen_porque;
   return copy;
 }
 
