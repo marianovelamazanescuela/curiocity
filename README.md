@@ -20,6 +20,8 @@ Elige asignatura ────── POST /api/ai ──────▶ valida, b
 Imagen del dato / porqué ◀── directamente de upload.wikimedia.org (sin cookies ni referer)
 ```
 
+**La primera vez**, antes de la cámara, una guía de bienvenida con Curi explica en tres pantallas qué hacer: hacer una foto a una cosa (nunca a personas), mirarla desde varias asignaturas y aceptar el permiso de la cámara. La cámara no se enciende ni pide permiso hasta que se termina o se salta. Se guarda una marca en el móvil (`curiocity_guia_v1`) para no volver a mostrarla, y se puede ver otra vez desde "¿Cómo funciona?" en "Mis descubrimientos" ([src/components/Guide.jsx](src/components/Guide.jsx)).
+
 **Los enlaces y las imágenes nunca los inventa la IA:** solo propone palabras de búsqueda y el servidor devuelve páginas e imágenes que existen de verdad. Las imágenes son solo la imagen principal del artículo, deben estar en Wikimedia Commons con autor y licencia (que se muestran debajo) y se descartan mapas, banderas, escudos, diagramas, iconos, logos, SVG e imágenes pequeñas.
 
 **Privacidad:** la app no tiene cuentas ni analíticas, y el navegador solo habla con nuestro servidor. La única excepción decidida son esas imágenes de ejemplo, que se cargan directamente desde `upload.wikimedia.org`, sin cookies ni referer. Se descartó pasarlas por nuestro servidor por sencillez y coste. (Queda pendiente el reconocimiento de respaldo, que solo se usa si el servidor falla y aún descarga su modelo de servidores de Google.)
@@ -141,6 +143,7 @@ Cada evento lleva:
 | `final` | Enciclopedia abierta, objeto relacionado, otra asignatura, compartir (solo el canal) |
 | `error` | Servidor no disponible, contenido sin conexión, imagen que no carga |
 | `leccion` | El JSON de la lección mostrada, una vez por lección, sin las direcciones de las imágenes |
+| `guia` | La guía de bienvenida: `resultado` (`terminada` o `saltada`), `pantalla` en la que acabó (`hola`, `foto` o `asignaturas`), `pantallas_vistas`, `duracion_ms` y `desde` (`inicio` o `como_funciona`) |
 
 **Nunca se registra** la foto ni ninguna imagen, la ubicación, identificadores del dispositivo, la IP, el *user-agent* ni texto escrito por el niño. El servidor solo deja pasar los campos de la tabla: un evento con cualquier otro campo, o con un tipo, código o tamaño no válidos, se descarta. Un test comprueba que ni la IP ni el *user-agent* llegan a la hoja ni a los registros del servidor. Detalle en lenguaje llano: [docs/ESTUDIO-PRIVACIDAD.md](docs/ESTUDIO-PRIVACIDAD.md).
 
@@ -233,8 +236,9 @@ server/
   index.js          arranca el servidor
   app.test.js, content.test.js, images.test.js
 src/
-  App.jsx           flujo: cámara → análisis → asignaturas → contenido; historial
-  components/       CameraView, Page (páginas a pantalla completa), ObjectChooser (elegir entre varios objetos), SubjectPicker, SubjectRow, ContentView (lección en tarjetas), Curi (mascota), HistoryView, icons (trazo fino), Toast, Splash
+  App.jsx           flujo: (guía la primera vez) → cámara → análisis → asignaturas → contenido; historial
+  guide.js          marca de la guía de bienvenida ya vista
+  components/       CameraView, Page (páginas a pantalla completa), ObjectChooser (elegir entre varios objetos), SubjectPicker, SubjectRow, ContentView (lección en tarjetas), Curi (mascota), Guide (guía de bienvenida), HistoryView, icons (trazo fino), Toast, Splash
   useCamera.js      gestión de la cámara
   api.js            llamadas al servidor + reconocimiento local de respaldo
   detection.js      lista de objetos de la foto (respuesta del servidor o cajas de COCO-SSD)
