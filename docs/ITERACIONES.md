@@ -4,6 +4,26 @@ Registro breve de las mejoras relevantes de diseño y de técnica: fecha, qué s
 
 ---
 
+## 2026-11-24 — Sin imágenes de ejemplo en la lección
+
+**Por qué:** la imagen de Wikimedia Commons que acompañaba a "¿Sabías que…?" y "¿Por qué?" la mayoría de las veces no salía bien o no tenía relación con el texto. La IA proponía un artículo de enciclopedia y se tomaba su imagen principal, pero ese artículo no siempre mostraba lo que decía el dato. Una imagen que no encaja confunde más que ayuda, así que se prefirió no poner ninguna, de acuerdo con la regla de rigor: mejor menos contenido que contenido dudoso.
+
+**Qué se cambió**
+- **Fuera las imágenes de las dos pantallas.** El dato y el porqué quedan con Curi, la etiqueta y el texto.
+- **El servidor ya no busca imágenes.** Se borra `server/images.js`, y el prompt y el esquema de la lección dejan de pedir `imagen_dato` e `imagen_porque`: menos texto para la IA y una búsqueda menos por lección.
+- **Las lecciones antiguas que aún tengan imagen** se abren sin errores: se ignora. En la versión de estudio, la lección se registra sin ese campo.
+- **Privacidad:** desaparece la única excepción que había. El móvil del niño ya no se conecta a `upload.wikimedia.org`; solo habla con nuestro servidor.
+- Los enlaces a enciclopedias de "Para saber más" no cambian.
+
+**Cómo se probó:** 201 tests en verde. Se quitan los de las imágenes y hay tests nuevos de que:
+- la lección no pide imágenes ni las devuelve;
+- no se consulta Wikimedia Commons;
+- una lección antigua con imagen no la muestra.
+
+Lint y compilación sin errores; la app compilada ya no contiene "wikimedia".
+
+---
+
 ## 2026-11-24 — Guía de bienvenida con Curi la primera vez
 
 **Por qué:** al abrir la app por primera vez, un niño o niña de 8 a 10 años se encontraba directamente con la cámara: no sabía qué hacer ni por qué el navegador le pedía permiso para usarla.
