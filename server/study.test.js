@@ -189,6 +189,12 @@ describe('cleanEvent', () => {
     expect(cleanEvent({ ...lesson, detalles: { leccion: 'x'.repeat(41000) } })).toBeNull();
   });
 
+  it('accepts the welcome guide event, with the screen as a name', () => {
+    const guide = event(1, { tipo: 'guia', pantalla: 'foto', detalles: { resultado: 'saltada', pantallas_vistas: 2, duracion_ms: 5300, desde: 'inicio' } });
+    expect(cleanEvent(guide)).toMatchObject({ tipo: 'guia', pantalla: 'foto' });
+    expect(cleanEvent({ ...guide, pantalla: 2 })).toBeNull(); // a number would be rejected
+  });
+
   it('requires an ISO date, a session and a participant code', () => {
     expect(cleanEvent(event(1, { fecha: 'ayer' }))).toBeNull();
     expect(cleanEvent({ ...event(1), sesion: undefined })).toBeNull();
