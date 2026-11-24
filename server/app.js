@@ -146,8 +146,11 @@ app.post('/api/ai', async (req, res) => {
           { role: 'user', content: user }
         ],
         response_format: jsonSchema(LESSON_SCHEMA),
-        max_tokens: 1500,
-        temperature: CONTENT_TEMPERATURE
+        // A little reasoning gives tempting wrong options in the question (tested on 20 objects,
+        // docs/ITERACIONES.md). It doubles the wait (~11 s) and its hidden tokens count here.
+        reasoning_effort: 'low',
+        max_tokens: 6000,
+        temperature: CONTENT_TEMPERATURE // only used by older models without reasoning
       },
       parsed => validateLesson(parsed)
     );
